@@ -1,6 +1,7 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  "globalEnv": ["NODE_ENV", "ADMIN_SESSION_SECRET"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -43,6 +44,30 @@ const saltwaterFish = [
 async function main() {
   console.log("开始初始化鱼种数据...");
 
+  // 创建默认管理员账号（如果不存在）
+  const adminPhone = "19900000000";
+  const adminNickname = "admin";
+   const adminPassword = "Admin@123";
+
+  const adminPasswordHash = await bcrypt.hash(adminPassword, 10);
+
+  const adminUser = await prisma.user.upsert({
+    where: { phone: adminPhone },
+    update: {
+      isAdmin: true,
+      nickname: adminNickname,
+      passwordHash: adminPasswordHash,
+    },
+    create: {
+      phone: adminPhone,
+      nickname: adminNickname,
+      isAdmin: true,
+      passwordHash: adminPasswordHash,
+    },
+  });
+
+  console.log(`管理员账号已就绪，手机号: ${adminUser.phone}，密码: ${adminPassword}`);
+
   // 创建特殊的"其他"鱼种
   await prisma.fishSpecies.upsert({
     where: { id: "OTHER" },
@@ -58,14 +83,13 @@ async function main() {
   // 创建淡水鱼种
   for (const fish of freshwaterFish) {
     await prisma.fishSpecies.upsert({
-      where: { id: `fish_${fish.name}` },
+      where: { name: fish.name },
       update: {
         name: fish.name,
         latinName: fish.latinName,
         habitatType: fish.habitatType,
       },
       create: {
-        id: `fish_${fish.name}`,
         name: fish.name,
         latinName: fish.latinName,
         habitatType: fish.habitatType,
@@ -77,14 +101,13 @@ async function main() {
   // 创建海水鱼种
   for (const fish of saltwaterFish) {
     await prisma.fishSpecies.upsert({
-      where: { id: `fish_${fish.name}` },
+      where: { name: fish.name },
       update: {
         name: fish.name,
         latinName: fish.latinName,
         habitatType: fish.habitatType,
       },
       create: {
-        id: `fish_${fish.name}`,
         name: fish.name,
         latinName: fish.latinName,
         habitatType: fish.habitatType,

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Alert, Button, Card, Form, Input, Typography } from "antd";
 import { AppstoreTwoTone } from "@ant-design/icons";
@@ -13,25 +12,35 @@ export default function AdminSignInPage() {
   const error = searchParams.get("error");
 
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(error ? "登录失败，请检查用户名和密码" : "");
+  const [errorMessage, setErrorMessage] = useState(
+    error === "NotAdmin"
+      ? "该账号没有后台访问权限，请联系管理员开通"
+      : error
+      ? "登录失败，请检查用户名和密码"
+      : ""
+  );
 
   const handleSubmit = async (values: { username: string; password: string }) => {
     setIsLoading(true);
     setErrorMessage("");
 
     try {
-      const result = await signIn("admin", {
-        username: values.username,
-        password: values.password,
-        redirect: false,
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ identifier: values.username, password: values.password }),
       });
 
-      if (result?.error) {
-        setErrorMessage("用户名或密码错误");
-      } else {
-        router.push(callbackUrl);
-        router.refresh();
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        setErrorMessage((data as { error?: string }).error ?? "登录失败，请检查用户名和密码");
+        return;
       }
+
+      router.push(callbackUrl);
+      router.refresh();
     } catch {
       setErrorMessage("登录失败，请稍后重试");
     } finally {

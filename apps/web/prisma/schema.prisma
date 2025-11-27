@@ -14,12 +14,16 @@ datasource db {
 
 // 用户表
 model User {
-  id            String    @id @default(cuid())
+  id            String    @id @default(uuid())
   phone         String?   @unique  // 手机号
   email         String?   @unique  // 邮箱（预留）
   emailVerified DateTime?
   nickname      String?
+  // 登录密码（BCrypt 哈希），为空表示仅支持短信登录
+  passwordHash  String?   @db.Text
   avatarUrl     String?   @db.Text
+  // 是否为后台管理员
+  isAdmin       Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -40,7 +44,7 @@ model User {
 
 // NextAuth Account 表
 model Account {
-  id                String  @id @default(cuid())
+  id                String  @id @default(uuid())
   userId            String
   type              String
   provider          String
@@ -61,7 +65,7 @@ model Account {
 
 // NextAuth Session 表
 model Session {
-  id           String   @id @default(cuid())
+  id           String   @id @default(uuid())
   sessionToken String   @unique
   userId       String
   expires      DateTime
@@ -73,7 +77,7 @@ model Session {
 
 // 短信验证码（用于阿里云短信验证）
 model SmsVerification {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   phone     String
   code      String
   type      String   @default("login") // login | register | reset
@@ -90,7 +94,7 @@ model SmsVerification {
 
 // 鱼竿
 model Rod {
-  id            String   @id @default(cuid())
+  id            String   @id @default(uuid())
   userId        String
   name          String   // 必填，用户自定义名称
   brand         String?  // 品牌
@@ -116,7 +120,7 @@ model Rod {
 
 // 渔轮
 model Reel {
-  id               String   @id @default(cuid())
+  id               String   @id @default(uuid())
   userId           String
   name             String   // 必填，用户自定义名称
   brand            String?  // 品牌
@@ -139,7 +143,7 @@ model Reel {
 
 // 装备组合
 model Combo {
-  id             String   @id @default(cuid())
+  id             String   @id @default(uuid())
   userId         String
   name           String   // 组合名称
   rodId          String   // 关联鱼竿
@@ -170,7 +174,7 @@ model Combo {
 
 // 出击记录
 model Trip {
-  id                     String    @id @default(cuid())
+  id                     String    @id @default(uuid())
   userId                 String
   title                  String?   // 出击标题
   startTime              DateTime  // 出击时间
@@ -199,7 +203,7 @@ model Trip {
 
 // 出击与组合的关联表
 model TripCombo {
-  id       String  @id @default(cuid())
+  id       String  @id @default(uuid())
   tripId   String
   comboId  String
   note     String? // 此次出击中关于该组合的备注
@@ -215,7 +219,7 @@ model TripCombo {
 
 // 鱼种数据库（系统级公共数据）
 model FishSpecies {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   name        String   // 中文名
   latinName   String?  // 学名
   aliasNames  Json?    // 别名 string[]
@@ -228,14 +232,14 @@ model FishSpecies {
 
   catches Catch[]
 
-  @@index([name])
+  @@unique([name])
   @@index([isActive])
   @@map("fish_species")
 }
 
 // 渔获条目
 model Catch {
-  id          String    @id @default(cuid())
+  id          String    @id @default(uuid())
   tripId      String
   userId      String    // 冗余字段，方便查询
   speciesId   String    // 鱼种ID

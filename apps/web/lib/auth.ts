@@ -3,51 +3,45 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import { verifySmsCode, isSmsVerificationEnabled } from "@/lib/sms";
+import bcrypt from "bcryptjs";
+
+console.log("[auth config] loaded from apps/web/lib/auth.ts");
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
+    // 通用账号/手机号 + 密码登录（前台使用）
     Credentials({
-      id: "phone",
-      name: "手机号登录",
+      id: "credentials",
+      name: "账号登录",
       credentials: {
-        phone: { label: "手机号", type: "tel" },
-        code: { label: "验证码", type: "text" },
+        identifier: { label: "账号或手机号", type: "text" },
+        password: { label: "密码", type: "password" },
       },
       async authorize(credentials) {
-        const phone = credentials?.phone as string;
-        const code = credentials?.code as string;
+        const identifier = (credentials?.identifier as string | undefined)?.trim();
+        const password = credentials?.password as string | undefined;
 
-        if (!phone) {
-          throw new Error("请输入手机号");
+        if (!identifier || !password) {
+          throw new Error("请输入账号和密码");
         }
 
-        // 检查是否需要短信验证
-        if (isSmsVerificationEnabled()) {
-          if (!code) {
-            throw new Error("请输入验证码");
-          }
-          
-          // 验证短信验证码
-          const verifyResult = await verifySmsCode(phone, code);
-          if (!verifyResult.success) {
-            throw new Error(verifyResult.message);
-          }
-        }
+        // 判断是手机号还是昵称（或将来单独 username）
+        const isPhone = /^1[3-9]\d{9}$/.test(identifier);
 
-        // 查找或创建用户
-        let user = await prisma.user.findFirst({
-          where: { phone },
+        const user = await prisma.user.findFirst({
+          where: isPhone
+            ? { phone: identifier }
+            : { nickname: identifier },
         });
 
-        if (!user) {
-          // 新用户，自动注册
-          user = await prisma.user.create({
-            data: {
-              phone,
-              nickname: `用户${phone.slice(-4)}`,
-            },
-          });
+        if (!user || !user.passwordHash) {
+          throw new Error("账号或密码错误");
+        }
+
+        const isValid = await bcrypt.compare(password, user.passwordHash);
+        if (!isValid) {
+          throw new Error("账号或密码错误");
         }
 
         return {
@@ -55,6 +49,55 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           phone: user.phone,
           name: user.nickname,
           image: user.avatarUrl,
+          isAdmin: user.isAdmin,
+        };
+      },
+    }),
+
+    // 后台管理员登录，仅允许 isAdmin = true
+    Credentials({
+      id: "admin",
+      name: "管理员登录",
+      credentials: {
+        identifier: { label: "账号或手机号", type: "text" },
+        password: { label: "密码", type: "password" },
+      },
+      async authorize(credentials) {
+        const identifier = (credentials?.identifier as string | undefined)?.trim();
+        const password = credentials?.password as string | undefined;
+
+        console.log("[admin login] raw credentials", credentials);
+
+        if (!identifier || !password) {
+          throw new Error("请输入账号和密码");
+        }
+
+        const isPhone = /^1[3-9]\d{9}$/.test(identifier);
+
+        const user = await prisma.user.findFirst({
+          where: {
+            AND: [
+              isPhone ? { phone: identifier } : { nickname: identifier },
+              { isAdmin: true },
+            ],
+          },
+        });
+
+        if (!user || !user.passwordHash) {
+          throw new Error("账号或密码错误");
+        }
+
+        const isValid = await bcrypt.compare(password, user.passwordHash);
+        if (!isValid) {
+          throw new Error("账号或密码错误");
+        }
+
+        return {
+          id: user.id,
+          phone: user.phone,
+          name: user.nickname,
+          image: user.avatarUrl,
+          isAdmin: user.isAdmin,
         };
       },
     }),
@@ -68,6 +111,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id;
         token.phone = (user as { phone?: string }).phone;
+        (token as { isAdmin?: boolean }).isAdmin = (user as { isAdmin?: boolean }).isAdmin ?? false;
       }
       return token;
     },
@@ -75,6 +119,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         (session.user as { phone?: string }).phone = token.phone as string;
+        (session.user as { isAdmin?: boolean }).isAdmin = (token as { isAdmin?: boolean }).isAdmin ?? false;
       }
       return session;
     },

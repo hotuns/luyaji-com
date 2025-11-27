@@ -2,18 +2,17 @@
 
 import {
   AppstoreOutlined,
-  FishOutlined,
   InboxOutlined,
   LogoutOutlined,
+  RadarChartOutlined,
   SettingOutlined,
   TeamOutlined,
   UnorderedListOutlined,
 } from "@ant-design/icons";
 import { Avatar, Dropdown, Layout, Menu, theme, Typography } from "antd";
 import type { MenuProps } from "antd";
-import { signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 const { Header, Sider, Content } = Layout;
 
@@ -21,7 +20,7 @@ const NAV_ITEMS = [
   { key: "/dashboard", label: "仪表盘", icon: <AppstoreOutlined /> },
   { key: "/users", label: "用户管理", icon: <TeamOutlined /> },
   { key: "/trips", label: "出击记录", icon: <UnorderedListOutlined /> },
-  { key: "/fish-species", label: "鱼种管理", icon: <FishOutlined /> },
+  { key: "/fish-species", label: "鱼种管理", icon: <RadarChartOutlined /> },
   { key: "/gear", label: "装备管理", icon: <InboxOutlined /> },
   { key: "/settings", label: "系统设置", icon: <SettingOutlined /> },
 ];
@@ -35,6 +34,7 @@ export function AdminShell({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const {
     token: { colorBgContainer, boxShadowSecondary },
   } = theme.useToken();
@@ -44,12 +44,24 @@ export function AdminShell({
     return found ? [found.key] : [NAV_ITEMS[0].key];
   }, [pathname]);
 
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/auth/signin");
+      router.refresh();
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
   const dropdownItems: MenuProps["items"] = [
     {
       key: "logout",
       icon: <LogoutOutlined />,
-      label: "退出登录",
-      onClick: () => signOut({ callbackUrl: "/auth/signin" }),
+      label: isLoggingOut ? "正在退出..." : "退出登录",
+      onClick: handleLogout,
+      disabled: isLoggingOut,
     },
   ];
 
