@@ -4,9 +4,19 @@ import { useMemo, useState } from "react";
 import { FishDexEntry, FishDexPayload } from "@/lib/dex";
 import { cn } from "@workspace/ui/lib/utils";
 import { Card, CardContent } from "@workspace/ui/components/card";
+import { Badge } from "@workspace/ui/components/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@workspace/ui/components/dialog";
+import { Fish, Lock } from "lucide-react";
 
 const FILTERS = [
-  { key: "all", label: "全部图鉴" },
+  { key: "all", label: "全部" },
   { key: "unlocked", label: "已解锁" },
 ];
 
@@ -34,23 +44,23 @@ export function DexDashboard({ summary, species }: DexDashboardProps) {
         <StatCard label="完成度" value={`${unlockRate}%`} helper="图鉴完成率" />
       </section>
 
-      <section className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
+      <section className="bg-white rounded-2xl shadow-sm p-4 space-y-4 min-h-[500px]">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold text-gray-900">鱼种图鉴</h2>
-            <p className="text-sm text-gray-500">
-              {filter === "all" ? "查看全部可记录鱼种" : "只看我钓到过的鱼"}
+            <p className="text-xs text-gray-500 mt-0.5">
+              {filter === "all" ? "收集进度" : "已解锁鱼种"}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex bg-gray-100 p-1 rounded-lg">
             {FILTERS.map((item) => (
               <button
                 key={item.key}
                 className={cn(
-                  "px-4 py-2 rounded-full text-sm font-medium border",
+                  "px-3 py-1.5 rounded-md text-xs font-medium transition-all",
                   filter === item.key
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-white text-gray-600 border-gray-200"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
                 )}
                 onClick={() => setFilter(item.key)}
               >
@@ -61,11 +71,16 @@ export function DexDashboard({ summary, species }: DexDashboardProps) {
         </div>
 
         {filteredSpecies.length === 0 ? (
-          <div className="py-16 text-center text-gray-400">
-            {filter === "unlocked" ? "你还没有解锁任何鱼种，快去钓鱼吧！" : "暂无鱼种数据"}
+          <div className="py-20 text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Fish className="w-8 h-8 text-gray-400" />
+            </div>
+            <p className="text-sm text-gray-500">
+              {filter === "unlocked" ? "你还没有解锁任何鱼种，快去钓鱼吧！" : "暂无鱼种数据"}
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
             {filteredSpecies.map((species) => (
               <FishCard key={species.id} entry={species} />
             ))}
@@ -78,68 +93,141 @@ export function DexDashboard({ summary, species }: DexDashboardProps) {
 
 function StatCard({ label, value, helper }: { label: string; value: number | string; helper?: string }) {
   return (
-    <Card className="bg-white/80 backdrop-blur-sm border-none shadow">
-      <CardContent className="py-4 text-center">
-        <p className="text-2xl font-semibold text-gray-900">{value}</p>
-        <p className="text-xs text-gray-500 mt-1">{label}</p>
-        {helper && <p className="text-[11px] text-gray-400 mt-1">{helper}</p>}
+    <Card className="bg-white/80 backdrop-blur-sm border-none shadow-sm">
+      <CardContent className="py-3 px-2 text-center">
+        <p className="text-xl font-bold text-gray-900">{value}</p>
+        <p className="text-xs font-medium text-gray-500 mt-0.5">{label}</p>
+        {helper && <p className="text-[10px] text-gray-400 mt-1 scale-90">{helper}</p>}
       </CardContent>
     </Card>
   );
 }
 
 function FishCard({ entry }: { entry: FishDexEntry }) {
-  const statusText = entry.unlocked
-    ? `已解锁 · ${entry.totalCount} 条`
-    : "未解锁";
-  const statusColor = entry.unlocked ? "text-green-600" : "text-gray-400";
+  const isUnlocked = entry.unlocked;
 
   return (
-    <Card className={cn("overflow-hidden", entry.unlocked ? "border-green-100" : "border-gray-100")}
-      aria-label={`${entry.name} ${statusText}`}
-    >
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden">
-            {entry.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={entry.imageUrl} alt={entry.name} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-2xl">🐟</span>
-            )}
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-gray-900">{entry.name}</h3>
-              <span className={cn("text-xs", statusColor)}>{statusText}</span>
+    <Dialog>
+      <DialogTrigger asChild>
+        <div
+          className={cn(
+            "aspect-[3/4] relative rounded-xl border-2 transition-all cursor-pointer group overflow-hidden",
+            isUnlocked
+              ? "bg-white border-blue-100 hover:border-blue-300 hover:shadow-md"
+              : "bg-gray-50 border-gray-100 hover:border-gray-200"
+          )}
+        >
+          {/* Background Pattern or Effect */}
+          <div className={cn(
+            "absolute inset-0 opacity-10 pointer-events-none",
+            isUnlocked ? "bg-gradient-to-br from-blue-500 to-cyan-500" : "bg-gray-200"
+          )} />
+
+          {/* Content */}
+          <div className="absolute inset-0 flex flex-col items-center p-2">
+            {/* Count Badge */}
+            <div className="w-full flex justify-end">
+              {isUnlocked && (
+                <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  x{entry.totalCount}
+                </span>
+              )}
             </div>
-            {entry.aliasNames.length > 0 && (
-              <p className="text-xs text-gray-500 truncate">别名：{entry.aliasNames.join(" / ")}</p>
-            )}
+
+            {/* Image Area */}
+            <div className="flex-1 flex items-center justify-center w-full relative">
+              {isUnlocked ? (
+                entry.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img 
+                    src={entry.imageUrl} 
+                    alt={entry.name} 
+                    className="w-16 h-16 object-contain drop-shadow-sm transition-transform group-hover:scale-110" 
+                  />
+                ) : (
+                  <Fish className="w-12 h-12 text-blue-400" />
+                )
+              ) : (
+                <Lock className="w-8 h-8 text-gray-300" />
+              )}
+            </div>
+
+            {/* Name */}
+            <div className="w-full text-center mt-1">
+              <p className={cn(
+                "text-xs font-medium truncate px-1 py-1 rounded-md",
+                isUnlocked ? "text-gray-900 bg-white/50" : "text-gray-400"
+              )}>
+                {isUnlocked ? entry.name : "???"}
+              </p>
+            </div>
           </div>
         </div>
+      </DialogTrigger>
+      
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {isUnlocked ? (
+              <>
+                <span>{entry.name}</span>
+                <Badge variant="secondary" className="text-xs font-normal">
+                  已捕获 {entry.totalCount} 次
+                </Badge>
+              </>
+            ) : (
+              <span className="text-gray-500">未解锁鱼种</span>
+            )}
+          </DialogTitle>
+          <DialogDescription>
+            {isUnlocked ? (
+              entry.aliasNames.length > 0 ? `别名：${entry.aliasNames.join(" / ")}` : "暂无别名"
+            ) : (
+              "捕获该鱼种后解锁详细信息"
+            )}
+          </DialogDescription>
+        </DialogHeader>
 
-        {entry.unlocked ? (
-          <div className="rounded-lg bg-green-50 px-3 py-2 text-xs text-green-700 space-y-1">
-            <p>
-              首次捕获：{formatDate(entry.firstCaughtAt)}
-            </p>
-            <p>
-              最近捕获：{formatDate(entry.lastCaughtAt)}
-            </p>
+        <div className="grid gap-4 py-4">
+          <div className="flex justify-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+            {isUnlocked ? (
+              entry.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={entry.imageUrl} alt={entry.name} className="h-32 object-contain" />
+              ) : (
+                <Fish className="h-24 w-24 text-blue-200" />
+              )
+            ) : (
+              <div className="flex flex-col items-center gap-2 text-gray-400">
+                <Lock className="h-12 w-12" />
+                <span className="text-sm">???</span>
+              </div>
+            )}
           </div>
-        ) : (
-          <p className="text-xs text-gray-400">记录一次渔获即可解锁此鱼种</p>
-        )}
-      </CardContent>
-    </Card>
+
+          {isUnlocked && (
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="space-y-1">
+                <p className="text-xs text-gray-500">首次捕获</p>
+                <p className="font-medium">{formatDate(entry.firstCaughtAt)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-gray-500">最近捕获</p>
+                <p className="font-medium">{formatDate(entry.lastCaughtAt)}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function formatDate(date: string | null) {
   if (!date) return "--";
   return new Intl.DateTimeFormat("zh-CN", {
-    month: "short",
+    year: "numeric",
+    month: "long",
     day: "numeric",
   }).format(new Date(date));
 }
