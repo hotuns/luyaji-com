@@ -4,15 +4,28 @@ import {
   AppstoreOutlined,
   InboxOutlined,
   LogoutOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
   RadarChartOutlined,
   SettingOutlined,
   TeamOutlined,
   UnorderedListOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
-import { Avatar, Dropdown, Layout, Menu, theme, Typography } from "antd";
+import {
+  Avatar,
+  Breadcrumb,
+  Button,
+  Dropdown,
+  Layout,
+  Menu,
+  theme,
+  Typography,
+} from "antd";
 import type { MenuProps } from "antd";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import Link from "next/link";
 
 const { Header, Sider, Content } = Layout;
 
@@ -25,6 +38,15 @@ const NAV_ITEMS = [
   { key: "/settings", label: "系统设置", icon: <SettingOutlined /> },
 ];
 
+const BREADCRUMB_NAME_MAP: Record<string, string> = {
+  "/dashboard": "仪表盘",
+  "/users": "用户管理",
+  "/trips": "出击记录",
+  "/fish-species": "鱼种管理",
+  "/gear": "装备管理",
+  "/settings": "系统设置",
+};
+
 export function AdminShell({
   user,
   children,
@@ -34,14 +56,28 @@ export function AdminShell({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const {
-    token: { colorBgContainer, boxShadowSecondary },
+    token: { colorBgContainer, colorBgLayout, borderRadiusLG },
   } = theme.useToken();
 
   const selectedKey = useMemo(() => {
     const found = NAV_ITEMS.find((item) => pathname.startsWith(item.key));
     return found ? [found.key] : [NAV_ITEMS[0].key];
+  }, [pathname]);
+
+  const breadcrumbItems = useMemo(() => {
+    const pathSnippets = pathname.split("/").filter((i) => i);
+    const items = pathSnippets.map((_, index) => {
+      const url = `/${pathSnippets.slice(0, index + 1).join("/")}`;
+      const title = BREADCRUMB_NAME_MAP[url] || (index === pathSnippets.length - 1 && pathSnippets.length > 1 ? "详情" : url);
+      return {
+        key: url,
+        title: index === pathSnippets.length - 1 ? title : <Link href={url}>{title}</Link>,
+      };
+    });
+    return [{ key: "/", title: <Link href="/dashboard">首页</Link> }, ...items];
   }, [pathname]);
 
   const handleLogout = async () => {
@@ -57,81 +93,166 @@ export function AdminShell({
 
   const dropdownItems: MenuProps["items"] = [
     {
+      key: "profile",
+      icon: <UserOutlined />,
+      label: "个人中心",
+      disabled: true,
+    },
+    {
+      type: "divider",
+    },
+    {
       key: "logout",
       icon: <LogoutOutlined />,
       label: isLoggingOut ? "正在退出..." : "退出登录",
       onClick: handleLogout,
       disabled: isLoggingOut,
+      danger: true,
     },
   ];
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      <Sider breakpoint="lg" collapsedWidth={56} theme="light" width={220} style={{ borderRight: "1px solid #f0f0f0" }}>
-        <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+      <Sider
+        trigger={null}
+        collapsible
+        collapsed={collapsed}
+        breakpoint="lg"
+        onBreakpoint={(broken) => {
+          if (broken) setCollapsed(true);
+        }}
+        theme="light"
+        width={240}
+        style={{
+          borderRight: "1px solid rgba(5, 5, 5, 0.06)",
+          position: "fixed",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          zIndex: 100,
+        }}
+      >
+        <div
+          style={{
+            height: 64,
+            padding: "0 24px",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            borderBottom: "1px solid rgba(5, 5, 5, 0.06)",
+          }}
+        >
           <div
             style={{
-              width: 36,
-              height: 36,
-              borderRadius: 12,
-              background: "#1677ff",
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: "linear-gradient(135deg, #1677ff 0%, #0050b3 100%)",
               color: "#fff",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontWeight: 600,
+              fontWeight: 700,
+              fontSize: 18,
+              flexShrink: 0,
             }}
           >
             钓
           </div>
-          <Typography.Title level={5} style={{ margin: 0 }}>
-            路亚记后台
-          </Typography.Title>
+          {!collapsed && (
+            <Typography.Title
+              level={5}
+              style={{ margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+            >
+              路亚记后台
+            </Typography.Title>
+          )}
         </div>
         <Menu
           mode="inline"
           selectedKeys={selectedKey}
           items={NAV_ITEMS}
           onClick={({ key }) => router.push(key)}
+          style={{ borderRight: 0, padding: "8px 0" }}
         />
       </Sider>
-      <Layout>
+      <Layout style={{ marginLeft: collapsed ? 80 : 240, transition: "all 0.2s" }}>
         <Header
           style={{
+            padding: "0 24px",
             background: colorBgContainer,
             display: "flex",
-            justifyContent: "flex-end",
             alignItems: "center",
-            padding: "0 24px",
-            boxShadow: boxShadowSecondary,
-            zIndex: 5,
+            justifyContent: "space-between",
+            position: "sticky",
+            top: 0,
+            zIndex: 99,
+            boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)",
           }}
         >
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <Button
+              type="text"
+              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              onClick={() => setCollapsed(!collapsed)}
+              style={{
+                fontSize: "16px",
+                width: 32,
+                height: 32,
+              }}
+            />
+            <Breadcrumb items={breadcrumbItems} />
+          </div>
+          
           <Dropdown menu={{ items: dropdownItems }} trigger={["click"]}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-              <Avatar style={{ backgroundColor: "#1677ff" }}>{(user?.name || "管理员").slice(0, 1)}</Avatar>
-              <div>
-                <Typography.Text strong>{user?.name || "管理员"}</Typography.Text>
-                <Typography.Paragraph style={{ margin: 0 }} type="secondary">
-                  {user?.email || "后台账号"}
-                </Typography.Paragraph>
-              </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                cursor: "pointer",
+                padding: "4px 8px",
+                borderRadius: 6,
+                transition: "background-color 0.2s",
+              }}
+              className="hover:bg-gray-50"
+            >
+              <Avatar
+                style={{
+                  backgroundColor: "#1677ff",
+                  verticalAlign: "middle",
+                }}
+                size="small"
+              >
+                {(user?.name || "A").slice(0, 1).toUpperCase()}
+              </Avatar>
+              <span style={{ fontSize: 14, color: "rgba(0, 0, 0, 0.88)" }}>
+                {user?.name || "管理员"}
+              </span>
             </div>
           </Dropdown>
         </Header>
-        <Content style={{ margin: 24 }}>
+        <Content
+          style={{
+            margin: "24px 24px 0",
+            minHeight: 280,
+            background: colorBgLayout,
+          }}
+        >
           <div
             style={{
-              minHeight: "calc(100vh - 160px)",
-              background: colorBgContainer,
-              borderRadius: 12,
               padding: 24,
-              boxShadow: boxShadowSecondary,
+              background: colorBgContainer,
+              borderRadius: borderRadiusLG,
+              minHeight: "calc(100vh - 112px)", // Header 64 + Margin 24 + Margin 24
             }}
           >
             {children}
           </div>
         </Content>
+        <Layout.Footer style={{ textAlign: "center", color: "rgba(0, 0, 0, 0.45)" }}>
+          Luyaji Admin ©{new Date().getFullYear()} Created by Hotuns
+        </Layout.Footer>
       </Layout>
     </Layout>
   );

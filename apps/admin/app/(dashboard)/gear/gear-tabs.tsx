@@ -1,8 +1,21 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { Tabs, Input, Table, Tag, Card } from "antd";
-import { SearchOutlined, ToolOutlined, SettingOutlined, AppstoreOutlined } from "@ant-design/icons";
+import { useRouter } from "next/navigation";
+import {
+  Tabs,
+  Input,
+  Table,
+  Tag,
+  Card,
+  Form,
+  InputNumber,
+  Select,
+  Button,
+  message,
+  Modal,
+} from "antd";
+import { SearchOutlined, ToolOutlined, SettingOutlined, AppstoreOutlined, PlusOutlined } from "@ant-design/icons";
 
 type RodData = {
   id: string;
@@ -49,6 +62,7 @@ export function GearTabs({
   reels: ReelData[];
   combos: ComboData[];
 }) {
+  const router = useRouter();
   const [rodSearch, setRodSearch] = useState("");
   const [reelSearch, setReelSearch] = useState("");
   const [comboSearch, setComboSearch] = useState("");
@@ -60,8 +74,26 @@ export function GearTabs({
     [combos, comboSearch]
   );
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
-    <Tabs
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
+          快速录入模板
+        </Button>
+      </div>
+
+      <TemplateCreateModal
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        onCreated={() => {
+          router.refresh();
+          setIsModalOpen(false);
+        }}
+      />
+
+      <Tabs
       defaultActiveKey="rods"
       items={[
         {
@@ -129,6 +161,7 @@ export function GearTabs({
         },
       ]}
     />
+    </div>
   );
 }
 
@@ -155,6 +188,173 @@ function GearSection({
       />
       {table}
     </Card>
+  );
+}
+
+function TemplateCreateModal({
+  open,
+  onCancel,
+  onCreated,
+}: {
+  open: boolean;
+  onCancel: () => void;
+  onCreated: () => void;
+}) {
+  const [rodForm] = Form.useForm();
+  const [reelForm] = Form.useForm();
+  const [rodLoading, setRodLoading] = useState(false);
+  const [reelLoading, setReelLoading] = useState(false);
+
+  const submitTemplate = async (values: Record<string, unknown>, type: "rods" | "reels") => {
+    const payload = Object.fromEntries(
+      Object.entries(values).map(([key, value]) => [key, value === undefined ? null : value])
+    );
+
+    const response = await fetch(`/api/templates/${type}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || "创建失败");
+    }
+    message.success(type === "rods" ? "鱼竿模板已创建" : "渔轮模板已创建");
+    onCreated();
+  };
+
+  const handleRodFinish = async (values: Record<string, unknown>) => {
+    try {
+      setRodLoading(true);
+      await submitTemplate(values, "rods");
+      rodForm.resetFields();
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : "创建失败");
+    } finally {
+      setRodLoading(false);
+    }
+  };
+
+  const handleReelFinish = async (values: Record<string, unknown>) => {
+    try {
+      setReelLoading(true);
+      await submitTemplate(values, "reels");
+      reelForm.resetFields();
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : "创建失败");
+    } finally {
+      setReelLoading(false);
+    }
+  };
+
+  return (
+    <Modal
+      title="快速录入模板"
+      open={open}
+      onCancel={onCancel}
+      footer={null}
+      width={600}
+      destroyOnClose
+    >
+      <p style={{ color: "#64748b", marginBottom: 16 }}>
+        模板会在前台装备库中展示，用户可快速复制使用。
+      </p>
+      <Tabs
+        items={[
+          {
+            key: "rod-template",
+            label: "鱼竿模板",
+            children: (
+              <Form
+                layout="vertical"
+                form={rodForm}
+                initialValues={{ lengthUnit: "m" }}
+                onFinish={handleRodFinish}
+              >
+                <Form.Item
+                  label="名称"
+                  name="name"
+                  rules={[{ required: true, message: "请输入鱼竿名称" }]}
+                >
+                  <Input placeholder="例如：Shimano Expride" />
+                </Form.Item>
+                <Form.Item label="品牌" name="brand">
+                  <Input placeholder="Shimano" />
+                </Form.Item>
+                <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+                  <Form.Item label="长度" name="length">
+                    <InputNumber min={0} step={0.01} style={{ width: "100%" }} placeholder="1.98" />
+                  </Form.Item>
+                  <Form.Item label="长度单位" name="lengthUnit">
+                    <Select
+                      options={[
+                        { label: "米 (m)", value: "m" },
+                        { label: "英尺 (ft)", value: "ft" },
+                      ]}
+                    />
+                  </Form.Item>
+                  <Form.Item label="硬度" name="power">
+                    <Input placeholder="ML / M / MH" />
+                  </Form.Item>
+                </div>
+                <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+                  <Form.Item label="饵重下限 (g)" name="lureWeightMin">
+                    <InputNumber min={0} step={1} style={{ width: "100%" }} />
+                  </Form.Item>
+                  <Form.Item label="饵重上限 (g)" name="lureWeightMax">
+                    <InputNumber min={0} step={1} style={{ width: "100%" }} />
+                  </Form.Item>
+                </div>
+                <Form.Item label="适用线号" name="lineWeightText">
+                  <Input placeholder="4-10lb" />
+                </Form.Item>
+                <Form.Item label="备注" name="note">
+                  <Input.TextArea rows={3} placeholder="额外说明、推荐场景等" />
+                </Form.Item>
+                <Button type="primary" htmlType="submit" loading={rodLoading} block>
+                  保存鱼竿模板
+                </Button>
+              </Form>
+            ),
+          },
+          {
+            key: "reel-template",
+            label: "渔轮模板",
+            children: (
+              <Form layout="vertical" form={reelForm} onFinish={handleReelFinish}>
+                <Form.Item
+                  label="名称"
+                  name="name"
+                  rules={[{ required: true, message: "请输入渔轮名称" }]}
+                >
+                  <Input placeholder="例如：Vanford 2500" />
+                </Form.Item>
+                <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+                  <Form.Item label="品牌" name="brand">
+                    <Input placeholder="Shimano" />
+                  </Form.Item>
+                  <Form.Item label="型号" name="model">
+                    <Input placeholder="2500" />
+                  </Form.Item>
+                </div>
+                <Form.Item label="速比" name="gearRatioText">
+                  <Input placeholder="6.2:1" />
+                </Form.Item>
+                <Form.Item label="线容量" name="lineCapacityText">
+                  <Input placeholder="PE #1.2-150m" />
+                </Form.Item>
+                <Form.Item label="备注" name="note">
+                  <Input.TextArea rows={3} placeholder="适用场景、推荐搭配等" />
+                </Form.Item>
+                <Button type="primary" htmlType="submit" loading={reelLoading} block>
+                  保存渔轮模板
+                </Button>
+              </Form>
+            ),
+          },
+        ]}
+      />
+    </Modal>
   );
 }
 
