@@ -1,0 +1,72 @@
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+
+const createReelSchema = z.object({
+  name: z.string().min(1).max(60),
+  brand: z.string().max(40).optional(),
+  model: z.string().max(40).optional(),
+  gearRatioText: z.string().max(30).optional(),
+  lineCapacityText: z.string().max(80).optional(),
+  note: z.string().max(500).optional(),
+  visibility: z.enum(["private", "public"]).optional(),
+});
+
+export async function GET() {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ success: false, error: "未登录" }, { status: 401 });
+    }
+
+    const reels = await prisma.reel.findMany({
+      where: { userId: session.user.id },
+      orderBy: { updatedAt: "desc" },
+      include: {
+        _count: { select: { combos: true } },
+      },
+    });
+
+    return NextResponse.json({ success: true, data: reels });
+  } catch (error) {
+    console.error("获取渔轮失败:", error);
+    return NextResponse.json({ success: false, error: "获取失败" }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ success: false, error: "未登录" }, { status: 401 });
+    }
+
+    const json = await request.json();
+    const payload = createReelSchema.parse(json);
+
+    const reel = await prisma.reel.create({
+      data: {
+        userId: session.user.id,
+        name: payload.name,
+        brand: payload.brand,
+        model: payload.model,
+        gearRatioText: payload.gearRatioText,
+        lineCapacityText: payload.lineCapacityText,
+        note: payload.note,
+        visibility: payload.visibility ?? "private",
+      },
+    });
+
+    return NextResponse.json({ success: true, data: reel }, { status: 201 });
+  } catch (error) {
+    console.error("创建渔轮失败:", error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { success: false, error: error.issues[0]?.message ?? "数据验证失败" },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json({ success: false, error: "创建失败" }, { status: 500 });
+  }
+}
