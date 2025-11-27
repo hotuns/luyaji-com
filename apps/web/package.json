@@ -9,15 +9,32 @@
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:push": "prisma db push",
+    "db:generate": "prisma generate",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@alicloud/dysmsapi20170525": "^4.2.0",
+    "@alicloud/openapi-client": "^0.4.15",
+    "@auth/prisma-adapter": "^2.11.1",
+    "@prisma/client": "5",
     "@workspace/ui": "workspace:*",
+    "ali-oss": "^6.23.0",
+    "clsx": "^2.1.1",
     "lucide-react": "^0.475.0",
     "next": "^15.4.5",
+    "next-auth": "5.0.0-beta.30",
     "next-themes": "^0.4.6",
+    "prisma": "5",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "tailwind-merge": "^3.4.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.11",
@@ -27,6 +44,7 @@
     "@workspace/eslint-config": "workspace:^",
     "@workspace/typescript-config": "workspace:*",
     "eslint": "^9.32.0",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.2"
   }
 }

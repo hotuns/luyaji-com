@@ -1,0 +1,263 @@
+// 路亚记 - Prisma Schema
+// 数据库模型定义
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== 用户认证相关 ====================
+
+// 用户表
+model User {
+  id            String    @id @default(cuid())
+  phone         String?   @unique  // 手机号
+  email         String?   @unique  // 邮箱（预留）
+  emailVerified DateTime?
+  nickname      String?
+  avatarUrl     String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // NextAuth 相关
+  accounts Account[]
+  sessions Session[]
+
+  // 业务关联
+  rods    Rod[]
+  reels   Reel[]
+  combos  Combo[]
+  trips   Trip[]
+  catches Catch[]
+
+  @@index([phone])
+  @@map("users")
+}
+
+// NextAuth Account 表
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+// NextAuth Session 表
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// 短信验证码（用于阿里云短信验证）
+model SmsVerification {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  type      String   @default("login") // login | register | reset
+  expires   DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([phone, code])
+  @@index([expires])
+  @@map("sms_verifications")
+}
+
+// ==================== 装备管理 ====================
+
+// 鱼竿
+model Rod {
+  id            String   @id @default(cuid())
+  userId        String
+  name          String   // 必填，用户自定义名称
+  brand         String?  // 品牌
+  length        Float?   // 长度数值（米）
+  lengthUnit    String?  @default("m") // 长度单位 m | ft
+  power         String?  // 调性/硬度 UL/L/ML/M/MH/H
+  lureWeightMin Float?   // 适用饵重下限（g）
+  lureWeightMax Float?   // 适用饵重上限（g）
+  lineWeightText String? // 适用线号描述
+  note          String?  @db.Text // 备注
+  visibility    String   @default("private") // private | public
+  sourceType    String   @default("user") // user | template | copied
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  combos Combo[]
+
+  @@index([userId])
+  @@index([visibility])
+  @@map("rods")
+}
+
+// 渔轮
+model Reel {
+  id               String   @id @default(cuid())
+  userId           String
+  name             String   // 必填，用户自定义名称
+  brand            String?  // 品牌
+  model            String?  // 型号 2500, 3000 等
+  gearRatioText    String?  // 速比描述
+  lineCapacityText String?  // 线容量描述
+  note             String?  @db.Text // 备注
+  visibility       String   @default("private") // private | public
+  sourceType       String   @default("user") // user | template | copied
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  combos Combo[]
+
+  @@index([userId])
+  @@index([visibility])
+  @@map("reels")
+}
+
+// 装备组合
+model Combo {
+  id             String   @id @default(cuid())
+  userId         String
+  name           String   // 组合名称
+  rodId          String   // 关联鱼竿
+  reelId         String   // 关联渔轮
+  mainLineText   String?  // 主线描述
+  leaderLineText String?  // 子线描述
+  hookText       String?  // 钩类描述
+  lures          Json?    // 常用假饵列表 ComboLure[]
+  sceneTags      Json?    // 适用场景标签 string[]
+  detailNote     String?  @db.Text // 组合详细说明
+  visibility     String   @default("private") // private | public
+  sourceType     String   @default("user") // user | template | copied
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rod        Rod         @relation(fields: [rodId], references: [id])
+  reel       Reel        @relation(fields: [reelId], references: [id])
+  tripCombos TripCombo[]
+  catches    Catch[]
+
+  @@index([userId])
+  @@index([visibility])
+  @@map("combos")
+}
+
+// ==================== 出击记录 ====================
+
+// 出击记录
+model Trip {
+  id                     String    @id @default(cuid())
+  userId                 String
+  title                  String?   // 出击标题
+  startTime              DateTime  // 出击时间
+  endTime                DateTime? // 结束时间
+  locationName           String    // 地点文本
+  locationLat            Float?    // 经度
+  locationLng            Float?    // 纬度
+  note                   String?   @db.Text // 总体备注
+  weatherType            String?   // 天气类型
+  weatherTemperatureText String?   // 温度文本
+  weatherWindText        String?   // 风力文本
+  totalCatchCount        Int?      @default(0) // 渔获总条数
+  fishSpeciesCount       Int?      @default(0) // 渔获鱼种数
+  visibility             String    @default("private") // private | public
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tripCombos TripCombo[]
+  catches    Catch[]
+
+  @@index([userId])
+  @@index([startTime])
+  @@map("trips")
+}
+
+// 出击与组合的关联表
+model TripCombo {
+  id       String  @id @default(cuid())
+  tripId   String
+  comboId  String
+  note     String? // 此次出击中关于该组合的备注
+
+  trip  Trip  @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  combo Combo @relation(fields: [comboId], references: [id])
+
+  @@unique([tripId, comboId])
+  @@map("trip_combos")
+}
+
+// ==================== 渔获与鱼种 ====================
+
+// 鱼种数据库（系统级公共数据）
+model FishSpecies {
+  id          String   @id @default(cuid())
+  name        String   // 中文名
+  latinName   String?  // 学名
+  aliasNames  Json?    // 别名 string[]
+  habitatType String?  // fresh | salt | brackish
+  imageUrl    String?  @db.Text // 图鉴图标
+  description String?  @db.Text // 简介
+  isActive    Boolean  @default(true) // 是否在应用中展示
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  catches Catch[]
+
+  @@index([name])
+  @@index([isActive])
+  @@map("fish_species")
+}
+
+// 渔获条目
+model Catch {
+  id          String    @id @default(cuid())
+  tripId      String
+  userId      String    // 冗余字段，方便查询
+  speciesId   String    // 鱼种ID
+  speciesName String    // 冗余保存当前显示名
+  count       Int       @default(1) // 条数
+  sizeText    String?   // 尺寸文本
+  weightText  String?   // 重量文本
+  caughtAt    DateTime? // 捕获时间
+  comboId     String?   // 使用的组合
+  lureText    String?   // 使用假饵描述
+  note        String?   @db.Text // 单条渔获备注
+  photoUrls   Json?     // 图片URL列表 string[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  trip    Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  species FishSpecies @relation(fields: [speciesId], references: [id])
+  combo   Combo?      @relation(fields: [comboId], references: [id])
+
+  @@index([tripId])
+  @@index([userId])
+  @@index([speciesId])
+  @@map("catches")
+}
