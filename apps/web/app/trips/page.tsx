@@ -2,6 +2,9 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { Card, CardContent } from "@workspace/ui/components/card";
+import { Button } from "@workspace/ui/components/button";
+import { Plus, MapPin, Fish, Calendar, CloudSun } from "lucide-react";
 
 export default async function TripsPage() {
   const session = await auth();
@@ -26,80 +29,104 @@ export default async function TripsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-24">
       {/* 顶部标题栏 */}
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
-        <div className="flex items-center justify-between px-4 h-14">
-          <h1 className="text-lg font-semibold text-gray-900">出击记录</h1>
-          <div className="text-sm text-gray-500">
-            共 {trips.length} 次
-          </div>
-        </div>
-      </header>
-
-      {/* 出击列表 */}
-      <div className="p-4 space-y-3">
-        {trips.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="text-5xl mb-4">🎣</div>
-            <h2 className="text-lg font-medium text-gray-900 mb-2">
-              还没有出击记录
-            </h2>
-            <p className="text-gray-500 text-sm mb-6">
-              点击下方按钮，开始记录你的第一次出击吧！
+      <div className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white px-6 pt-10 pb-16 rounded-b-[2.5rem] shadow-lg relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-400/20 rounded-full -ml-10 -mb-10 blur-2xl pointer-events-none"></div>
+        
+        <div className="relative z-10 flex justify-between items-end">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">出击记录</h1>
+            <p className="text-sm text-indigo-100 mt-2 font-medium opacity-90">
+              回顾每一次精彩的作钓旅程
             </p>
           </div>
+          <div className="text-2xl font-bold opacity-80">
+            {trips.length} <span className="text-sm font-normal opacity-60">次</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 出击列表 */}
+      <div className="px-4 space-y-4 -mt-8 relative z-20">
+        {trips.length === 0 ? (
+          <Card className="border-dashed border-2 bg-gray-50/50 shadow-none">
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <Fish className="w-8 h-8 text-gray-400" />
+              </div>
+              <h2 className="text-lg font-medium text-gray-900 mb-2">
+                还没有出击记录
+              </h2>
+              <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">
+                点击下方按钮，开始记录你的第一次出击吧！
+              </p>
+              <Button asChild>
+                <Link href="/trips/new" className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  新建出击
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
           trips.map((trip) => (
             <Link
               key={trip.id}
               href={`/trips/${trip.id}`}
-              className="block bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+              className="block group"
             >
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="font-medium text-gray-900">
-                  {trip.title || trip.locationName}
-                </h3>
-                <span className="text-xs text-gray-400">
-                  {new Date(trip.startTime).toLocaleDateString("zh-CN", {
-                    month: "numeric",
-                    day: "numeric",
-                  })}
-                </span>
-              </div>
-              
-              <div className="flex items-center gap-4 text-sm text-gray-500">
-                <span className="flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  </svg>
-                  {trip.locationName}
-                </span>
-                
-                {trip.catches.length > 0 && (
-                  <span className="flex items-center gap-1">
-                    <span>🐟</span>
-                    {trip.catches.reduce((sum, c) => sum + c.count, 0)} 条
-                  </span>
-                )}
-                
-                {trip.weatherType && (
-                  <span>{trip.weatherType}</span>
-                )}
-              </div>
-              
-              {trip.tripCombos.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {trip.tripCombos.map((tc) => (
-                    <span
-                      key={tc.id}
-                      className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full"
-                    >
-                      {tc.combo.name}
+              <Card className="hover:shadow-md transition-all duration-200 border-l-4 border-l-indigo-500 group-hover:border-l-indigo-600">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="font-semibold text-gray-900 text-lg group-hover:text-indigo-700 transition-colors">
+                      {trip.title || trip.locationName}
+                    </h3>
+                    <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-1 rounded-full flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {new Date(trip.startTime).toLocaleDateString("zh-CN", {
+                        month: "numeric",
+                        day: "numeric",
+                      })}
                     </span>
-                  ))}
-                </div>
-              )}
+                  </div>
+                  
+                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
+                    <span className="flex items-center gap-1.5">
+                      <MapPin className="w-4 h-4 text-gray-400" />
+                      {trip.locationName}
+                    </span>
+                    
+                    {trip.catches.length > 0 && (
+                      <span className="flex items-center gap-1.5 text-indigo-600 font-medium bg-indigo-50 px-2 py-0.5 rounded-md">
+                        <Fish className="w-4 h-4" />
+                        {trip.catches.reduce((sum, c) => sum + c.count, 0)}
+                      </span>
+                    )}
+                    
+                    {trip.weatherType && (
+                      <span className="flex items-center gap-1.5">
+                        <CloudSun className="w-4 h-4 text-gray-400" />
+                        {trip.weatherType}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {trip.tripCombos.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-3 border-t border-dashed border-gray-100">
+                      {trip.tripCombos.map((tc) => (
+                        <span
+                          key={tc.id}
+                          className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full"
+                        >
+                          {tc.combo.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </Link>
           ))
         )}
@@ -108,11 +135,9 @@ export default async function TripsPage() {
       {/* 悬浮新建按钮 */}
       <Link
         href="/trips/new"
-        className="fixed right-4 bottom-20 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition-colors z-20"
+        className="fixed right-5 bottom-24 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg shadow-indigo-600/30 flex items-center justify-center hover:bg-indigo-700 hover:scale-105 transition-all z-30"
       >
-        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
+        <Plus className="w-7 h-7" />
       </Link>
     </div>
   );

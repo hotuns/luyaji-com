@@ -37,7 +37,7 @@ export function DexDashboard({ summary, species }: DexDashboardProps) {
     : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <section className="grid grid-cols-3 gap-3">
         <StatCard label="已解锁" value={summary.unlockedSpecies} helper={`共 ${summary.totalSpecies} 种`} />
         <StatCard label="总渔获" value={summary.totalCatch} helper="累计记录" />

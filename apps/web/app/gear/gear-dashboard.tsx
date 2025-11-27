@@ -87,7 +87,7 @@ export function GearDashboard({ initialRods, initialReels, initialCombos }: Gear
   const [combos, setCombos] = useState(initialCombos);
 
   return (
-    <Tabs defaultValue="combos" className="space-y-6">
+    <Tabs defaultValue="combos" className="space-y-4">
       <div className="flex items-center justify-between">
         <TabsList>
           <TabsTrigger value="combos">组合 ({combos.length})</TabsTrigger>

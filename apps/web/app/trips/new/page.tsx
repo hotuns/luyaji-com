@@ -6,6 +6,7 @@ import { TripFormState, TripCatchDraft } from "@/lib/types";
 import Step1BasicInfo from "./step1-basic-info";
 import Step2GearWeather from "./step2-gear-weather";
 import Step3Catches from "./step3-catches";
+import { X } from "lucide-react";
 
 // 本地存储 key
 const DRAFT_STORAGE_KEY = "luyaji_trip_draft_current";
@@ -172,24 +173,29 @@ export default function NewTripPage() {
   // 渲染草稿恢复对话框
   if (showDraftDialog) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full">
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+        <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="mb-2 text-xl font-bold text-gray-900">
             检测到未完成的出击
           </h2>
-          <p className="text-gray-500 text-sm mb-6">
-            是否继续编辑上次未完成的出击记录？
+          <p className="mb-8 text-sm text-gray-500">
+            系统自动保存了您上次未完成的记录，是否继续编辑？
           </p>
           <div className="flex gap-3">
             <button
               onClick={discardDraft}
-              className="flex-1 py-2.5 border border-gray-200 rounded-xl text-gray-600 font-medium"
+              className="flex-1 rounded-xl border border-gray-200 py-3 font-medium text-gray-600 transition hover:bg-gray-50"
             >
               丢弃
             </button>
             <button
               onClick={loadDraft}
-              className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl font-medium"
+              className="flex-1 rounded-xl bg-blue-600 py-3 font-medium text-white shadow-lg shadow-blue-200 transition hover:bg-blue-700"
             >
               继续编辑
             </button>
@@ -200,10 +206,10 @@ export default function NewTripPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       {/* 顶部导航 */}
-      <header className="sticky top-0 bg-white border-b border-gray-100 z-10">
-        <div className="flex items-center justify-between px-4 h-14">
+      <header className="sticky top-0 z-10 border-b border-gray-100 bg-white/80 backdrop-blur-md">
+        <div className="flex h-14 items-center justify-between px-4">
           <button
             onClick={() => {
               if (formState.locationName || formState.title) {
@@ -217,30 +223,30 @@ export default function NewTripPage() {
                 router.push("/trips");
               }
             }}
-            className="text-gray-600"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X className="h-6 w-6" />
           </button>
-          <h1 className="text-base font-medium text-gray-900">
+          <h1 className="text-base font-semibold text-gray-900">
             新建出击 ({formState.currentStep}/3)
           </h1>
           <button
             onClick={saveDraftAndExit}
-            className="text-sm text-blue-600 font-medium"
+            className="rounded-full px-4 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50"
           >
             保存草稿
           </button>
         </div>
         
         {/* 步骤指示器 */}
-        <div className="flex gap-1 px-4 pb-3">
+        <div className="flex gap-1.5 px-4 pb-3">
           {[1, 2, 3].map((step) => (
             <div
               key={step}
-              className={`flex-1 h-1 rounded-full transition-colors ${
-                step <= formState.currentStep ? "bg-blue-600" : "bg-gray-200"
+              className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                step <= formState.currentStep 
+                  ? "bg-gradient-to-r from-blue-500 to-indigo-500" 
+                  : "bg-gray-100"
               }`}
             />
           ))}
@@ -248,7 +254,7 @@ export default function NewTripPage() {
       </header>
 
       {/* 步骤内容 */}
-      <div className="p-4">
+      <div className="mx-auto max-w-3xl p-4 pb-24">
         {formState.currentStep === 1 && (
           <Step1BasicInfo
             formState={formState}
