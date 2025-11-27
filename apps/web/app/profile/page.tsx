@@ -39,8 +39,8 @@ export default async function ProfilePage() {
     (overview.user.phone ? `钓友${overview.user.phone.slice(-4)}` : "钓友");
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white px-6 pt-10 pb-20 rounded-b-[2.5rem] shadow-lg relative overflow-hidden">
+    <div className="min-h-screen bg-gray-50 pb-24 md:pb-8">
+      <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white px-6 pt-10 pb-20 rounded-b-[2.5rem] md:rounded-3xl shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/20 rounded-full -ml-10 -mb-10 blur-2xl pointer-events-none"></div>
         
@@ -70,15 +70,15 @@ export default async function ProfilePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mt-8 relative z-10">
+        <div className="grid grid-cols-3 gap-4 mt-8 relative z-10 max-w-2xl mx-auto md:mx-0">
           <StatCard label="出击次数" value={overview.stats.tripCount} />
           <StatCard label="总渔获" value={overview.stats.totalCatch} />
           <StatCard label="解锁鱼种" value={overview.stats.speciesCount} />
         </div>
       </div>
 
-      <div className="px-4 -mt-10 space-y-4 relative z-20">
-        <Card className="border-none shadow-md">
+      <div className="px-4 md:px-0 -mt-10 space-y-4 relative z-20">
+        <Card className="border-none shadow-md md:rounded-2xl">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -93,7 +93,7 @@ export default async function ProfilePage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card className="border-none shadow-md md:rounded-2xl">
           <CardContent className="p-0 divide-y divide-gray-100">
             <div className="p-4 pb-3">
               <h2 className="text-base font-semibold text-gray-900">账号信息</h2>
@@ -114,7 +114,7 @@ export default async function ProfilePage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card className="border-none shadow-md md:rounded-2xl">
           <CardContent className="p-4">
             <div className="mb-4">
               <h2 className="text-base font-semibold text-gray-900">安全</h2>

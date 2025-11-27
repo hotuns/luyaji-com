@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from "next"
 
 import "@workspace/ui/globals.css"
 import { Providers } from "@/components/providers"
-import { BottomNav } from "@/components/bottom-nav"
+import { ResponsiveNav } from "@/components/responsive-nav"
 
 const fontSans = Geist({
   subsets: ["latin"],
@@ -45,10 +45,12 @@ export default function RootLayout({
         className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}
       >
         <Providers>
-          <main className="pb-16 min-h-screen bg-gray-50">
-            {children}
+          <ResponsiveNav />
+          <main className="pb-16 md:pb-8 md:pt-16 min-h-screen bg-gray-50">
+            <div className="max-w-5xl mx-auto w-full md:px-6 lg:px-8">
+              {children}
+            </div>
           </main>
-          <BottomNav />
         </Providers>
       </body>
     </html>

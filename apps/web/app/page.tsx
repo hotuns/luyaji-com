@@ -33,9 +33,9 @@ export default async function HomePage() {
   ]);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50 pb-20 md:pb-8">
       {/* 顶部欢迎区域 */}
-      <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white px-6 pt-12 pb-16 rounded-b-[2.5rem] shadow-lg relative overflow-hidden">
+      <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white px-6 pt-12 pb-16 rounded-b-[2.5rem] md:rounded-3xl shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/10 rounded-full -ml-10 -mb-10 blur-2xl pointer-events-none"></div>
         
@@ -52,32 +52,32 @@ export default async function HomePage() {
         </div>
 
         {/* 统计卡片 */}
-        <div className="grid grid-cols-3 gap-4 relative z-10">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center border border-white/10 shadow-sm">
+        <div className="grid grid-cols-3 gap-4 relative z-10 max-w-2xl mx-auto md:mx-0">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center border border-white/10 shadow-sm hover:bg-white/20 transition-colors cursor-default">
             <div className="text-2xl font-bold tracking-tight">{tripCount}</div>
             <div className="text-xs text-blue-100 font-medium mt-1">出击次数</div>
           </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center border border-white/10 shadow-sm">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center border border-white/10 shadow-sm hover:bg-white/20 transition-colors cursor-default">
             <div className="text-2xl font-bold tracking-tight">{catchCount._sum.count || 0}</div>
             <div className="text-xs text-blue-100 font-medium mt-1">总渔获</div>
           </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center border border-white/10 shadow-sm">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center border border-white/10 shadow-sm hover:bg-white/20 transition-colors cursor-default">
             <div className="text-2xl font-bold tracking-tight">{speciesCount.length}</div>
             <div className="text-xs text-blue-100 font-medium mt-1">解锁鱼种</div>
           </div>
         </div>
       </div>
 
-      <div className="px-4 -mt-8 space-y-4 relative z-20">
+      <div className="px-4 md:px-0 -mt-8 space-y-6 relative z-20">
         {/* 快捷操作 */}
-        <Card className="border-none shadow-md overflow-hidden">
+        <Card className="border-none shadow-md overflow-hidden md:rounded-2xl">
           <CardHeader className="pb-3 pt-4 px-4">
             <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
               <Map className="w-4 h-4 text-blue-500" />
               快捷操作
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-3 px-4 pb-4">
+          <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3 px-4 pb-4">
             <Link href="/trips/new" className="block group">
               <div className="bg-blue-50 hover:bg-blue-100 transition-colors rounded-xl p-3 flex flex-col items-center justify-center gap-2 h-20 border border-blue-100 group-hover:border-blue-200">
                 <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
@@ -94,6 +94,7 @@ export default async function HomePage() {
                 <span className="font-medium text-xs text-gray-900">管理装备</span>
               </div>
             </Link>
+            {/* Desktop placeholders or more actions could go here */}
           </CardContent>
         </Card>
 
@@ -110,7 +111,7 @@ export default async function HomePage() {
           </div>
 
           {recentTrips.length === 0 ? (
-            <Card className="border-dashed border-2 bg-gray-50/50 shadow-none">
+            <Card className="border-dashed border-2 bg-gray-50/50 shadow-none md:rounded-2xl">
               <CardContent className="flex flex-col items-center justify-center py-10 text-center">
                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
                   <MapPin className="w-6 h-6 text-gray-400" />
@@ -122,13 +123,13 @@ export default async function HomePage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {recentTrips.map((trip) => (
-                <Link key={trip.id} href={`/trips/${trip.id}`} className="block group">
-                  <Card className="hover:shadow-md transition-all duration-200 border-l-4 border-l-blue-500 group-hover:border-l-blue-600">
-                    <CardContent className="p-4 flex items-center justify-between">
+                <Link key={trip.id} href={`/trips/${trip.id}`} className="block group h-full">
+                  <Card className="hover:shadow-md transition-all duration-200 border-l-4 border-l-blue-500 group-hover:border-l-blue-600 h-full md:rounded-xl">
+                    <CardContent className="p-4 flex items-center justify-between h-full">
                       <div className="space-y-1">
-                        <h3 className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">
+                        <h3 className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors line-clamp-1">
                           {trip.title || trip.locationName}
                         </h3>
                         <div className="flex items-center gap-3 text-xs text-gray-500">
@@ -144,7 +145,7 @@ export default async function HomePage() {
                           )}
                         </div>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-400 transition-colors" />
+                      <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-400 transition-colors shrink-0" />
                     </CardContent>
                   </Card>
                 </Link>

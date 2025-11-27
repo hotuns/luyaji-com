@@ -77,8 +77,8 @@ export default async function GearPage() {
   }));
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      <div className="bg-gradient-to-br from-sky-500 to-blue-600 text-white px-6 pt-10 pb-16 rounded-b-[2.5rem] shadow-lg relative overflow-hidden">
+    <div className="min-h-screen bg-gray-50 pb-24 md:pb-8">
+      <div className="bg-gradient-to-br from-sky-500 to-blue-600 text-white px-6 pt-10 pb-16 rounded-b-[2.5rem] md:rounded-3xl shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-sky-400/20 rounded-full -ml-10 -mb-10 blur-2xl pointer-events-none"></div>
         
@@ -90,7 +90,7 @@ export default async function GearPage() {
         </div>
       </div>
       
-      <div className="px-4 space-y-4 -mt-8 relative z-20">
+      <div className="px-4 md:px-0 space-y-4 -mt-8 relative z-20">
         <GearDashboard initialRods={rodSummaries} initialReels={reelSummaries} initialCombos={comboSummaries} />
       </div>
     </div>

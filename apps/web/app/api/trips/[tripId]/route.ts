@@ -19,6 +19,18 @@ const updateTripSchema = z.object({
     })
     .optional(),
   usedComboIds: z.array(z.string()).min(1).optional(),
+  catches: z
+    .array(
+      z.object({
+        speciesId: z.string(),
+        count: z.number().min(1),
+        sizeText: z.string().optional(),
+        comboId: z.string().optional(),
+        lureText: z.string().optional(),
+        note: z.string().optional(),
+      })
+    )
+    .optional(),
 });
 
 export async function GET(
@@ -91,6 +103,12 @@ export async function PATCH(
       updateData.weatherWindText = payload.weather.windText;
     }
 
+    // 如果更新了渔获，需要重新计算统计数据
+    if (payload.catches) {
+      updateData.totalCatchCount = payload.catches.reduce((sum, c) => sum + c.count, 0);
+      updateData.fishSpeciesCount = new Set(payload.catches.map((c) => c.speciesId)).size;
+    }
+
     await prisma.$transaction(async (tx) => {
       if (Object.keys(updateData).length > 0) {
         await tx.trip.update({ where: { id: existing.id }, data: updateData });
@@ -101,6 +119,35 @@ export async function PATCH(
         await tx.tripCombo.createMany({
           data: comboIds.map((comboId) => ({ tripId: existing.id, comboId })),
         });
+      }
+
+      if (payload.catches) {
+        // 获取鱼种名称映射
+        const speciesIds = payload.catches.map((c) => c.speciesId);
+        const speciesList = await tx.fishSpecies.findMany({
+          where: { id: { in: speciesIds } },
+        });
+        const speciesMap = new Map(speciesList.map((s) => [s.id, s.name]));
+
+        // 删除旧渔获
+        await tx.catch.deleteMany({ where: { tripId: existing.id } });
+        
+        // 创建新渔获
+        if (payload.catches.length > 0) {
+          await tx.catch.createMany({
+            data: payload.catches.map((c) => ({
+              tripId: existing.id,
+              userId: session.user.id!,
+              speciesId: c.speciesId,
+              speciesName: speciesMap.get(c.speciesId) || "未知",
+              count: c.count,
+              sizeText: c.sizeText,
+              comboId: c.comboId,
+              lureText: c.lureText,
+              note: c.note,
+            })),
+          });
+        }
       }
     });
 

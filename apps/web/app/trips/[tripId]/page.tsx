@@ -11,7 +11,7 @@ import {
 } from "@workspace/ui/components/card";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
-import { CalendarDays, Clock, Fish, MapPinned, NotebookText, Wind } from "lucide-react";
+import { CalendarDays, Clock, Fish, MapPinned, NotebookText, Wind, Pencil } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { ComponentType } from "react";
@@ -57,6 +57,15 @@ export default async function TripDetailPage({ params }: { params: { tripId: str
         <div className="absolute -left-20 top-20 h-48 w-48 rounded-full bg-indigo-500/20 blur-2xl" />
         
         <div className="container relative px-6">
+          <div className="absolute right-6 top-0 z-10">
+            <Button asChild variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm">
+              <Link href={`/trips/${params.tripId}/edit`}>
+                <Pencil className="size-5" />
+                <span className="sr-only">编辑</span>
+              </Link>
+            </Button>
+          </div>
+
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm font-medium text-blue-50/80">

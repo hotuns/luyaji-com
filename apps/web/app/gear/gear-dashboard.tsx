@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
@@ -73,6 +74,40 @@ export type ComboSummary = {
   sceneTags: string[] | null;
   rod: { id: string; name: string } | null;
   reel: { id: string; name: string } | null;
+};
+
+type RodLibraryItem = {
+  id: string;
+  name: string;
+  brand: string | null;
+  length: number | null;
+  lengthUnit: string | null;
+  power: string | null;
+  lureWeightMin: number | null;
+  lureWeightMax: number | null;
+  lineWeightText: string | null;
+  note: string | null;
+  updatedAt: string;
+  ownerName: string;
+};
+
+type ReelLibraryItem = {
+  id: string;
+  name: string;
+  brand: string | null;
+  model: string | null;
+  gearRatioText: string | null;
+  lineCapacityText: string | null;
+  note: string | null;
+  updatedAt: string;
+  ownerName: string;
+};
+
+type GearLibraryItemBase = {
+  id: string;
+  name: string;
+  ownerName: string;
+  updatedAt: string;
 };
 
 type GearDashboardProps = {
@@ -251,6 +286,22 @@ function RodForm({ onSuccess, initialData, closeDialog }: { onSuccess: (rod: Rod
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<StatusState>(null);
 
+  const handleTemplateApply = (template: RodLibraryItem) => {
+    setForm((prev) => ({
+      ...prev,
+      name: template.name ?? "",
+      brand: template.brand ?? "",
+      length: template.length?.toString() ?? "",
+      lengthUnit: (template.lengthUnit as "m" | "ft") ?? prev.lengthUnit,
+      power: template.power ?? "",
+      lureWeightMin: template.lureWeightMin?.toString() ?? "",
+      lureWeightMax: template.lureWeightMax?.toString() ?? "",
+      lineWeightText: template.lineWeightText ?? "",
+      note: template.note ?? "",
+    }));
+    setStatus({ type: "success", message: "已根据装备库模板填充，可继续调整" });
+  };
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus(null);
@@ -313,6 +364,16 @@ function RodForm({ onSuccess, initialData, closeDialog }: { onSuccess: (rod: Rod
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
+      <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50/60 p-3 space-y-2">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium">快速复制</p>
+            <p className="text-xs text-muted-foreground">引用其他钓友公开的鱼竿模板自动填充。</p>
+          </div>
+          <RodLibraryPicker onSelect={handleTemplateApply} />
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <LabeledInput
           label="名称"
@@ -446,6 +507,19 @@ function ReelForm({ onSuccess, initialData, closeDialog }: { onSuccess: (reel: R
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<StatusState>(null);
 
+  const handleTemplateApply = (template: ReelLibraryItem) => {
+    setForm((prev) => ({
+      ...prev,
+      name: template.name ?? "",
+      brand: template.brand ?? "",
+      model: template.model ?? "",
+      gearRatioText: template.gearRatioText ?? "",
+      lineCapacityText: template.lineCapacityText ?? "",
+      note: template.note ?? "",
+    }));
+    setStatus({ type: "success", message: "已根据装备库模板填充，可继续调整" });
+  };
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus(null);
@@ -502,6 +576,16 @@ function ReelForm({ onSuccess, initialData, closeDialog }: { onSuccess: (reel: R
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
+      <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50/60 p-3 space-y-2">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium">快速复制</p>
+            <p className="text-xs text-muted-foreground">使用其他钓友公开的渔轮模板快速填写。</p>
+          </div>
+          <ReelLibraryPicker onSelect={handleTemplateApply} />
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <LabeledInput
           label="名称"
@@ -588,6 +672,172 @@ function ReelForm({ onSuccess, initialData, closeDialog }: { onSuccess: (reel: R
         </Button>
       </DialogFooter>
     </form>
+  );
+}
+
+function RodLibraryPicker({ onSelect }: { onSelect: (item: RodLibraryItem) => void }) {
+  return (
+    <GearLibraryDialog<RodLibraryItem>
+      type="rod"
+      title="从装备库复制鱼竿"
+      description="展示其他钓友公开的鱼竿参数，选择后会自动填充表单。"
+      trigger={
+        <Button type="button" size="sm" variant="outline">
+          选择模板
+        </Button>
+      }
+      formatMeta={(item) => {
+        const specs = [
+          item.brand,
+          item.length ? `${item.length}${item.lengthUnit ?? ""}` : null,
+          item.power,
+        ].filter(Boolean);
+        const lureRange =
+          item.lureWeightMin || item.lureWeightMax
+            ? `${item.lureWeightMin ?? "?"}-${item.lureWeightMax ?? "?"}g 饵重`
+            : null;
+        const lineText = item.lineWeightText ? `线号 ${item.lineWeightText}` : null;
+        return [...specs, lureRange, lineText].filter(Boolean).join(" ｜ ");
+      }}
+      onSelect={onSelect}
+    />
+  );
+}
+
+function ReelLibraryPicker({ onSelect }: { onSelect: (item: ReelLibraryItem) => void }) {
+  return (
+    <GearLibraryDialog<ReelLibraryItem>
+      type="reel"
+      title="从装备库复制渔轮"
+      description="使用其他钓友公开的渔轮模板，自动带出常用参数。"
+      trigger={
+        <Button type="button" size="sm" variant="outline">
+          选择模板
+        </Button>
+      }
+      formatMeta={(item) => {
+        const specs = [item.brand, item.model, item.gearRatioText].filter(Boolean);
+        const line = item.lineCapacityText ? `线容量 ${item.lineCapacityText}` : null;
+        return [...specs, line].filter(Boolean).join(" ｜ ");
+      }}
+      onSelect={onSelect}
+    />
+  );
+}
+
+type GearLibraryDialogProps<T extends GearLibraryItemBase> = {
+  type: "rod" | "reel";
+  title: string;
+  description: string;
+  trigger: ReactNode;
+  formatMeta: (item: T) => string;
+  onSelect: (item: T) => void;
+};
+
+function GearLibraryDialog<T extends GearLibraryItemBase>({ type, title, description, trigger, formatMeta, onSelect }: GearLibraryDialogProps<T>) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [items, setItems] = useState<T[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setIsLoading(true);
+    setError(null);
+
+    const handler = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ type });
+        if (query) {
+          params.set("q", query);
+        }
+        const response = await fetch(`/api/gear-library?${params.toString()}`);
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || "加载失败");
+        }
+        if (!cancelled) {
+          setItems(data.data as T[]);
+        }
+      } catch (fetchError) {
+        if (!cancelled) {
+          setError(fetchError instanceof Error ? fetchError.message : "加载失败");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(handler);
+    };
+  }, [open, query, type]);
+
+  const handleSelect = (item: T) => {
+    onSelect(item);
+    setOpen(false);
+    setQuery("");
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        setOpen(value);
+        if (!value) {
+          setQuery("");
+          setItems([]);
+          setError(null);
+        }
+      }}
+    >
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent className="sm:max-w-[520px] max-h-[85vh] overflow-y-auto space-y-4">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <Input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="搜索名称、品牌或备注"
+        />
+        <p className="text-xs text-muted-foreground">仅展示其他钓友公开的装备模板</p>
+        {error && <p className="text-sm text-red-500">{error}</p>}
+        <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground">加载中...</p>
+          ) : items.length === 0 ? (
+            <p className="text-sm text-muted-foreground">暂无可复制的装备，试试调整关键词</p>
+          ) : (
+            items.map((item) => {
+              const meta = formatMeta(item);
+              const updatedLabel = new Date(item.updatedAt).toLocaleDateString();
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => handleSelect(item)}
+                  className="w-full rounded-lg border bg-white p-3 text-left transition hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium">{item.name}</span>
+                    <Badge variant="secondary">来自 {item.ownerName}</Badge>
+                  </div>
+                  {meta && <p className="mt-1 text-xs text-muted-foreground">{meta}</p>}
+                  <p className="mt-1 text-[11px] text-muted-foreground">最近更新 {updatedLabel}</p>
+                </button>
+              );
+            })
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -854,84 +1104,85 @@ function RodCard({
   }
 
   return (
-    <Card className="flex flex-col h-full hover:shadow-md transition-shadow">
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-start gap-2">
-          <div>
-            <CardTitle className="text-base font-semibold line-clamp-1" title={rod.name}>
-              {rod.name}
-            </CardTitle>
-            <CardDescription className="mt-1 line-clamp-1">
+    <Card className="hover:shadow-md transition-shadow">
+      <div className="p-3">
+        <div className="flex justify-between items-start gap-2 mb-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-sm truncate" title={rod.name}>
+                {rod.name}
+              </h3>
+              {rod.visibility === "public" && (
+                <Badge variant="secondary" className="px-1 py-0 text-[10px] h-4 font-normal">
+                  公开
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground truncate">
               {rod.brand || "未知品牌"}
-            </CardDescription>
+            </p>
           </div>
-          {rod.visibility === "public" && (
-            <Badge variant="secondary" className="shrink-0 text-[10px] px-1.5 h-5">公开</Badge>
-          )}
+          <div className="flex gap-1 shrink-0">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <Pencil className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>编辑鱼竿</DialogTitle>
+                </DialogHeader>
+                <RodForm
+                  initialData={rod}
+                  onSuccess={(updated) => {
+                    onUpdated(updated);
+                    setIsDialogOpen(false);
+                  }}
+                  closeDialog={() => setIsDialogOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 hover:text-red-600 hover:bg-red-50"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
-      </CardHeader>
-      <CardContent className="flex-1 pb-3">
-        <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm text-gray-600">
-          <div className="flex items-center gap-2">
-            <Ruler className="w-3.5 h-3.5 text-gray-400" />
-            <span>{rod.length ? `${rod.length}${rod.lengthUnit}` : "-"}</span>
+
+        <div className="bg-muted/30 rounded p-2 grid grid-cols-3 gap-2 text-xs text-muted-foreground mb-2">
+          <div className="flex flex-col">
+            <span className="scale-90 origin-top-left opacity-70">长度</span>
+            <span className="font-medium text-foreground">
+              {rod.length ? `${rod.length}${rod.lengthUnit}` : "-"}
+            </span>
           </div>
-          <div className="flex items-center gap-2">
-            <Activity className="w-3.5 h-3.5 text-gray-400" />
-            <span>{rod.power || "-"}</span>
+          <div className="flex flex-col">
+            <span className="scale-90 origin-top-left opacity-70">硬度</span>
+            <span className="font-medium text-foreground">{rod.power || "-"}</span>
           </div>
-          <div className="flex items-center gap-2 col-span-2">
-            <Weight className="w-3.5 h-3.5 text-gray-400" />
-            <span>
+          <div className="flex flex-col">
+            <span className="scale-90 origin-top-left opacity-70">饵重</span>
+            <span className="font-medium text-foreground truncate">
               {rod.lureWeightMin || rod.lureWeightMax
                 ? `${rod.lureWeightMin ?? "?"}-${rod.lureWeightMax ?? "?"}g`
                 : "-"}
             </span>
           </div>
         </div>
-        {rod.note && (
-          <p className="mt-3 text-xs text-gray-400 line-clamp-2 border-t pt-2 border-dashed">
-            {rod.note}
-          </p>
-        )}
-      </CardContent>
-      <CardFooter className="pt-0 flex justify-between items-center border-t bg-gray-50/50 p-3">
-        <span className="text-xs text-gray-400">
-          关联组合: {rod.combosCount}
-        </span>
-        <div className="flex gap-1">
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <Pencil className="h-3.5 w-3.5 text-gray-500" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>编辑鱼竿</DialogTitle>
-              </DialogHeader>
-              <RodForm
-                initialData={rod}
-                onSuccess={(updated) => {
-                  onUpdated(updated);
-                  setIsDialogOpen(false);
-                }}
-                closeDialog={() => setIsDialogOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:text-red-600 hover:bg-red-50"
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+          <div className="truncate max-w-[70%]">
+            {rod.note ? rod.note : <span className="opacity-50">无备注</span>}
+          </div>
+          <div className="shrink-0">组合: {rod.combosCount}</div>
         </div>
-      </CardFooter>
+      </div>
     </Card>
   );
 }
@@ -968,82 +1219,81 @@ function ReelCard({
   }
 
   return (
-    <Card className="flex flex-col h-full hover:shadow-md transition-shadow">
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-start gap-2">
-          <div>
-            <CardTitle className="text-base font-semibold line-clamp-1" title={reel.name}>
-              {reel.name}
-            </CardTitle>
-            <CardDescription className="mt-1 line-clamp-1">
+    <Card className="hover:shadow-md transition-shadow">
+      <div className="p-3">
+        <div className="flex justify-between items-start gap-2 mb-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-sm truncate" title={reel.name}>
+                {reel.name}
+              </h3>
+              {reel.visibility === "public" && (
+                <Badge variant="secondary" className="px-1 py-0 text-[10px] h-4 font-normal">
+                  公开
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground truncate">
               {reel.brand || "未知品牌"}
-            </CardDescription>
+            </p>
           </div>
-          {reel.visibility === "public" && (
-            <Badge variant="secondary" className="shrink-0 text-[10px] px-1.5 h-5">公开</Badge>
-          )}
+          <div className="flex gap-1 shrink-0">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <Pencil className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>编辑渔轮</DialogTitle>
+                </DialogHeader>
+                <ReelForm
+                  initialData={reel}
+                  onSuccess={(updated) => {
+                    onUpdated(updated);
+                    setIsDialogOpen(false);
+                  }}
+                  closeDialog={() => setIsDialogOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 hover:text-red-600 hover:bg-red-50"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
-      </CardHeader>
-      <CardContent className="flex-1 pb-3">
-        <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm text-gray-600">
-          <div className="flex items-center gap-2">
-            <Settings2 className="w-3.5 h-3.5 text-gray-400" />
-            <span>{reel.model || "-"}</span>
+
+        <div className="bg-muted/30 rounded p-2 grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-2">
+          <div className="flex flex-col">
+            <span className="scale-90 origin-top-left opacity-70">型号</span>
+            <span className="font-medium text-foreground">{reel.model || "-"}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Activity className="w-3.5 h-3.5 text-gray-400" />
-            <span>{reel.gearRatioText || "-"}</span>
+          <div className="flex flex-col">
+            <span className="scale-90 origin-top-left opacity-70">速比</span>
+            <span className="font-medium text-foreground">{reel.gearRatioText || "-"}</span>
           </div>
-          <div className="flex items-center gap-2 col-span-2">
-            <Disc className="w-3.5 h-3.5 text-gray-400" />
-            <span className="truncate" title={reel.lineCapacityText || ""}>
+          <div className="flex flex-col col-span-2">
+            <span className="scale-90 origin-top-left opacity-70">线容量</span>
+            <span className="font-medium text-foreground truncate" title={reel.lineCapacityText || ""}>
               {reel.lineCapacityText || "-"}
             </span>
           </div>
         </div>
-        {reel.note && (
-          <p className="mt-3 text-xs text-gray-400 line-clamp-2 border-t pt-2 border-dashed">
-            {reel.note}
-          </p>
-        )}
-      </CardContent>
-      <CardFooter className="pt-0 flex justify-between items-center border-t bg-gray-50/50 p-3">
-        <span className="text-xs text-gray-400">
-          关联组合: {reel.combosCount}
-        </span>
-        <div className="flex gap-1">
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <Pencil className="h-3.5 w-3.5 text-gray-500" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>编辑渔轮</DialogTitle>
-              </DialogHeader>
-              <ReelForm
-                initialData={reel}
-                onSuccess={(updated) => {
-                  onUpdated(updated);
-                  setIsDialogOpen(false);
-                }}
-                closeDialog={() => setIsDialogOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:text-red-600 hover:bg-red-50"
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+          <div className="truncate max-w-[70%]">
+            {reel.note ? reel.note : <span className="opacity-50">无备注</span>}
+          </div>
+          <div className="shrink-0">组合: {reel.combosCount}</div>
         </div>
-      </CardFooter>
+      </div>
     </Card>
   );
 }
@@ -1084,99 +1334,108 @@ function ComboCard({
   }
 
   return (
-    <Card className="flex flex-col h-full hover:shadow-md transition-shadow border-l-4 border-l-blue-500">
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-start gap-2">
-          <div>
-            <CardTitle className="text-base font-semibold line-clamp-1" title={combo.name}>
-              {combo.name}
-            </CardTitle>
-            <div className="flex flex-wrap gap-1 mt-2">
-              {combo.sceneTags?.map((tag) => (
-                <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-normal">
-                  {tag}
+    <Card className="hover:shadow-md transition-shadow border-l-4 border-l-blue-500">
+      <div className="p-3">
+        <div className="flex justify-between items-start gap-2 mb-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-sm truncate" title={combo.name}>
+                {combo.name}
+              </h3>
+              {combo.visibility === "public" && (
+                <Badge variant="secondary" className="px-1 py-0 text-[10px] h-4 font-normal">
+                  公开
                 </Badge>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {combo.sceneTags?.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700"
+                >
+                  {tag}
+                </span>
               ))}
             </div>
           </div>
-          {combo.visibility === "public" && (
-            <Badge variant="secondary" className="shrink-0 text-[10px] px-1.5 h-5">公开</Badge>
-          )}
+          <div className="flex gap-1 shrink-0">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <Pencil className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px]">
+                <DialogHeader>
+                  <DialogTitle>编辑组合</DialogTitle>
+                </DialogHeader>
+                <ComboForm
+                  rods={rods}
+                  reels={reels}
+                  initialData={combo}
+                  onSuccess={(updated) => {
+                    onUpdated(updated);
+                    setIsDialogOpen(false);
+                  }}
+                  closeDialog={() => setIsDialogOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 hover:text-red-600 hover:bg-red-50"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
-      </CardHeader>
-      <CardContent className="flex-1 pb-3 space-y-3">
-        <div className="space-y-2 text-sm">
-          <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-            <div className="w-8 h-8 rounded-full bg-white border flex items-center justify-center shrink-0">
-              <span className="text-xs font-bold text-gray-500">竿</span>
-            </div>
-            <span className="font-medium text-gray-700 line-clamp-1">
+
+        <div className="space-y-2 mb-3">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="shrink-0 w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500">
+              竿
+            </span>
+            <span className="truncate text-gray-700">
               {combo.rod?.name || "未关联"}
             </span>
           </div>
-          <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-            <div className="w-8 h-8 rounded-full bg-white border flex items-center justify-center shrink-0">
-              <span className="text-xs font-bold text-gray-500">轮</span>
-            </div>
-            <span className="font-medium text-gray-700 line-clamp-1">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="shrink-0 w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500">
+              轮
+            </span>
+            <span className="truncate text-gray-700">
               {combo.reel?.name || "未关联"}
             </span>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 text-xs text-gray-500 pt-2 border-t border-dashed">
-          <div className="text-center">
-            <div className="scale-75 text-gray-400 mb-0.5">主线</div>
-            <div className="font-medium text-gray-700 truncate">{combo.mainLineText || "-"}</div>
+        <div className="bg-muted/30 rounded p-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+          <div className="flex flex-col items-center flex-1">
+            <span className="scale-90 opacity-70">主线</span>
+            <span className="font-medium text-foreground truncate max-w-full">
+              {combo.mainLineText || "-"}
+            </span>
           </div>
-          <div className="text-center border-l border-dashed">
-            <div className="scale-75 text-gray-400 mb-0.5">前导</div>
-            <div className="font-medium text-gray-700 truncate">{combo.leaderLineText || "-"}</div>
+          <div className="w-px h-6 bg-border/50"></div>
+          <div className="flex flex-col items-center flex-1">
+            <span className="scale-90 opacity-70">前导</span>
+            <span className="font-medium text-foreground truncate max-w-full">
+              {combo.leaderLineText || "-"}
+            </span>
           </div>
-          <div className="text-center border-l border-dashed">
-            <div className="scale-75 text-gray-400 mb-0.5">钩/饵</div>
-            <div className="font-medium text-gray-700 truncate">{combo.hookText || "-"}</div>
+          <div className="w-px h-6 bg-border/50"></div>
+          <div className="flex flex-col items-center flex-1">
+            <span className="scale-90 opacity-70">钩/饵</span>
+            <span className="font-medium text-foreground truncate max-w-full">
+              {combo.hookText || "-"}
+            </span>
           </div>
         </div>
-      </CardContent>
-      <CardFooter className="pt-0 flex justify-end items-center border-t bg-gray-50/50 p-2">
-        <div className="flex gap-1">
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 px-2 text-xs">
-                <Pencil className="h-3.5 w-3.5 mr-1.5 text-gray-500" />
-                编辑
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>编辑组合</DialogTitle>
-              </DialogHeader>
-              <ComboForm
-                rods={rods}
-                reels={reels}
-                initialData={combo}
-                onSuccess={(updated) => {
-                  onUpdated(updated);
-                  setIsDialogOpen(false);
-                }}
-                closeDialog={() => setIsDialogOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2 text-xs hover:text-red-600 hover:bg-red-50"
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-            删除
-          </Button>
-        </div>
-      </CardFooter>
+      </div>
     </Card>
   );
 }
