@@ -64,7 +64,7 @@ export function AdminShell({
 
   const selectedKey = useMemo(() => {
     const found = NAV_ITEMS.find((item) => pathname.startsWith(item.key));
-    return found ? [found.key] : [NAV_ITEMS[0].key];
+    return found ? [found.key] : NAV_ITEMS[0] ? [NAV_ITEMS[0].key] : [];
   }, [pathname]);
 
   const breadcrumbItems = useMemo(() => {

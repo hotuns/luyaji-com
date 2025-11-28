@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Fish, ArrowRight, User, Lock } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 
@@ -145,6 +146,16 @@ export default function SignInPage() {
             和
             <a href="#" className="text-gray-600 hover:underline">隐私政策</a>
           </p>
+
+          <div className="mt-4 text-center">
+            <span className="text-sm text-gray-500">还没有账号？</span>
+            <Link
+              href="/auth/register"
+              className="ml-1 text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
+            >
+              立即注册
+            </Link>
+          </div>
         </div>
       </div>
     </div>

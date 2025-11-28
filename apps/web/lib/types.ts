@@ -138,6 +138,8 @@ export interface TripFormState {
   title?: string;
   startTime: string; // ISO string
   locationName: string;
+  locationLat?: number;
+  locationLng?: number;
   note?: string;
 
   // Step2: 装备组合 & 天气

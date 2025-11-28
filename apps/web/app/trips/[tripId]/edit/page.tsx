@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { TripFormState, TripCatchDraft } from "@/lib/types";
 import Step1BasicInfo from "../../new/step1-basic-info";
@@ -8,7 +8,8 @@ import Step2GearWeather from "../../new/step2-gear-weather";
 import Step3Catches from "../../new/step3-catches";
 import { X } from "lucide-react";
 
-export default function EditTripPage({ params }: { params: { tripId: string } }) {
+export default function EditTripPage({ params }: { params: Promise<{ tripId: string }> }) {
+  const { tripId } = use(params);
   const router = useRouter();
   const [formState, setFormState] = useState<TripFormState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -18,7 +19,7 @@ export default function EditTripPage({ params }: { params: { tripId: string } })
   useEffect(() => {
     const fetchTrip = async () => {
       try {
-        const response = await fetch(`/api/trips/${params.tripId}`);
+        const response = await fetch(`/api/trips/${tripId}`);
         if (!response.ok) {
           throw new Error("获取出击详情失败");
         }
@@ -51,14 +52,14 @@ export default function EditTripPage({ params }: { params: { tripId: string } })
       } catch (error) {
         console.error("加载出击详情失败:", error);
         alert("加载失败，请重试");
-        router.push(`/trips/${params.tripId}`);
+        router.push(`/trips/${tripId}`);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchTrip();
-  }, [params.tripId, router]);
+  }, [tripId, router]);
 
   // 更新表单字段
   const updateForm = (updates: Partial<TripFormState>) => {
@@ -85,7 +86,7 @@ export default function EditTripPage({ params }: { params: { tripId: string } })
     if (!formState) return;
     setIsSubmitting(true);
     try {
-      const response = await fetch(`/api/trips/${params.tripId}`, {
+      const response = await fetch(`/api/trips/${tripId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -115,7 +116,7 @@ export default function EditTripPage({ params }: { params: { tripId: string } })
       }
 
       // 跳转到出击详情
-      router.push(`/trips/${params.tripId}`);
+      router.push(`/trips/${tripId}`);
       router.refresh(); // 刷新页面数据
     } catch (error) {
       console.error("更新出击失败:", error);
@@ -153,7 +154,7 @@ export default function EditTripPage({ params }: { params: { tripId: string } })
       <header className="sticky top-0 z-10 border-b border-gray-100 bg-white/80 backdrop-blur-md">
         <div className="flex h-14 items-center justify-between px-4">
           <button
-            onClick={() => router.push(`/trips/${params.tripId}`)}
+            onClick={() => router.push(`/trips/${tripId}`)}
             className="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
           >
             <X className="h-6 w-6" />
@@ -186,7 +187,7 @@ export default function EditTripPage({ params }: { params: { tripId: string } })
             formState={formState}
             updateForm={updateForm}
             onNext={nextStep}
-            onCancel={() => router.push(`/trips/${params.tripId}`)}
+            onCancel={() => router.push(`/trips/${tripId}`)}
           />
         )}
         

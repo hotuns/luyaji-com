@@ -15,9 +15,10 @@ const updateReelSchema = z.object({
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { reelId: string } }
+  { params }: { params: Promise<{ reelId: string }> }
 ) {
   try {
+    const { reelId } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ success: false, error: "未登录" }, { status: 401 });
@@ -27,7 +28,7 @@ export async function PATCH(
     const payload = updateReelSchema.parse(json);
 
     const existing = await prisma.reel.findFirst({
-      where: { id: params.reelId, userId: session.user.id },
+      where: { id: reelId, userId: session.user.id },
     });
 
     if (!existing) {
@@ -54,16 +55,17 @@ export async function PATCH(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { reelId: string } }
+  { params }: { params: Promise<{ reelId: string }> }
 ) {
   try {
+    const { reelId } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ success: false, error: "未登录" }, { status: 401 });
     }
 
     const existing = await prisma.reel.findFirst({
-      where: { id: params.reelId, userId: session.user.id },
+      where: { id: reelId, userId: session.user.id },
       select: { id: true },
     });
 
@@ -72,7 +74,7 @@ export async function DELETE(
     }
 
     const comboCount = await prisma.combo.count({
-      where: { userId: session.user.id, reelId: params.reelId },
+      where: { userId: session.user.id, reelId: reelId },
     });
 
     if (comboCount > 0) {

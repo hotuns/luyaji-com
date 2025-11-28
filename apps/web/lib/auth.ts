@@ -2,12 +2,11 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
-import { verifySmsCode, isSmsVerificationEnabled } from "@/lib/sms";
 import bcrypt from "bcryptjs";
 
 console.log("[auth config] loaded from apps/web/lib/auth.ts");
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const authConfig = {
   adapter: PrismaAdapter(prisma),
   providers: [
     // 通用账号/手机号 + 密码登录（前台使用）
@@ -107,7 +106,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/auth/error",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: any; user?: any }) {
       if (user) {
         token.id = user.id;
         token.phone = (user as { phone?: string }).phone;
@@ -115,7 +114,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: any }) {
       if (session.user) {
         session.user.id = token.id as string;
         (session.user as { phone?: string }).phone = token.phone as string;
@@ -125,6 +124,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   session: {
-    strategy: "jwt",
+    strategy: "jwt" as const,
   },
-});
+};
+
+// NextAuth 返回的类型在 monorepo /打包时可能无法被正确命名引用。
+// 我们把返回值断言为一个更明确的结构，以避免 TS 在构建时要求不可移植的类型引用。
+const _nextAuth = NextAuth(authConfig) as unknown as {
+  handlers: {
+    GET?: (req: Request) => Response | Promise<Response>;
+    POST?: (req: Request) => Response | Promise<Response>;
+    // may include other methods, keep optional
+    [key: string]: ((req: Request) => Response | Promise<Response>) | undefined;
+  };
+  auth: (...args: any[]) => Promise<any>;
+  signIn: unknown;
+  signOut: unknown;
+};
+
+export const { handlers, auth, signIn, signOut } = _nextAuth;

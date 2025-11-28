@@ -163,25 +163,24 @@ async function sendAliyunSms(phone: string, code: string): Promise<{
     config.endpoint = "dysmsapi.aliyuncs.com";
 
     const client = new Dysmsapi20170525(config);
-    const sendSmsRequest = new Dysmsapi20170525.SendSmsRequest({
+    // SDK 可能导出不同的构造函数；直接传 plain object 给 sendSms 更为兼容
+    const result = await client.sendSms({
       phoneNumbers: phone,
       signName: process.env.ALIYUN_SMS_SIGN_NAME || "路亚记",
       templateCode: process.env.ALIYUN_SMS_TEMPLATE_CODE || "",
       templateParam: JSON.stringify({ code }),
-    });
+    } as any);
 
-    const result = await client.sendSms(sendSmsRequest);
-
-    if (result.body.code === "OK") {
+    if (result?.body?.code === "OK") {
       return {
         success: true,
         message: "验证码已发送",
       };
     } else {
-      console.error("阿里云短信发送失败:", result.body);
+      console.error("阿里云短信发送失败:", result?.body);
       return {
         success: false,
-        message: result.body.message || "发送失败",
+        message: result?.body?.message || "发送失败",
       };
     }
   } catch (error) {

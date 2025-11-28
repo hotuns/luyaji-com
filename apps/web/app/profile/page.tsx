@@ -4,11 +4,10 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getProfileOverview } from "@/lib/profile";
 
-import { Button } from "@workspace/ui/components/button";
 import { Card, CardContent } from "@workspace/ui/components/card";
-import { User, Phone, Calendar } from "lucide-react";
+import { Phone, Calendar } from "lucide-react";
 
-import { ProfileForm } from "./profile-form";
+import { ProfileEditModal } from "./profile-edit-modal";
 import { SignOutButton } from "./sign-out-button";
 
 function maskPhone(phone?: string | null) {
@@ -40,32 +39,24 @@ export default async function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 md:pb-8">
-      <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white px-6 pt-10 pb-20 rounded-b-[2.5rem] md:rounded-3xl shadow-lg relative overflow-hidden">
+      <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white px-6 pt-12 pb-20 rounded-b-[2.5rem] md:rounded-3xl shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/20 rounded-full -ml-10 -mb-10 blur-2xl pointer-events-none"></div>
         
-        <div className="relative z-10 flex items-center gap-5">
-          <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center overflow-hidden border-2 border-white/20 shadow-inner">
-            {overview.user.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={overview.user.avatarUrl}
-                alt={displayName}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <User className="w-10 h-10 text-white/80" />
-            )}
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">{displayName}</h1>
-            <div className="flex items-center gap-2 text-blue-100 text-sm mt-1">
+        <div className="relative z-10">
+          <ProfileEditModal
+            nickname={overview.user.nickname}
+            avatarUrl={overview.user.avatarUrl}
+            displayName={displayName}
+          />
+          <div className="mt-3 flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2 text-blue-100">
               <Phone className="w-3.5 h-3.5" />
               <span>{maskPhone(overview.user.phone)}</span>
             </div>
-            <div className="flex items-center gap-2 text-blue-200 text-xs mt-1">
+            <div className="flex items-center gap-2 text-blue-200">
               <Calendar className="w-3.5 h-3.5" />
-              <span>加入时间 · {formatDate(overview.user.createdAt)}</span>
+              <span>加入 {formatDate(overview.user.createdAt)}</span>
             </div>
           </div>
         </div>
@@ -78,21 +69,6 @@ export default async function ProfilePage() {
       </div>
 
       <div className="px-4 md:px-0 -mt-10 space-y-4 relative z-20">
-        <Card className="border-none shadow-md md:rounded-2xl">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-base font-semibold text-gray-900">个人资料</h2>
-                <p className="text-xs text-gray-500 mt-0.5">更新昵称与头像，个性化你的钓鱼名片</p>
-              </div>
-            </div>
-            <ProfileForm
-              initialNickname={overview.user.nickname}
-              initialAvatarUrl={overview.user.avatarUrl}
-            />
-          </CardContent>
-        </Card>
-
         <Card className="border-none shadow-md md:rounded-2xl">
           <CardContent className="p-0 divide-y divide-gray-100">
             <div className="p-4 pb-3">

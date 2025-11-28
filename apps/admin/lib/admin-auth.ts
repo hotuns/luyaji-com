@@ -10,7 +10,7 @@ export class AdminAuthError extends Error {
 }
 
 export async function requireAdminUser() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
   const session = decodeAdminSession(token);
 

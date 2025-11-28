@@ -2,6 +2,7 @@
 
 import { TripFormState } from "@/lib/types";
 import { useState, useEffect } from "react";
+import { LocationPicker } from "@/components/map";
 
 interface Step1Props {
   formState: TripFormState;
@@ -112,30 +113,38 @@ export default function Step1BasicInfo({
         </p>
       </div>
 
-      {/* 出击地点 */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          出击地点
-          <span className="text-red-500 ml-0.5">*</span>
-        </label>
-        <input
-          type="text"
-          value={formState.locationName}
-          onChange={(e) => updateForm({ locationName: e.target.value })}
-          placeholder="例如：XX水库大坝、XX河桥洞、附近小坑"
-          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-          maxLength={100}
-        />
-        {lastLocation && formState.locationName !== lastLocation && (
-          <button
-            type="button"
-            onClick={() => updateForm({ locationName: lastLocation })}
-            className="mt-2 text-sm text-blue-600"
-          >
-            使用上一次的地点：{lastLocation}
-          </button>
-        )}
-      </div>
+      {/* 出击地点 - 使用地图组件 */}
+      <LocationPicker
+        value={
+          formState.locationLat && formState.locationLng
+            ? { lat: formState.locationLat, lng: formState.locationLng }
+            : null
+        }
+        onChange={(location) => {
+          if (location) {
+            updateForm({
+              locationLat: location.lat,
+              locationLng: location.lng,
+            });
+          } else {
+            updateForm({
+              locationLat: undefined,
+              locationLng: undefined,
+            });
+          }
+        }}
+        locationName={formState.locationName}
+        onLocationNameChange={(name) => updateForm({ locationName: name })}
+      />
+      {lastLocation && formState.locationName !== lastLocation && (
+        <button
+          type="button"
+          onClick={() => updateForm({ locationName: lastLocation })}
+          className="mt-2 text-sm text-blue-600"
+        >
+          使用上一次的地点：{lastLocation}
+        </button>
+      )}
 
       {/* 备注（可选） */}
       <div>

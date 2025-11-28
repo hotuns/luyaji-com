@@ -11,7 +11,7 @@ import {
 } from "@workspace/ui/components/card";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
-import { CalendarDays, Clock, Fish, MapPinned, NotebookText, Wind, Pencil } from "lucide-react";
+import { CalendarDays, Clock, Fish, MapPinned, NotebookText, Wind, Pencil, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { ComponentType } from "react";
@@ -37,29 +37,36 @@ function formatDuration(start: string, end: string | null) {
   return `${hours} 小时 ${minutes} 分钟`;
 }
 
-export default async function TripDetailPage({ params }: { params: { tripId: string } }) {
+export default async function TripDetailPage({ params }: { params: Promise<{ tripId: string }> }) {
+  const { tripId } = await params;
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/auth/signin");
   }
 
-  const trip = await getTripDetail(session.user.id, params.tripId);
+  const trip = await getTripDetail(session.user.id, tripId);
 
   if (!trip) {
     notFound();
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 pb-24">
-      <div className="relative overflow-hidden rounded-b-[2.5rem] bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-500 pb-10 pt-24 shadow-xl">
+    <div className="min-h-screen bg-gray-50 pb-24 md:pb-8">
+      <div className="relative overflow-hidden rounded-b-[2.5rem] md:rounded-3xl bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-500 px-6 pt-12 pb-16 shadow-xl">
         <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10" />
         <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
         <div className="absolute -left-20 top-20 h-48 w-48 rounded-full bg-indigo-500/20 blur-2xl" />
         
         <div className="container relative px-6">
-          <div className="absolute right-6 top-0 z-10">
+          <div className="flex items-center justify-between mb-6">
             <Button asChild variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm">
-              <Link href={`/trips/${params.tripId}/edit`}>
+              <Link href="/trips">
+                <ChevronLeft className="size-6" />
+                <span className="sr-only">返回</span>
+              </Link>
+            </Button>
+            <Button asChild variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm">
+              <Link href={`/trips/${tripId}/edit`}>
                 <Pencil className="size-5" />
                 <span className="sr-only">编辑</span>
               </Link>
@@ -102,7 +109,7 @@ export default async function TripDetailPage({ params }: { params: { tripId: str
       <div className="container -mt-8 space-y-6 px-4">
         <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
           <div className="space-y-6">
-            <Card className="border-none bg-white/80 shadow-sm backdrop-blur-md">
+            <Card className="border-none shadow-md md:rounded-2xl">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
@@ -159,7 +166,7 @@ export default async function TripDetailPage({ params }: { params: { tripId: str
               </CardContent>
             </Card>
 
-            <Card className="border-none bg-white/80 shadow-sm backdrop-blur-md">
+            <Card className="border-none shadow-md md:rounded-2xl">
               <CardHeader>
                 <CardTitle>渔获记录</CardTitle>
                 <CardDescription>按照出水顺序回顾每一次收获</CardDescription>
@@ -222,7 +229,7 @@ export default async function TripDetailPage({ params }: { params: { tripId: str
           </div>
 
           <div className="space-y-6">
-            <Card className="border-none bg-white/80 shadow-sm backdrop-blur-md">
+            <Card className="border-none shadow-md md:rounded-2xl">
               <CardHeader>
                 <CardTitle>概览</CardTitle>
                 <CardDescription>本次出击的核心数据</CardDescription>
@@ -237,7 +244,7 @@ export default async function TripDetailPage({ params }: { params: { tripId: str
               </CardContent>
             </Card>
 
-            <Card className="border-none bg-white/80 shadow-sm backdrop-blur-md">
+            <Card className="border-none shadow-md md:rounded-2xl">
               <CardHeader>
                 <CardTitle>天气记录</CardTitle>
                 <CardDescription>人工录入的天气信息</CardDescription>
@@ -251,7 +258,7 @@ export default async function TripDetailPage({ params }: { params: { tripId: str
               </CardContent>
             </Card>
 
-            <Card className="border-none bg-white/80 shadow-sm backdrop-blur-md">
+            <Card className="border-none shadow-md md:rounded-2xl">
               <CardHeader>
                 <CardTitle>作战记录</CardTitle>
                 <CardDescription>随手记录的灵感、心得或突发状况</CardDescription>

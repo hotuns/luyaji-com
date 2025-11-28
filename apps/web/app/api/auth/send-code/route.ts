@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, message: error.errors[0].message },
+        { success: false, message: error.errors[0]?.message ?? "数据校验失败" },
         { status: 400 }
       );
     }

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Card, CardContent } from "@workspace/ui/components/card";
 import { Button } from "@workspace/ui/components/button";
-import { Plus, MapPin, Fish, Calendar, CloudSun } from "lucide-react";
+import { Plus, MapPin, Fish, Calendar, CloudSun, Map } from "lucide-react";
 
 export default async function TripsPage() {
   const session = await auth();
@@ -31,7 +31,7 @@ export default async function TripsPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24 md:pb-8">
       {/* 顶部标题栏 */}
-      <div className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white px-6 pt-10 pb-16 rounded-b-[2.5rem] md:rounded-3xl shadow-lg relative overflow-hidden">
+      <div className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white px-6 pt-12 pb-20 rounded-b-[2.5rem] md:rounded-3xl shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-400/20 rounded-full -ml-10 -mb-10 blur-2xl pointer-events-none"></div>
         
@@ -46,20 +46,46 @@ export default async function TripsPage() {
             <div className="text-2xl font-bold opacity-80">
               {trips.length} <span className="text-sm font-normal opacity-60">次</span>
             </div>
-            <Button asChild size="sm" variant="secondary" className="hidden md:flex shadow-sm">
-              <Link href="/trips/new" className="gap-2">
-                <Plus className="w-4 h-4" />
-                新建出击
-              </Link>
-            </Button>
+            <div className="flex gap-2">
+              <Button asChild size="sm" variant="ghost" className="hidden md:flex text-white hover:bg-white/20">
+                <Link href="/trips/map" className="gap-2">
+                  <Map className="w-4 h-4" />
+                  地图
+                </Link>
+              </Button>
+              <Button asChild size="sm" variant="secondary" className="hidden md:flex shadow-sm">
+                <Link href="/trips/new" className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  新建出击
+                </Link>
+              </Button>
+            </div>
           </div>
+        </div>
+
+        {/* 移动端快捷入口 */}
+        <div className="flex gap-3 mt-4 md:hidden relative z-10">
+          <Link
+            href="/trips/map"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white/20 hover:bg-white/30 rounded-xl text-white text-sm font-medium transition-colors backdrop-blur-sm"
+          >
+            <Map className="w-4 h-4" />
+            查看地图
+          </Link>
+          <Link
+            href="/trips/new"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white hover:bg-white/90 rounded-xl text-indigo-600 text-sm font-medium transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            新建出击
+          </Link>
         </div>
       </div>
 
       {/* 出击列表 */}
-      <div className="px-4 md:px-0 space-y-4 -mt-8 relative z-20">
+      <div className="px-4 md:px-0 space-y-4 -mt-10 relative z-20">
         {trips.length === 0 ? (
-          <Card className="border-dashed border-2 bg-gray-50/50 shadow-none md:rounded-2xl">
+          <Card className="border-dashed border-2 bg-gray-50 shadow-none md:rounded-2xl">
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <Fish className="w-8 h-8 text-gray-400" />
@@ -86,7 +112,7 @@ export default async function TripsPage() {
                 href={`/trips/${trip.id}`}
                 className="block group"
               >
-                <Card className="hover:shadow-md transition-all duration-200 border-l-4 border-l-indigo-500 group-hover:border-l-indigo-600 md:rounded-xl">
+                <Card className="bg-white shadow-sm hover:shadow-md transition-all duration-200 border-l-4 border-l-indigo-500 group-hover:border-l-indigo-600 md:rounded-2xl">
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start mb-3">
                       <h3 className="font-semibold text-gray-900 text-lg group-hover:text-indigo-700 transition-colors line-clamp-1">

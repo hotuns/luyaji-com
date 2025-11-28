@@ -9,9 +9,13 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "devDependencies": {
+    "@types/node": "^20.19.9",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
+    "ali-oss": "^6.23.0",
+    "dotenv": "^17.2.3",
     "prettier": "^3.6.2",
+    "ts-node": "^10.9.2",
     "turbo": "^2.5.5",
     "typescript": "5.7.3"
   },

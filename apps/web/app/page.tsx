@@ -33,9 +33,9 @@ export default async function HomePage() {
   ]);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 md:pb-8">
+    <div className="min-h-screen bg-gray-50 pb-24 md:pb-8">
       {/* 顶部欢迎区域 */}
-      <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white px-6 pt-12 pb-16 rounded-b-[2.5rem] md:rounded-3xl shadow-lg relative overflow-hidden">
+      <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white px-6 pt-12 pb-20 rounded-b-[2.5rem] md:rounded-3xl shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/10 rounded-full -ml-10 -mb-10 blur-2xl pointer-events-none"></div>
         
@@ -68,7 +68,7 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <div className="px-4 md:px-0 -mt-8 space-y-6 relative z-20">
+      <div className="px-4 md:px-0 -mt-10 space-y-6 relative z-20">
         {/* 快捷操作 */}
         <Card className="border-none shadow-md overflow-hidden md:rounded-2xl">
           <CardHeader className="pb-3 pt-4 px-4">

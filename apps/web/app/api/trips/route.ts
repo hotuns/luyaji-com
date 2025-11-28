@@ -8,6 +8,8 @@ const createTripSchema = z.object({
   title: z.string().max(50).optional(),
   startTime: z.string(),
   locationName: z.string().min(1).max(100),
+  locationLat: z.number().optional(),
+  locationLng: z.number().optional(),
   note: z.string().optional(),
   usedComboIds: z.array(z.string()).min(1),
   weather: z
@@ -84,6 +86,8 @@ export async function POST(request: NextRequest) {
         title: validatedData.title,
         startTime: new Date(validatedData.startTime),
         locationName: validatedData.locationName,
+        locationLat: validatedData.locationLat,
+        locationLng: validatedData.locationLng,
         note: validatedData.note,
         weatherType: validatedData.weather?.type,
         weatherTemperatureText: validatedData.weather?.temperatureText,

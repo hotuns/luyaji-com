@@ -10,6 +10,8 @@ const updateTripSchema = z.object({
   startTime: z.string().optional(),
   endTime: z.string().optional(),
   locationName: z.string().min(1).max(100).optional(),
+  locationLat: z.number().optional(),
+  locationLng: z.number().optional(),
   note: z.string().optional(),
   weather: z
     .object({
@@ -35,15 +37,16 @@ const updateTripSchema = z.object({
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { tripId: string } }
+  { params }: { params: Promise<{ tripId: string }> }
 ) {
   try {
+    const { tripId } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ success: false, error: "未登录" }, { status: 401 });
     }
 
-    const detail = await getTripDetail(session.user.id, params.tripId);
+    const detail = await getTripDetail(session.user.id, tripId);
     if (!detail) {
       return NextResponse.json({ success: false, error: "记录不存在" }, { status: 404 });
     }
@@ -57,16 +60,19 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { tripId: string } }
+  { params }: { params: Promise<{ tripId: string }> }
 ) {
   try {
+    const { tripId } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ success: false, error: "未登录" }, { status: 401 });
     }
+    
+    const userId = session.user.id;
 
     const existing = await prisma.trip.findFirst({
-      where: { id: params.tripId, userId: session.user.id },
+      where: { id: tripId, userId },
     });
 
     if (!existing) {
@@ -94,6 +100,8 @@ export async function PATCH(
 
     if (payload.title !== undefined) updateData.title = payload.title;
     if (payload.locationName !== undefined) updateData.locationName = payload.locationName;
+    if (payload.locationLat !== undefined) updateData.locationLat = payload.locationLat;
+    if (payload.locationLng !== undefined) updateData.locationLng = payload.locationLng;
     if (payload.note !== undefined) updateData.note = payload.note;
     if (payload.startTime) updateData.startTime = new Date(payload.startTime);
     if (payload.endTime) updateData.endTime = new Date(payload.endTime);
@@ -137,7 +145,7 @@ export async function PATCH(
           await tx.catch.createMany({
             data: payload.catches.map((c) => ({
               tripId: existing.id,
-              userId: session.user.id!,
+              userId: userId,
               speciesId: c.speciesId,
               speciesName: speciesMap.get(c.speciesId) || "未知",
               count: c.count,
@@ -167,16 +175,17 @@ export async function PATCH(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { tripId: string } }
+  { params }: { params: Promise<{ tripId: string }> }
 ) {
   try {
+    const { tripId } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ success: false, error: "未登录" }, { status: 401 });
     }
 
     const existing = await prisma.trip.findFirst({
-      where: { id: params.tripId, userId: session.user.id },
+      where: { id: tripId, userId: session.user.id },
     });
 
     if (!existing) {

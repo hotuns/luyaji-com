@@ -1,0 +1,11 @@
+{
+  "name": "LuyaJi",
+  "short_name": "LuyaJi",
+  "description": "Fishing trip tracker for lure anglers",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "lang": "zh-CN"
+}

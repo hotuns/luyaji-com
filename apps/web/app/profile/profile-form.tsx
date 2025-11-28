@@ -5,6 +5,8 @@ import { FormEvent, useState } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
+import { AvatarPicker } from "@/components/avatar-picker";
+import { defaultAvatar } from "@/lib/avatar-config";
 
 interface ProfileFormProps {
   initialNickname: string | null;
@@ -14,7 +16,7 @@ interface ProfileFormProps {
 export function ProfileForm({ initialNickname, initialAvatarUrl }: ProfileFormProps) {
   const router = useRouter();
   const [nickname, setNickname] = useState(initialNickname ?? "");
-  const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl ?? "");
+  const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl ?? defaultAvatar?.url ?? "");
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -54,7 +56,18 @@ export function ProfileForm({ initialNickname, initialAvatarUrl }: ProfileFormPr
   }
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
+    <form className="space-y-6" onSubmit={handleSubmit}>
+      {/* 头像选择 */}
+      <div className="flex flex-col items-center space-y-3">
+        <Label className="text-center">头像</Label>
+        <AvatarPicker
+          value={avatarUrl}
+          onChange={setAvatarUrl}
+          disabled={isSaving}
+        />
+        <p className="text-xs text-gray-500">点击头像更换</p>
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="nickname">昵称</Label>
         <Input
@@ -64,18 +77,6 @@ export function ProfileForm({ initialNickname, initialAvatarUrl }: ProfileFormPr
           placeholder="钓友昵称"
           onChange={(event) => setNickname(event.target.value)}
         />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="avatarUrl">头像链接</Label>
-        <Input
-          id="avatarUrl"
-          value={avatarUrl}
-          type="url"
-          placeholder="https://..."
-          onChange={(event) => setAvatarUrl(event.target.value)}
-        />
-        <p className="text-xs text-gray-500">支持外部图片链接，留空则使用默认头像。</p>
       </div>
 
       {status ? (

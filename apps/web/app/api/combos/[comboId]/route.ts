@@ -18,9 +18,10 @@ const updateComboSchema = z.object({
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { comboId: string } }
+  { params }: { params: Promise<{ comboId: string }> }
 ) {
   try {
+    const { comboId } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ success: false, error: "未登录" }, { status: 401 });
@@ -30,7 +31,7 @@ export async function PATCH(
     const payload = updateComboSchema.parse(json);
 
     const existing = await prisma.combo.findFirst({
-      where: { id: params.comboId, userId: session.user.id },
+      where: { id: comboId, userId: session.user.id },
     });
 
     if (!existing) {
@@ -61,16 +62,17 @@ export async function PATCH(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { comboId: string } }
+  { params }: { params: Promise<{ comboId: string }> }
 ) {
   try {
+    const { comboId } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ success: false, error: "未登录" }, { status: 401 });
     }
 
     const existing = await prisma.combo.findFirst({
-      where: { id: params.comboId, userId: session.user.id },
+      where: { id: comboId, userId: session.user.id },
       select: { id: true },
     });
 

@@ -18,9 +18,10 @@ const updateRodSchema = z.object({
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { rodId: string } }
+  { params }: { params: Promise<{ rodId: string }> }
 ) {
   try {
+    const { rodId } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ success: false, error: "未登录" }, { status: 401 });
@@ -30,7 +31,7 @@ export async function PATCH(
     const payload = updateRodSchema.parse(json);
 
     const existing = await prisma.rod.findFirst({
-      where: { id: params.rodId, userId: session.user.id },
+      where: { id: rodId, userId: session.user.id },
     });
 
     if (!existing) {
@@ -57,16 +58,17 @@ export async function PATCH(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { rodId: string } }
+  { params }: { params: Promise<{ rodId: string }> }
 ) {
   try {
+    const { rodId } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ success: false, error: "未登录" }, { status: 401 });
     }
 
     const existing = await prisma.rod.findFirst({
-      where: { id: params.rodId, userId: session.user.id },
+      where: { id: rodId, userId: session.user.id },
       select: { id: true },
     });
 
@@ -75,7 +77,7 @@ export async function DELETE(
     }
 
     const comboCount = await prisma.combo.count({
-      where: { userId: session.user.id, rodId: params.rodId },
+      where: { userId: session.user.id, rodId: rodId },
     });
 
     if (comboCount > 0) {

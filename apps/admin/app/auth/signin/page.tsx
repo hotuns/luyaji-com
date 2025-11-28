@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Alert, Button, Card, Form, Input, Typography } from "antd";
+import { Alert, Button, Card, Form, Input, Typography, Spin } from "antd";
 import { AppstoreTwoTone } from "@ant-design/icons";
 
-export default function AdminSignInPage() {
+function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
@@ -111,5 +111,27 @@ export default function AdminSignInPage() {
         </Form>
       </Card>
     </div>
+  );
+}
+
+export default function AdminSignInPage() {
+  return (
+    <Suspense
+      fallback={
+        <div
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "linear-gradient(135deg, #0f172a, #1e293b)",
+          }}
+        >
+          <Spin size="large" />
+        </div>
+      }
+    >
+      <SignInForm />
+    </Suspense>
   );
 }
