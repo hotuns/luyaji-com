@@ -168,6 +168,7 @@ export interface TripCatchDraft {
   comboId?: string;
   lureText?: string;
   note?: string;
+  photoUrls?: string[]; // 渔获照片 URL 列表
 }
 
 // 天气类型选项

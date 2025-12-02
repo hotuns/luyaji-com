@@ -82,20 +82,29 @@ export default function Step3Catches({
           <label className="block text-sm font-medium text-slate-700 mb-2">
             条数
           </label>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setCount((c) => Math.max(1, c - 1))}
-              className="w-12 h-12 rounded-full bg-white border border-slate-200 flex items-center justify-center text-xl font-medium text-slate-600"
+              className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-xl font-medium text-slate-600 active:scale-95 transition-transform"
               disabled={count <= 1}
             >
               −
             </button>
-            <span className="text-2xl font-semibold text-slate-900 min-w-[3rem] text-center">
-              {count}
-            </span>
+            <input
+              type="number"
+              inputMode="numeric"
+              value={count}
+              onChange={(e) => {
+                const val = parseInt(e.target.value) || 1;
+                setCount(Math.max(1, Math.min(999, val)));
+              }}
+              className="w-20 h-12 text-center text-xl font-semibold text-slate-900 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              min={1}
+              max={999}
+            />
             <button
-              onClick={() => setCount((c) => Math.min(99, c + 1))}
-              className="w-12 h-12 rounded-full bg-white border border-slate-200 flex items-center justify-center text-xl font-medium text-slate-600"
+              onClick={() => setCount((c) => Math.min(999, c + 1))}
+              className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-xl font-medium text-slate-600 active:scale-95 transition-transform"
             >
               ＋
             </button>

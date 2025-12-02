@@ -21,9 +21,9 @@ export default function Step2GearWeather({
   const [error, setError] = useState("");
   const [showNewComboForm, setShowNewComboForm] = useState(false);
 
-  // 获取用户的组合列表
+  // 获取用户的组合列表（禁用缓存确保获取最新数据）
   useEffect(() => {
-    fetch("/api/combos")
+    fetch("/api/combos", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {

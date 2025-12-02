@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google"
 import type { Metadata, Viewport } from "next"
+import { headers } from "next/headers"
 
 import "@workspace/ui/globals.css"
 import { Providers } from "@/components/providers"
@@ -34,33 +35,46 @@ export const viewport: Viewport = {
   themeColor: "#ffffff",
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // 检查是否是 auth 或 trips/new 路由（需要独立布局的页面）
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") || headersList.get("x-invoke-path") || "";
+  const isAuthPage = pathname.startsWith("/auth");
+  const isNewTripPage = pathname === "/trips/new";
+  const isFullScreenPage = isAuthPage || isNewTripPage;
+
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <body
         className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}
       >
         <Providers>
-          <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
-            <ResponsiveNav />
-            
-            {/* 📱 MAIN CONTENT WRAPPER - 匹配 Demo 布局 */}
-            <div className="flex-1 flex flex-col md:ml-64 relative min-h-screen transition-all duration-300">
-              {/* Header - 在内容区域内，sticky 定位 */}
-              <AppHeader />
+          {isFullScreenPage ? (
+            // Auth 和 新建出击 页面使用独立全屏布局
+            children
+          ) : (
+            // 其他页面使用带侧边栏的主布局
+            <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+              <ResponsiveNav />
               
-              {/* Main Content Area */}
-              <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
-                <div className="max-w-6xl mx-auto w-full">
-                  {children}
-                </div>
-              </main>
+              {/* 📱 MAIN CONTENT WRAPPER - 匹配 Demo 布局 */}
+              <div className="flex-1 flex flex-col md:ml-64 relative min-h-screen transition-all duration-300">
+                {/* Header - 在内容区域内，sticky 定位 */}
+                <AppHeader />
+                
+                {/* Main Content Area */}
+                <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
+                  <div className="max-w-6xl mx-auto w-full">
+                    {children}
+                  </div>
+                </main>
+              </div>
             </div>
-          </div>
+          )}
         </Providers>
       </body>
     </html>
