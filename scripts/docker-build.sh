@@ -60,16 +60,19 @@ else
 fi
 
 # ============================================================
-# 3. 构建 Docker 镜像
+# 3. 构建 Docker 镜像 (指定 linux/amd64 平台)
 # ============================================================
 echo ""
 log_info "========== 构建 Docker 镜像 =========="
 
-log_info "构建 luyaji-web 镜像..."
-docker build -t luyaji-web:latest "$WEB_DIR"
+# 目标平台：linux/amd64（服务器架构）
+PLATFORM="linux/amd64"
 
-log_info "构建 luyaji-admin 镜像..."
-docker build -t luyaji-admin:latest "$ADMIN_DIR"
+log_info "构建 luyaji-web 镜像 (平台: $PLATFORM)..."
+docker build --platform "$PLATFORM" -t luyaji-web:latest "$WEB_DIR"
+
+log_info "构建 luyaji-admin 镜像 (平台: $PLATFORM)..."
+docker build --platform "$PLATFORM" -t luyaji-admin:latest "$ADMIN_DIR"
 
 # ============================================================
 # 4. 导出镜像为 tar 文件
