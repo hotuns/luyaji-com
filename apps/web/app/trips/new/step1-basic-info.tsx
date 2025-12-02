@@ -74,27 +74,27 @@ export default function Step1BasicInfo({
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-gray-900">基础信息</h2>
+      <h2 className="text-lg font-semibold text-slate-900">基础信息</h2>
 
       {/* 出击标题（可选） */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-slate-700 mb-2">
           出击标题
-          <span className="text-gray-400 font-normal ml-1">（选填）</span>
+          <span className="text-slate-400 font-normal ml-1">（选填）</span>
         </label>
         <input
           type="text"
           value={formState.title || ""}
           onChange={(e) => updateForm({ title: e.target.value })}
           placeholder="给这次出击起个名字，如 XX水库早晨翘嘴"
-          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+          className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
           maxLength={50}
         />
       </div>
 
       {/* 出击时间 */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-slate-700 mb-2">
           出击时间
           <span className="text-red-500 ml-0.5">*</span>
         </label>
@@ -105,10 +105,10 @@ export default function Step1BasicInfo({
             onChange={(e) =>
               updateForm({ startTime: new Date(e.target.value).toISOString() })
             }
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
           />
         </div>
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="text-xs text-slate-400 mt-1">
           当前选择：{formatDateTime(formState.startTime)}
         </p>
       </div>
@@ -148,16 +148,16 @@ export default function Step1BasicInfo({
 
       {/* 备注（可选） */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-slate-700 mb-2">
           备注
-          <span className="text-gray-400 font-normal ml-1">（选填）</span>
+          <span className="text-slate-400 font-normal ml-1">（选填）</span>
         </label>
         <textarea
           value={formState.note || ""}
           onChange={(e) => updateForm({ note: e.target.value })}
           placeholder="想记点啥？比如水位、鱼情、同伴……"
           rows={3}
-          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+          className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
         />
       </div>
 
@@ -171,7 +171,7 @@ export default function Step1BasicInfo({
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 py-3 border border-gray-200 rounded-xl text-gray-600 font-medium"
+          className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium"
         >
           取消
         </button>

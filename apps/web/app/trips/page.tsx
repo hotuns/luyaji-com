@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Card, CardContent } from "@workspace/ui/components/card";
 import { Button } from "@workspace/ui/components/button";
-import { Plus, MapPin, Fish, Calendar, CloudSun, Map } from "lucide-react";
+import { Plus, MapPin, Cloud, Thermometer, Wind, Map } from "lucide-react";
 
 export default async function TripsPage() {
   const session = await auth();
@@ -29,141 +29,129 @@ export default async function TripsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 md:pb-8">
-      {/* 顶部标题栏 */}
-      <div className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white px-6 pt-12 pb-20 rounded-b-[2.5rem] md:rounded-3xl shadow-lg relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-400/20 rounded-full -ml-10 -mb-10 blur-2xl pointer-events-none"></div>
-        
-        <div className="relative z-10 flex justify-between items-end">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">出击记录</h1>
-            <p className="text-sm text-indigo-100 mt-2 font-medium opacity-90">
-              回顾每一次精彩的作钓旅程
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <div className="text-2xl font-bold opacity-80">
-              {trips.length} <span className="text-sm font-normal opacity-60">次</span>
-            </div>
-            <div className="flex gap-2">
-              <Button asChild size="sm" variant="ghost" className="hidden md:flex text-white hover:bg-white/20">
-                <Link href="/trips/map" className="gap-2">
-                  <Map className="w-4 h-4" />
-                  地图
-                </Link>
-              </Button>
-              <Button asChild size="sm" variant="secondary" className="hidden md:flex shadow-sm">
-                <Link href="/trips/new" className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  新建出击
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* 移动端快捷入口 */}
-        <div className="flex gap-3 mt-4 md:hidden relative z-10">
-          <Link
+    <div className="h-full flex flex-col">
+      {/* Header - 匹配 Demo TripView */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl md:text-3xl font-bold text-slate-800">出击记录</h2>
+        <div className="flex gap-2">
+          <Link 
             href="/trips/map"
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white/20 hover:bg-white/30 rounded-xl text-white text-sm font-medium transition-colors backdrop-blur-sm"
+            className="hidden md:flex items-center gap-2 px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all text-sm font-medium"
           >
-            <Map className="w-4 h-4" />
-            查看地图
+            <Map size={18} />
+            地图视图
           </Link>
-          <Link
+          <Link 
             href="/trips/new"
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white hover:bg-white/90 rounded-xl text-indigo-600 text-sm font-medium transition-colors shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-200 text-sm font-medium active:scale-95"
           >
-            <Plus className="w-4 h-4" />
-            新建出击
+            <Plus size={18} />
+            记一笔
           </Link>
         </div>
       </div>
 
       {/* 出击列表 */}
-      <div className="px-4 md:px-0 space-y-4 -mt-10 relative z-20">
+      <div className="flex-1 pb-24 md:pb-8">
         {trips.length === 0 ? (
-          <Card className="border-dashed border-2 bg-gray-50 shadow-none md:rounded-2xl">
+          <Card className="border-dashed border-2 bg-slate-50 shadow-none">
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <Fish className="w-8 h-8 text-gray-400" />
+              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                <MapPin size={32} className="text-slate-400" />
               </div>
-              <h2 className="text-lg font-medium text-gray-900 mb-2">
+              <h2 className="text-lg font-medium text-slate-800 mb-2">
                 还没有出击记录
               </h2>
-              <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">
+              <p className="text-slate-500 text-sm mb-6 max-w-xs mx-auto">
                 点击下方按钮，开始记录你的第一次出击吧！
               </p>
-              <Button asChild>
+              <Button asChild className="bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200">
                 <Link href="/trips/new" className="gap-2">
-                  <Plus className="w-4 h-4" />
+                  <Plus size={18} />
                   新建出击
                 </Link>
               </Button>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {trips.map((trip) => (
-              <Link
-                key={trip.id}
-                href={`/trips/${trip.id}`}
-                className="block group"
-              >
-                <Card className="bg-white shadow-sm hover:shadow-md transition-all duration-200 border-l-4 border-l-indigo-500 group-hover:border-l-indigo-600 md:rounded-2xl">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="font-semibold text-gray-900 text-lg group-hover:text-indigo-700 transition-colors line-clamp-1">
-                        {trip.title || trip.locationName}
-                      </h3>
-                      <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-1 rounded-full flex items-center gap-1 shrink-0">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(trip.startTime).toLocaleDateString("zh-CN", {
-                          month: "numeric",
-                          day: "numeric",
-                        })}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
-                      <span className="flex items-center gap-1.5 truncate">
-                        <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
-                        <span className="truncate">{trip.locationName}</span>
-                      </span>
-                      
-                      {trip.catches.length > 0 && (
-                        <span className="flex items-center gap-1.5 text-indigo-600 font-medium bg-indigo-50 px-2 py-0.5 rounded-md shrink-0">
-                          <Fish className="w-4 h-4" />
-                          {trip.catches.reduce((sum, c) => sum + c.count, 0)}
-                        </span>
-                      )}
-                      
-                      {trip.weatherType && (
-                        <span className="flex items-center gap-1.5 shrink-0">
-                          <CloudSun className="w-4 h-4 text-gray-400" />
-                          {trip.weatherType}
-                        </span>
-                      )}
-                    </div>
-                    
-                    {trip.tripCombos.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-3 border-t border-dashed border-gray-100">
-                        {trip.tripCombos.map((tc) => (
-                          <span
-                            key={tc.id}
-                            className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full"
-                          >
-                            {tc.combo.name}
+          <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4">
+            {trips.map((trip) => {
+              // 计算时长
+              const startHour = new Date(trip.startTime).getHours();
+              const endHour = trip.endTime ? new Date(trip.endTime).getHours() : null;
+              const durationHours = endHour ? endHour - startHour : null;
+              
+              return (
+                <Link
+                  key={trip.id}
+                  href={`/trips/${trip.id}`}
+                  className="block group"
+                >
+                  <Card className="bg-white border-none shadow-sm hover:shadow-md hover:border-blue-300 transition-all h-full flex flex-col">
+                    <CardContent className="p-4 flex-1">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex flex-col gap-1">
+                          <span className="font-bold text-slate-800 text-lg truncate group-hover:text-blue-600 transition-colors">
+                            {trip.title || trip.locationName}
                           </span>
-                        ))}
+                          <div className="flex items-center gap-2">
+                            <span className="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-md border border-blue-100">
+                              {trip.locationName}
+                            </span>
+                            <span className="text-xs text-slate-400 font-mono hidden md:inline-block">
+                              {new Date(trip.startTime).toLocaleDateString("zh-CN")}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-xs text-slate-400 font-mono md:hidden">
+                          {new Date(trip.startTime).toLocaleDateString("zh-CN", {
+                            month: "numeric",
+                            day: "numeric",
+                          })}
+                        </span>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+                      
+                      {/* Weather Bar - 匹配 Demo */}
+                      <div className="grid grid-cols-3 gap-2 text-xs text-slate-500 mb-4 bg-slate-50 p-2 rounded-lg">
+                        <span className="flex items-center gap-1 justify-center">
+                          <Cloud size={14} />
+                          {trip.weatherType || "晴"}
+                        </span>
+                        <span className="flex items-center gap-1 justify-center">
+                          <Thermometer size={14} />
+                          {trip.weatherTemperatureText || "-"}
+                        </span>
+                        <span className="flex items-center gap-1 justify-center">
+                          <Wind size={14} />
+                          {durationHours ? `${durationHours}h` : "-"}
+                        </span>
+                      </div>
+                      
+                      {/* Catches */}
+                      <div className="flex flex-wrap gap-2 mt-auto">
+                        {trip.catches.length > 0 ? (
+                          trip.catches.slice(0, 4).map((c, idx) => (
+                            <div 
+                              key={idx} 
+                              className="flex items-center gap-1 text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded-full border border-amber-100"
+                            >
+                              <span>🐟</span>
+                              <span className="font-medium">{c.speciesName}</span>
+                              <span className="bg-white/50 px-1.5 rounded-full ml-1 font-bold">x{c.count}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <span className="text-xs text-slate-400 italic">空军 (此次无渔获)</span>
+                        )}
+                        {trip.catches.length > 4 && (
+                          <span className="text-xs text-slate-400">+{trip.catches.length - 4} 种</span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
@@ -171,9 +159,9 @@ export default async function TripsPage() {
       {/* 悬浮新建按钮 (Mobile Only) */}
       <Link
         href="/trips/new"
-        className="md:hidden fixed right-5 bottom-24 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg shadow-indigo-600/30 flex items-center justify-center hover:bg-indigo-700 hover:scale-105 transition-all z-30"
+        className="md:hidden fixed right-5 bottom-24 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg shadow-blue-600/30 flex items-center justify-center hover:bg-blue-700 hover:scale-105 transition-all z-30 active:scale-95"
       >
-        <Plus className="w-7 h-7" />
+        <Plus size={28} />
       </Link>
     </div>
   );

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@workspace/ui/components/button";
+import { LogOut } from "lucide-react";
 
 export function SignOutButton() {
   const [isLoading, setIsLoading] = useState(false);
@@ -28,11 +29,12 @@ export function SignOutButton() {
 
   return (
     <Button
-      variant="destructive"
-      className="w-full"
+      variant="ghost"
+      className="w-full bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 gap-2"
       onClick={handleSignOut}
       disabled={isLoading}
     >
+      <LogOut size={18} />
       {isLoading ? "正在退出..." : "退出登录"}
     </Button>
   );

@@ -18,10 +18,10 @@ const MapWithNoSSR = dynamic<MapContainerProps>(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full items-center justify-center bg-gray-100">
+      <div className="flex h-full items-center justify-center bg-slate-100">
         <div className="text-center">
           <div className="mb-2 h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600 mx-auto" />
-          <p className="text-sm text-gray-500">加载地图中...</p>
+          <p className="text-sm text-slate-500">加载地图中...</p>
         </div>
       </div>
     ),
@@ -115,7 +115,7 @@ export default function LocationPicker({
     <div className="space-y-3">
       {/* 地点名称输入 */}
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">
+        <label className="mb-1 block text-sm font-medium text-slate-700">
           地点名称 <span className="text-red-500">*</span>
         </label>
         <input
@@ -123,19 +123,19 @@ export default function LocationPicker({
           value={locationName}
           onChange={(e) => onLocationNameChange?.(e.target.value)}
           placeholder="例如：千岛湖大桥北侧"
-          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-base outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
         />
       </div>
 
       {/* 地图选点入口 */}
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">
+        <label className="mb-1 block text-sm font-medium text-slate-700">
           精确位置（可选）
         </label>
         <button
           type="button"
           onClick={handleOpenMap}
-          className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-left transition-all hover:border-blue-300 hover:bg-blue-50/50"
+          className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition-all hover:border-blue-300 hover:bg-blue-50/50"
         >
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50">
@@ -144,15 +144,15 @@ export default function LocationPicker({
             <div>
               {value ? (
                 <>
-                  <p className="text-sm font-medium text-gray-900">已选择位置</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm font-medium text-slate-900">已选择位置</p>
+                  <p className="text-xs text-slate-500">
                     {value.lat.toFixed(6)}, {value.lng.toFixed(6)}
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="text-sm font-medium text-gray-700">点击地图选点</p>
-                  <p className="text-xs text-gray-500">选择精确钓点，方便下次导航</p>
+                  <p className="text-sm font-medium text-slate-700">点击地图选点</p>
+                  <p className="text-xs text-slate-500">选择精确钓点，方便下次导航</p>
                 </>
               )}
             </div>
@@ -164,7 +164,7 @@ export default function LocationPicker({
                 e.stopPropagation();
                 handleClear();
               }}
-              className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
             >
               <X className="h-4 w-4" />
             </button>
@@ -177,20 +177,20 @@ export default function LocationPicker({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 md:p-8">
           <div className="flex h-full w-full flex-col bg-white md:h-[80vh] md:max-h-[800px] md:w-full md:max-w-4xl md:rounded-2xl md:shadow-2xl">
           {/* 顶部导航 */}
-          <header className="flex h-14 items-center justify-between border-b border-gray-100 px-4 md:px-6">
+          <header className="flex h-14 items-center justify-between border-b border-slate-100 px-4 md:px-6">
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
             >
               <X className="h-6 w-6" />
             </button>
-            <h2 className="text-base font-semibold text-gray-900">选择钓点位置</h2>
+            <h2 className="text-base font-semibold text-slate-900">选择钓点位置</h2>
             <button
               type="button"
               onClick={handleConfirm}
               disabled={!tempLocation}
-              className="rounded-full px-4 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 disabled:text-gray-300 md:bg-blue-600 md:text-white md:hover:bg-blue-700 md:disabled:bg-gray-200 md:disabled:text-gray-400"
+              className="rounded-full px-4 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 disabled:text-slate-300 md:bg-blue-600 md:text-white md:hover:bg-blue-700 md:disabled:bg-slate-200 md:disabled:text-slate-400"
             >
               确定
             </button>
@@ -210,7 +210,7 @@ export default function LocationPicker({
               type="button"
               onClick={getCurrentLocation}
               disabled={isLocating}
-              className="absolute bottom-24 right-4 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg transition-all hover:bg-gray-50 disabled:opacity-50 md:bottom-8 md:h-14 md:w-14"
+              className="absolute bottom-24 right-4 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg transition-all hover:bg-slate-50 disabled:opacity-50 md:bottom-8 md:h-14 md:w-14"
             >
               {isLocating ? (
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600" />
@@ -228,21 +228,21 @@ export default function LocationPicker({
           </div>
 
           {/* 底部信息 */}
-          <div className="border-t border-gray-100 bg-white px-4 py-4 pb-8 md:pb-4">
+          <div className="border-t border-slate-100 bg-white px-4 py-4 pb-8 md:pb-4">
             {tempLocation ? (
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50">
                   <MapPin className="h-5 w-5 text-green-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">已选择位置</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm font-medium text-slate-900">已选择位置</p>
+                  <p className="text-xs text-slate-500">
                     纬度 {tempLocation.lat.toFixed(6)}, 经度 {tempLocation.lng.toFixed(6)}
                   </p>
                 </div>
               </div>
             ) : (
-              <p className="text-center text-sm text-gray-500">
+              <p className="text-center text-sm text-slate-500">
                 点击地图选择钓点位置，或使用右下角定位按钮获取当前位置
               </p>
             )}

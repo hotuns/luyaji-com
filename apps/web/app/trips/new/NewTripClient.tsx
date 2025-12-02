@@ -182,16 +182,16 @@ export default function NewTripClient() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="mb-2 text-xl font-bold text-gray-900">
+          <h2 className="mb-2 text-xl font-bold text-slate-900">
             检测到未完成的出击
           </h2>
-          <p className="mb-8 text-sm text-gray-500">
+          <p className="mb-8 text-sm text-slate-500">
             系统自动保存了您上次未完成的记录，是否继续编辑？
           </p>
           <div className="flex gap-3">
             <button
               onClick={discardDraft}
-              className="flex-1 rounded-xl border border-gray-200 py-3 font-medium text-gray-600 transition hover:bg-gray-50"
+              className="flex-1 rounded-xl border border-slate-200 py-3 font-medium text-slate-600 transition hover:bg-slate-50"
             >
               丢弃
             </button>
@@ -208,9 +208,9 @@ export default function NewTripClient() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       {/* 顶部导航 */}
-      <header className="sticky top-0 z-10 border-b border-gray-100 bg-white/80 backdrop-blur-md">
+      <header className="sticky top-0 z-10 border-b border-slate-100 bg-white/80 backdrop-blur-md">
         <div className="flex h-14 items-center justify-between px-4">
           <button
             onClick={() => {
@@ -225,11 +225,11 @@ export default function NewTripClient() {
                 router.push("/trips");
               }
             }}
-            className="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
           >
             <X className="h-6 w-6" />
           </button>
-          <h1 className="text-base font-semibold text-gray-900">
+          <h1 className="text-base font-semibold text-slate-900">
             新建出击 ({formState.currentStep}/3)
           </h1>
           <button
@@ -248,7 +248,7 @@ export default function NewTripClient() {
               className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
                 step <= formState.currentStep 
                   ? "bg-gradient-to-r from-blue-500 to-indigo-500" 
-                  : "bg-gray-100"
+                  : "bg-slate-100"
               }`}
             />
           ))}

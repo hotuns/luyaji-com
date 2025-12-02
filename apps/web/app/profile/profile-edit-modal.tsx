@@ -127,10 +127,10 @@ export function ProfileEditModal({
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             {/* 头部 */}
             <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">编辑个人资料</h3>
+              <h3 className="text-lg font-semibold text-slate-900">编辑个人资料</h3>
               <button
                 onClick={handleClose}
-                className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -147,7 +147,7 @@ export function ProfileEditModal({
                   unoptimized
                 />
               </div>
-              <p className="mt-2 text-sm text-gray-500">选择一个头像</p>
+              <p className="mt-2 text-sm text-slate-500">选择一个头像</p>
             </div>
 
             {/* 头像选择网格 */}
@@ -162,7 +162,7 @@ export function ProfileEditModal({
                     "relative aspect-square overflow-hidden rounded-xl border-2 transition-all",
                     avatarUrl === avatar.url
                       ? "border-blue-500 ring-2 ring-blue-200"
-                      : "border-gray-200 hover:border-gray-300"
+                      : "border-slate-200 hover:border-slate-300"
                   )}
                 >
                   <Image

@@ -51,7 +51,7 @@ export default async function TripDetailPage({ params }: { params: Promise<{ tri
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 md:pb-8">
+    <div className="min-h-screen bg-slate-50 pb-24 md:pb-8">
       <div className="relative overflow-hidden rounded-b-[2.5rem] md:rounded-3xl bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-500 px-6 pt-12 pb-16 shadow-xl">
         <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10" />
         <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
@@ -123,40 +123,40 @@ export default async function TripDetailPage({ params }: { params: Promise<{ tri
               </CardHeader>
               <CardContent className="space-y-4">
                 {trip.combos.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 p-8 text-center">
-                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
-                      <NotebookText className="size-5 text-gray-400" />
+                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center">
+                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
+                      <NotebookText className="size-5 text-slate-400" />
                     </div>
                     <p className="text-sm text-muted-foreground">暂无关联组合，可在「编辑出击」中追加。</p>
                   </div>
                 ) : (
                   <div className="grid gap-4">
                     {trip.combos.map((combo) => (
-                      <div key={combo.id} className="group relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:border-blue-200 hover:shadow-md">
+                      <div key={combo.id} className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all hover:border-blue-200 hover:shadow-md">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div className="space-y-1">
-                            <p className="text-base font-semibold text-gray-900">{combo.name}</p>
+                            <p className="text-base font-semibold text-slate-900">{combo.name}</p>
                             <div className="flex flex-wrap gap-2 text-sm">
                               {combo.rod ? <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100">鱼竿 · {combo.rod.name}</Badge> : null}
                               {combo.reel ? <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100">轮子 · {combo.reel.name}</Badge> : null}
                             </div>
                           </div>
                           {combo.detailNote ? (
-                            <Badge variant="outline" className="border-gray-200 text-gray-500">{combo.detailNote}</Badge>
+                            <Badge variant="outline" className="border-slate-200 text-slate-500">{combo.detailNote}</Badge>
                           ) : null}
                         </div>
-                        <div className="mt-4 grid gap-4 rounded-xl bg-gray-50/80 p-3 text-sm lg:grid-cols-3">
+                        <div className="mt-4 grid gap-4 rounded-xl bg-slate-50/80 p-3 text-sm lg:grid-cols-3">
                           <div>
-                            <dt className="text-xs font-medium text-gray-500">主线</dt>
-                            <dd className="mt-0.5 font-medium text-gray-900">{combo.mainLineText || "-"}</dd>
+                            <dt className="text-xs font-medium text-slate-500">主线</dt>
+                            <dd className="mt-0.5 font-medium text-slate-900">{combo.mainLineText || "-"}</dd>
                           </div>
                           <div>
-                            <dt className="text-xs font-medium text-gray-500">前导</dt>
-                            <dd className="mt-0.5 font-medium text-gray-900">{combo.leaderLineText || "-"}</dd>
+                            <dt className="text-xs font-medium text-slate-500">前导</dt>
+                            <dd className="mt-0.5 font-medium text-slate-900">{combo.leaderLineText || "-"}</dd>
                           </div>
                           <div>
-                            <dt className="text-xs font-medium text-gray-500">钩型</dt>
-                            <dd className="mt-0.5 font-medium text-gray-900">{combo.hookText || "-"}</dd>
+                            <dt className="text-xs font-medium text-slate-500">钩型</dt>
+                            <dd className="mt-0.5 font-medium text-slate-900">{combo.hookText || "-"}</dd>
                           </div>
                         </div>
                       </div>
@@ -173,16 +173,16 @@ export default async function TripDetailPage({ params }: { params: Promise<{ tri
               </CardHeader>
               <CardContent className="space-y-4">
                 {trip.catches.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 p-8 text-center">
-                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
-                      <Fish className="size-5 text-gray-400" />
+                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center">
+                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
+                      <Fish className="size-5 text-slate-400" />
                     </div>
                     <p className="text-sm text-muted-foreground">暂无渔获记录。</p>
                   </div>
                 ) : (
                   <ol className="space-y-4">
                     {trip.catches.map((item, index) => (
-                      <li key={item.id} className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:border-blue-200 hover:shadow-md">
+                      <li key={item.id} className="relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all hover:border-blue-200 hover:shadow-md">
                         <div className="absolute right-0 top-0 h-16 w-16 translate-x-4 translate-y-[-20%] rotate-12 rounded-full bg-gradient-to-br from-blue-50 to-indigo-50 opacity-50" />
                         
                         <div className="relative flex flex-wrap items-center justify-between gap-3">
@@ -191,13 +191,13 @@ export default async function TripDetailPage({ params }: { params: Promise<{ tri
                               #{index + 1}
                             </div>
                             <div>
-                              <p className="text-lg font-bold text-gray-900">{item.speciesName}</p>
+                              <p className="text-lg font-bold text-slate-900">{item.speciesName}</p>
                             </div>
                           </div>
                           <Badge className="bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-1 text-sm hover:from-blue-700 hover:to-indigo-700">{item.count} 尾</Badge>
                         </div>
                         
-                        <div className="mt-4 grid gap-3 rounded-xl bg-gray-50/80 p-4 text-sm lg:grid-cols-4">
+                        <div className="mt-4 grid gap-3 rounded-xl bg-slate-50/80 p-4 text-sm lg:grid-cols-4">
                           <DetailRow label="时间" value={formatDateTime(item.caughtAt)} />
                           <DetailRow label="规格" value={item.sizeText || "-"} />
                           <DetailRow label="重量" value={item.weightText || "-"} />
@@ -207,14 +207,14 @@ export default async function TripDetailPage({ params }: { params: Promise<{ tri
                         {(item.lureText || item.note) && (
                           <div className="mt-3 space-y-2 px-1 text-sm">
                             {item.lureText ? (
-                              <p className="text-gray-600">
-                                <span className="font-medium text-gray-900">饵型：</span>
+                              <p className="text-slate-600">
+                                <span className="font-medium text-slate-900">饵型：</span>
                                 {item.lureText}
                               </p>
                             ) : null}
                             {item.note ? (
-                              <p className="text-gray-600">
-                                <span className="font-medium text-gray-900">备注：</span>
+                              <p className="text-slate-600">
+                                <span className="font-medium text-slate-900">备注：</span>
                                 {item.note}
                               </p>
                             ) : null}
@@ -265,7 +265,7 @@ export default async function TripDetailPage({ params }: { params: Promise<{ tri
               </CardHeader>
               <CardContent>
                 {trip.note ? (
-                  <div className="rounded-xl bg-yellow-50/50 p-4 text-sm leading-6 text-gray-700">
+                  <div className="rounded-xl bg-yellow-50/50 p-4 text-sm leading-6 text-slate-700">
                     {trip.note}
                   </div>
                 ) : (

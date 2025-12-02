@@ -142,24 +142,24 @@ export default function EditTripPage({ params }: { params: Promise<{ tripId: str
 
   if (isLoading || !formState) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       {/* 顶部导航 */}
-      <header className="sticky top-0 z-10 border-b border-gray-100 bg-white/80 backdrop-blur-md">
+      <header className="sticky top-0 z-10 border-b border-slate-100 bg-white/80 backdrop-blur-md">
         <div className="flex h-14 items-center justify-between px-4">
           <button
             onClick={() => router.push(`/trips/${tripId}`)}
-            className="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
           >
             <X className="h-6 w-6" />
           </button>
-          <h1 className="text-base font-semibold text-gray-900">
+          <h1 className="text-base font-semibold text-slate-900">
             编辑出击 ({formState.currentStep}/3)
           </h1>
           <div className="w-10" /> {/* 占位，保持标题居中 */}
@@ -173,7 +173,7 @@ export default function EditTripPage({ params }: { params: Promise<{ tripId: str
               className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
                 step <= formState.currentStep 
                   ? "bg-gradient-to-r from-blue-500 to-indigo-500" 
-                  : "bg-gray-100"
+                  : "bg-slate-100"
               }`}
             />
           ))}

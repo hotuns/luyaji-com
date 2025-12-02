@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from "next"
 
 import "@workspace/ui/globals.css"
 import { Providers } from "@/components/providers"
-import { ResponsiveNav } from "@/components/responsive-nav"
+import { ResponsiveNav, AppHeader } from "@/components/responsive-nav"
 
 const fontSans = Geist({
   subsets: ["latin"],
@@ -45,12 +45,22 @@ export default function RootLayout({
         className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}
       >
         <Providers>
-          <ResponsiveNav />
-          <main className="pb-16 md:pb-8 md:pt-16 min-h-screen bg-gray-50">
-            <div className="max-w-5xl mx-auto w-full md:px-6 lg:px-8">
-              {children}
+          <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+            <ResponsiveNav />
+            
+            {/* 📱 MAIN CONTENT WRAPPER - 匹配 Demo 布局 */}
+            <div className="flex-1 flex flex-col md:ml-64 relative min-h-screen transition-all duration-300">
+              {/* Header - 在内容区域内，sticky 定位 */}
+              <AppHeader />
+              
+              {/* Main Content Area */}
+              <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
+                <div className="max-w-6xl mx-auto w-full">
+                  {children}
+                </div>
+              </main>
             </div>
-          </main>
+          </div>
         </Providers>
       </body>
     </html>

@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Fish, User, Lock, ArrowRight } from "lucide-react";
+import { Anchor, User, Lock } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
+import Link from "next/link";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -74,141 +75,109 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gray-50">
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-500 opacity-10" />
-      <div className="absolute -right-40 -top-40 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl" />
-      <div className="absolute -left-40 bottom-0 h-96 w-96 rounded-full bg-indigo-500/20 blur-3xl" />
-
-      <div className="relative w-full max-w-sm px-4">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-xl shadow-blue-500/20">
-            <Fish className="h-10 w-10 text-white" />
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-blue-600 to-blue-500 rounded-b-[100%] scale-x-150 shadow-2xl z-0" />
+      <div className="absolute top-20 right-20 text-blue-400 opacity-20 hidden md:block">
+        <Anchor size={200} />
+      </div>
+      
+      <div className="z-10 w-full max-w-sm bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-inner">
+            <Anchor size={32} />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">路亚记</h1>
-          <p className="mt-2 text-gray-500">注册新账号，开始记录每一次出击</p>
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">创建账号</h1>
+          <p className="text-slate-500 mt-1 text-sm">开始记录你的每一次出击</p>
         </div>
 
-        <div className="overflow-hidden rounded-3xl bg-white/80 p-8 shadow-2xl backdrop-blur-xl ring-1 ring-gray-200/50">
-          <h2 className="mb-6 text-center text-lg font-semibold text-gray-900">
-            账号 / 手机号 注册
-          </h2>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label
-                htmlFor="identifier"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
-                账号或手机号
-              </label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 flex -translate-y-1/2 items-center gap-2 border-r border-gray-200 pr-2 text-gray-500">
-                  <User className="h-4 w-4" />
-                </div>
-                <input
-                  id="identifier"
-                  type="text"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="请输入账号或手机号"
-                  required
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-3 pl-24 pr-4 text-gray-900 outline-none transition-all placeholder:text-gray-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
-                />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-slate-500 uppercase">
+              手机号 / 账号
+            </label>
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                <User size={18} />
               </div>
-            </div>
-
-            <div>
-              <label
-                htmlFor="nickname"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
-                昵称（可选）
-              </label>
               <input
-                id="nickname"
                 type="text"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                placeholder="用于展示的昵称"
-                className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-3 px-4 text-gray-900 outline-none transition-all placeholder:text-gray-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                className="w-full px-4 py-3 pl-12 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-800 placeholder:text-slate-400"
+                placeholder="请输入账号"
               />
             </div>
+          </div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
-                密码
-              </label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 flex -translate-y-1/2 items-center gap-2 border-r border-gray-200 pr-2 text-gray-500">
-                  <Lock className="h-4 w-4" />
-                </div>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="请输入密码（至少 6 位）"
-                  required
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-3 pl-24 pr-4 text-gray-900 outline-none transition-all placeholder:text-gray-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
-                />
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-slate-500 uppercase">
+              昵称（可选）
+            </label>
+            <input
+              type="text"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-800 placeholder:text-slate-400"
+              placeholder="用于展示的昵称"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-slate-500 uppercase">
+              密码
+            </label>
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                <Lock size={18} />
               </div>
-            </div>
-
-            <div>
-              <label
-                htmlFor="confirmPassword"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
-                确认密码
-              </label>
               <input
-                id="confirmPassword"
                 type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="请再次输入密码"
-                required
-                className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-3 px-4 text-gray-900 outline-none transition-all placeholder:text-gray-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 pl-12 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-800 placeholder:text-slate-400"
+                placeholder="至少 6 位"
               />
             </div>
+          </div>
 
-            {error && (
-              <div className="rounded-xl bg-red-50 p-3 text-center text-sm text-red-600">
-                {error}
-              </div>
-            )}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-slate-500 uppercase">
+              确认密码
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-800 placeholder:text-slate-400"
+              placeholder="再次输入密码"
+            />
+          </div>
 
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="group w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 py-6 text-base font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-blue-500/40 disabled:opacity-50 disabled:shadow-none"
-            >
-              {isLoading ? (
-                "注册中..."
-              ) : (
-                <span className="flex items-center justify-center gap-2">
-                  立即注册
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </span>
-              )}
-            </Button>
-          </form>
-        </div>
+          {error && (
+            <div className="bg-red-50 text-red-600 text-sm text-center p-3 rounded-xl border border-red-100">
+              {error}
+            </div>
+          )}
 
-        <p className="mt-6 text-center text-xs text-gray-400">
-          已有账号？
-          <button
-            type="button"
-            onClick={() => router.push("/auth/signin")}
-            className="ml-1 text-gray-600 hover:underline"
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full py-3 mt-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-md shadow-blue-200 transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none"
           >
+            {isLoading ? "注册中..." : "立即注册"}
+          </Button>
+        </form>
+        
+        <p className="text-center text-xs text-slate-400 mt-6">
+          已有账号?{" "}
+          <Link href="/auth/signin" className="text-blue-600 cursor-pointer hover:underline font-medium">
             去登录
-          </button>
+          </Link>
         </p>
       </div>
+      
+      <p className="absolute bottom-6 text-slate-400 text-xs">© 2024 路亚记 All rights reserved.</p>
     </div>
   );
 }

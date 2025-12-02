@@ -9,7 +9,7 @@ function VerifyContent() {
   const email = searchParams.get("email") || "";
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gray-50">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-50">
       {/* Background Elements */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-500 opacity-10" />
       <div className="absolute -right-40 -top-40 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl" />
@@ -22,23 +22,23 @@ function VerifyContent() {
         </div>
 
         {/* 标题 */}
-        <h1 className="mb-3 text-2xl font-bold text-gray-900">查看您的邮箱</h1>
-        <p className="mb-8 text-gray-500">
-          我们已向 <span className="font-medium text-gray-900">{email}</span>{" "}
+        <h1 className="mb-3 text-2xl font-bold text-slate-900">查看您的邮箱</h1>
+        <p className="mb-8 text-slate-500">
+          我们已向 <span className="font-medium text-slate-900">{email}</span>{" "}
           发送了验证邮件
         </p>
 
         {/* 提示卡片 */}
-        <div className="overflow-hidden rounded-3xl bg-white/80 p-8 text-left shadow-2xl backdrop-blur-xl ring-1 ring-gray-200/50">
-          <h3 className="mb-4 font-semibold text-gray-900">接下来：</h3>
+        <div className="overflow-hidden rounded-3xl bg-white/80 p-8 text-left shadow-2xl backdrop-blur-xl ring-1 ring-slate-200/50">
+          <h3 className="mb-4 font-semibold text-slate-900">接下来：</h3>
           <ol className="space-y-4">
             <li className="flex items-start gap-4">
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600">
                 <Mail className="h-4 w-4" />
               </div>
               <div className="pt-1">
-                <p className="text-sm font-medium text-gray-900">打开邮箱</p>
-                <p className="text-xs text-gray-500">找到来自「路亚记」的邮件</p>
+                <p className="text-sm font-medium text-slate-900">打开邮箱</p>
+                <p className="text-xs text-slate-500">找到来自「路亚记」的邮件</p>
               </div>
             </li>
             <li className="flex items-start gap-4">
@@ -46,8 +46,8 @@ function VerifyContent() {
                 <MousePointerClick className="h-4 w-4" />
               </div>
               <div className="pt-1">
-                <p className="text-sm font-medium text-gray-900">点击链接</p>
-                <p className="text-xs text-gray-500">点击邮件中的链接或输入验证码</p>
+                <p className="text-sm font-medium text-slate-900">点击链接</p>
+                <p className="text-xs text-slate-500">点击邮件中的链接或输入验证码</p>
               </div>
             </li>
             <li className="flex items-start gap-4">
@@ -55,15 +55,15 @@ function VerifyContent() {
                 <CheckCircle2 className="h-4 w-4" />
               </div>
               <div className="pt-1">
-                <p className="text-sm font-medium text-gray-900">完成登录</p>
-                <p className="text-xs text-gray-500">开始记录您的路亚之旅！</p>
+                <p className="text-sm font-medium text-slate-900">完成登录</p>
+                <p className="text-xs text-slate-500">开始记录您的路亚之旅！</p>
               </div>
             </li>
           </ol>
         </div>
 
         {/* 底部提示 */}
-        <p className="mt-8 text-xs text-gray-400">
+        <p className="mt-8 text-xs text-slate-400">
           没有收到邮件？请检查垃圾邮件文件夹
         </p>
         <a href="/auth/signin" className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700">

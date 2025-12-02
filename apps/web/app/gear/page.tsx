@@ -77,22 +77,13 @@ export default async function GearPage() {
   }));
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 md:pb-8">
-      <div className="bg-gradient-to-br from-sky-500 to-blue-600 text-white px-6 pt-12 pb-20 rounded-b-[2.5rem] md:rounded-3xl shadow-lg relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-sky-400/20 rounded-full -ml-10 -mb-10 blur-2xl pointer-events-none"></div>
-        
-        <div className="relative z-10">
-          <h1 className="text-2xl font-bold tracking-tight">装备管理</h1>
-          <p className="text-sm text-blue-50 mt-2 font-medium opacity-90">
-            统一维护鱼竿、渔轮与组合，支持快速创建与编辑
-          </p>
-        </div>
+    <div className="space-y-6">
+      {/* Header - 匹配 Demo GearView */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <h2 className="text-2xl md:text-3xl font-bold text-slate-800">装备库</h2>
       </div>
       
-      <div className="px-4 md:px-0 space-y-4 -mt-10 relative z-20">
-        <GearDashboard initialRods={rodSummaries} initialReels={reelSummaries} initialCombos={comboSummaries} />
-      </div>
+      <GearDashboard initialRods={rodSummaries} initialReels={reelSummaries} initialCombos={comboSummaries} />
     </div>
   );
 }

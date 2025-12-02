@@ -9,10 +9,10 @@ const TripsMapView = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full items-center justify-center bg-gray-100">
+      <div className="flex h-full items-center justify-center bg-slate-100">
         <div className="text-center">
           <div className="mb-2 h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600 mx-auto" />
-          <p className="text-sm text-gray-500">加载地图中...</p>
+          <p className="text-sm text-slate-500">加载地图中...</p>
         </div>
       </div>
     ),
@@ -37,10 +37,10 @@ interface MapClientProps {
 export default function MapClient({ trips }: MapClientProps) {
   if (trips.length === 0) {
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-gray-50 p-8 text-center">
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+      <div className="flex h-full flex-col items-center justify-center bg-slate-50 p-8 text-center">
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
           <svg
-            className="h-8 w-8 text-gray-400"
+            className="h-8 w-8 text-slate-400"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -53,10 +53,10 @@ export default function MapClient({ trips }: MapClientProps) {
             />
           </svg>
         </div>
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">
+        <h2 className="mb-2 text-lg font-semibold text-slate-900">
           还没有记录钓点
         </h2>
-        <p className="mb-6 text-sm text-gray-500">
+        <p className="mb-6 text-sm text-slate-500">
           在新建出击时选择精确位置，<br />即可在地图上查看所有钓点
         </p>
         <Link

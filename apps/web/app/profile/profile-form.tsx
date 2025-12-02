@@ -65,7 +65,7 @@ export function ProfileForm({ initialNickname, initialAvatarUrl }: ProfileFormPr
           onChange={setAvatarUrl}
           disabled={isSaving}
         />
-        <p className="text-xs text-gray-500">点击头像更换</p>
+        <p className="text-xs text-slate-500">点击头像更换</p>
       </div>
 
       <div className="space-y-2">

@@ -174,8 +174,8 @@ export default function TripsMapView({ trips }: TripsMapViewProps) {
 
       {/* 图例 - 移动端左上角，PC端左下角 */}
       <div className="absolute left-4 top-4 z-[500] rounded-xl bg-white/95 px-4 py-3 shadow-lg backdrop-blur-sm md:bottom-8 md:top-auto md:rounded-2xl">
-        <h3 className="mb-2 text-sm font-semibold text-gray-900">图例说明</h3>
-        <div className="space-y-1.5 text-xs text-gray-600">
+        <h3 className="mb-2 text-sm font-semibold text-slate-900">图例说明</h3>
+        <div className="space-y-1.5 text-xs text-slate-600">
           <div className="flex items-center gap-2">
             <div className="h-3 w-3 rounded-full bg-green-500" />
             <span>渔获 &gt; 5 尾</span>
@@ -185,7 +185,7 @@ export default function TripsMapView({ trips }: TripsMapViewProps) {
             <span>渔获 1-5 尾</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-gray-500" />
+            <div className="h-3 w-3 rounded-full bg-slate-500" />
             <span>空军</span>
           </div>
         </div>
@@ -196,32 +196,32 @@ export default function TripsMapView({ trips }: TripsMapViewProps) {
         <div className="absolute bottom-24 left-4 right-4 z-[500] rounded-2xl bg-white p-4 shadow-xl md:bottom-8 md:left-auto md:right-8 md:w-96 md:p-5">
           <button
             onClick={() => setSelectedTrip(null)}
-            className="absolute right-3 top-3 rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            className="absolute right-3 top-3 rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
 
-          <h3 className="pr-8 text-lg font-semibold text-gray-900">
+          <h3 className="pr-8 text-lg font-semibold text-slate-900">
             {selectedTrip.title || selectedTrip.locationName}
           </h3>
           {selectedTrip.title && (
-            <p className="mt-1 text-sm text-gray-500">{selectedTrip.locationName}</p>
+            <p className="mt-1 text-sm text-slate-500">{selectedTrip.locationName}</p>
           )}
 
           <div className="mt-3 flex items-center gap-4 text-sm">
             <div className="flex items-center gap-1.5">
-              <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <span className="text-gray-600">{formatDate(selectedTrip.startTime)}</span>
+              <span className="text-slate-600">{formatDate(selectedTrip.startTime)}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              <span className="text-gray-600">
+              <span className="text-slate-600">
                 {selectedTrip.totalCatchCount} 尾 / {selectedTrip.fishSpeciesCount} 种
               </span>
             </div>

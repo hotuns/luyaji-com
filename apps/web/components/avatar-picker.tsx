@@ -76,10 +76,10 @@ export function AvatarPicker({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">选择头像</h3>
+          <h3 className="text-lg font-semibold text-slate-900">选择头像</h3>
           <button
             onClick={handleCancel}
-            className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
           >
             <X className="h-5 w-5" />
           </button>
@@ -109,7 +109,7 @@ export function AvatarPicker({
                 "relative aspect-square overflow-hidden rounded-xl border-2 transition-all",
                 selectedUrl === avatar.url
                   ? "border-blue-500 ring-2 ring-blue-200"
-                  : "border-gray-200 hover:border-gray-300"
+                  : "border-slate-200 hover:border-slate-300"
               )}
             >
               <Image
@@ -137,7 +137,7 @@ export function AvatarPicker({
           <button
             type="button"
             onClick={handleCancel}
-            className="flex-1 rounded-xl border border-gray-300 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            className="flex-1 rounded-xl border border-slate-300 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
           >
             取消
           </button>

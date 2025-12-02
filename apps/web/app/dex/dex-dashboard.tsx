@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { FishDexEntry, FishDexPayload } from "@/lib/dex";
 import { cn } from "@workspace/ui/lib/utils";
-import { Card, CardContent } from "@workspace/ui/components/card";
+import { Card } from "@workspace/ui/components/card";
 import { Badge } from "@workspace/ui/components/badge";
 import {
   Dialog,
@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@workspace/ui/components/dialog";
-import { Fish, Lock } from "lucide-react";
+import { Fish, Lock, Trophy } from "lucide-react";
 
 const FILTERS = [
   { key: "all", label: "全部" },
@@ -37,30 +37,52 @@ export function DexDashboard({ summary, species }: DexDashboardProps) {
     : 0;
 
   return (
-    <div className="space-y-4">
-      <section className="grid grid-cols-3 gap-3">
+    <div className="space-y-6 pb-24 md:pb-8">
+      {/* 顶部统计区 - 匹配 Demo DexView 的暗色头部 */}
+      <div className="bg-slate-900 text-white p-6 md:p-10 rounded-2xl shadow-lg relative overflow-hidden">
+        <div className="relative z-10 max-w-2xl">
+          <h2 className="text-2xl md:text-4xl font-bold mb-2">渔获图鉴</h2>
+          <p className="text-slate-400 text-sm md:text-base mb-6">
+            收集进度: <span className="text-white font-mono text-xl">{summary.unlockedSpecies}</span>{" "}
+            <span className="mx-1">/</span> {summary.totalSpecies}
+          </p>
+          <div className="w-full bg-slate-700 h-3 rounded-full overflow-hidden">
+            <div 
+              className="bg-emerald-500 h-full transition-all duration-1000" 
+              style={{ width: `${unlockRate}%` }}
+            />
+          </div>
+        </div>
+        <Fish className="absolute -right-6 -bottom-6 text-slate-800 opacity-50" size={140} />
+        <Fish className="absolute right-32 top-10 text-slate-800 opacity-20 hidden md:block" size={80} />
+      </div>
+
+      {/* 统计卡片 */}
+      <div className="grid grid-cols-3 gap-3">
         <StatCard label="已解锁" value={summary.unlockedSpecies} helper={`共 ${summary.totalSpecies} 种`} />
         <StatCard label="总渔获" value={summary.totalCatch} helper="累计记录" />
         <StatCard label="完成度" value={`${unlockRate}%`} helper="图鉴完成率" />
-      </section>
+      </div>
 
-      <section className="bg-white rounded-2xl shadow-sm p-4 space-y-4 min-h-[500px]">
+      {/* 鱼种图鉴网格 */}
+      <section className="bg-white rounded-2xl shadow-sm p-4 space-y-4 min-h-[400px]">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-semibold text-gray-900">鱼种图鉴</h2>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <h2 className="text-base font-semibold text-slate-800">鱼种图鉴</h2>
+            <p className="text-xs text-slate-400 mt-0.5">
               {filter === "all" ? "收集进度" : "已解锁鱼种"}
             </p>
           </div>
-          <div className="flex bg-gray-100 p-1 rounded-lg">
+          {/* Custom Tabs like Demo */}
+          <div className="flex p-1 bg-slate-100 rounded-xl">
             {FILTERS.map((item) => (
               <button
                 key={item.key}
                 className={cn(
-                  "px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                  "px-3 py-2 text-sm font-medium rounded-lg transition-all",
                   filter === item.key
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
                 )}
                 onClick={() => setFilter(item.key)}
               >
@@ -72,17 +94,17 @@ export function DexDashboard({ summary, species }: DexDashboardProps) {
 
         {filteredSpecies.length === 0 ? (
           <div className="py-20 text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Fish className="w-8 h-8 text-gray-400" />
+            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Fish size={32} className="text-slate-400" />
             </div>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-slate-500">
               {filter === "unlocked" ? "你还没有解锁任何鱼种，快去钓鱼吧！" : "暂无鱼种数据"}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
-            {filteredSpecies.map((species) => (
-              <FishCard key={species.id} entry={species} />
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+            {filteredSpecies.map((entry) => (
+              <FishCard key={entry.id} entry={entry} />
             ))}
           </div>
         )}
@@ -93,12 +115,10 @@ export function DexDashboard({ summary, species }: DexDashboardProps) {
 
 function StatCard({ label, value, helper }: { label: string; value: number | string; helper?: string }) {
   return (
-    <Card className="bg-white/80 backdrop-blur-sm border-none shadow-sm">
-      <CardContent className="py-3 px-2 text-center">
-        <p className="text-xl font-bold text-gray-900">{value}</p>
-        <p className="text-xs font-medium text-gray-500 mt-0.5">{label}</p>
-        {helper && <p className="text-[10px] text-gray-400 mt-1 scale-90">{helper}</p>}
-      </CardContent>
+    <Card className="bg-white border-none shadow-sm p-3 text-center">
+      <p className="text-xl font-bold text-slate-800">{value}</p>
+      <p className="text-xs font-medium text-slate-400 mt-0.5">{label}</p>
+      {helper && <p className="text-[10px] text-slate-300 mt-1">{helper}</p>}
     </Card>
   );
 }
@@ -111,57 +131,51 @@ function FishCard({ entry }: { entry: FishDexEntry }) {
       <DialogTrigger asChild>
         <div
           className={cn(
-            "aspect-[3/4] relative rounded-xl border-2 transition-all cursor-pointer group overflow-hidden",
-            isUnlocked
-              ? "bg-white border-blue-100 hover:border-blue-300 hover:shadow-md"
-              : "bg-gray-50 border-gray-100 hover:border-gray-200"
+            "group relative p-4 rounded-xl border flex flex-col items-center text-center transition-all duration-300 cursor-pointer",
+            isUnlocked 
+              ? "bg-white border-slate-200 shadow-sm hover:-translate-y-1 hover:shadow-md" 
+              : "bg-slate-50 border-slate-100 grayscale opacity-60"
           )}
         >
-          {/* Background Pattern or Effect */}
-          <div className={cn(
-            "absolute inset-0 opacity-10 pointer-events-none",
-            isUnlocked ? "bg-gradient-to-br from-blue-500 to-cyan-500" : "bg-gray-200"
-          )} />
-
-          {/* Content */}
-          <div className="absolute inset-0 flex flex-col items-center p-2">
-            {/* Count Badge */}
-            <div className="w-full flex justify-end">
-              {isUnlocked && (
-                <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                  x{entry.totalCount}
-                </span>
-              )}
-            </div>
-
-            {/* Image Area */}
-            <div className="flex-1 flex items-center justify-center w-full relative">
-              {isUnlocked ? (
-                entry.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img 
-                    src={entry.imageUrl} 
-                    alt={entry.name} 
-                    className="w-16 h-16 object-contain drop-shadow-sm transition-transform group-hover:scale-110" 
-                  />
-                ) : (
-                  <Fish className="w-12 h-12 text-blue-400" />
-                )
+          {/* 图标区域 */}
+          <div className="text-4xl md:text-5xl mb-3 filter drop-shadow-sm transform group-hover:scale-110 transition-transform duration-300">
+            {isUnlocked ? (
+              entry.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img 
+                  src={entry.imageUrl} 
+                  alt={entry.name} 
+                  className="w-12 h-12 md:w-14 md:h-14 object-contain" 
+                />
               ) : (
-                <Lock className="w-8 h-8 text-gray-300" />
-              )}
-            </div>
-
-            {/* Name */}
-            <div className="w-full text-center mt-1">
-              <p className={cn(
-                "text-xs font-medium truncate px-1 py-1 rounded-md",
-                isUnlocked ? "text-gray-900 bg-white/50" : "text-gray-400"
-              )}>
-                {isUnlocked ? entry.name : "???"}
-              </p>
-            </div>
+                <Fish size={48} className="text-blue-400" />
+              )
+            ) : (
+              <Trophy size={32} className="text-slate-300" />
+            )}
           </div>
+          
+          {/* 名称 */}
+          <div className="font-bold text-slate-800 text-sm">
+            {isUnlocked ? entry.name : "???"}
+          </div>
+          
+          {/* 学名 */}
+          <div className="text-[10px] text-slate-400 italic mb-2 h-3">
+            {isUnlocked ? (entry.aliasNames[0] || "") : ""}
+          </div>
+          
+          {/* 统计信息 */}
+          {isUnlocked ? (
+            <div className="w-full mt-2 pt-2 border-t border-slate-100 flex justify-between text-[10px] text-slate-500 font-mono">
+              <span>已捕获</span>
+              <span>{entry.totalCount}尾</span>
+            </div>
+          ) : (
+            <div className="mt-auto pt-2 text-[10px] text-slate-400 flex items-center gap-1">
+              <Trophy size={10} /> 待解锁
+            </div>
+          )}
         </div>
       </DialogTrigger>
       
@@ -176,7 +190,7 @@ function FishCard({ entry }: { entry: FishDexEntry }) {
                 </Badge>
               </>
             ) : (
-              <span className="text-gray-500">未解锁鱼种</span>
+              <span className="text-slate-500">未解锁鱼种</span>
             )}
           </DialogTitle>
           <DialogDescription>
@@ -189,17 +203,17 @@ function FishCard({ entry }: { entry: FishDexEntry }) {
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          <div className="flex justify-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+          <div className="flex justify-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
             {isUnlocked ? (
               entry.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={entry.imageUrl} alt={entry.name} className="h-32 object-contain" />
               ) : (
-                <Fish className="h-24 w-24 text-blue-200" />
+                <Fish size={96} className="text-blue-200" />
               )
             ) : (
-              <div className="flex flex-col items-center gap-2 text-gray-400">
-                <Lock className="h-12 w-12" />
+              <div className="flex flex-col items-center gap-2 text-slate-400">
+                <Lock size={48} />
                 <span className="text-sm">???</span>
               </div>
             )}
@@ -208,12 +222,12 @@ function FishCard({ entry }: { entry: FishDexEntry }) {
           {isUnlocked && (
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div className="space-y-1">
-                <p className="text-xs text-gray-500">首次捕获</p>
-                <p className="font-medium">{formatDate(entry.firstCaughtAt)}</p>
+                <p className="text-xs text-slate-500">首次捕获</p>
+                <p className="font-medium text-slate-800">{formatDate(entry.firstCaughtAt)}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-xs text-gray-500">最近捕获</p>
-                <p className="font-medium">{formatDate(entry.lastCaughtAt)}</p>
+                <p className="text-xs text-slate-500">最近捕获</p>
+                <p className="font-medium text-slate-800">{formatDate(entry.lastCaughtAt)}</p>
               </div>
             </div>
           )}

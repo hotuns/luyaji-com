@@ -6,14 +6,8 @@ import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Textarea } from "@workspace/ui/components/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@workspace/ui/components/card";
+import { Card } from "@workspace/ui/components/card";
 import { Badge } from "@workspace/ui/components/badge";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@workspace/ui/components/tabs";
 import {
   Select,
   SelectContent,
@@ -32,7 +26,7 @@ import {
 } from "@workspace/ui/components/dialog";
 
 import { cn } from "@workspace/ui/lib/utils";
-import { Plus, Pencil, Trash2, Settings2, Ruler, Weight, Activity, Disc } from "lucide-react";
+import { Plus, Pencil, Trash2, Settings2 } from "lucide-react";
 
 export type RodSummary = {
   id: string;
@@ -120,22 +114,39 @@ export function GearDashboard({ initialRods, initialReels, initialCombos }: Gear
   const [rods, setRods] = useState(initialRods);
   const [reels, setReels] = useState(initialReels);
   const [combos, setCombos] = useState(initialCombos);
+  const [gearTab, setGearTab] = useState<"combos" | "rods" | "reels">("combos");
 
   return (
-    <Tabs defaultValue="combos" className="space-y-4">
-      <div className="flex items-center justify-between">
-        <TabsList>
-          <TabsTrigger value="combos">组合 ({combos.length})</TabsTrigger>
-          <TabsTrigger value="rods">鱼竿 ({rods.length})</TabsTrigger>
-          <TabsTrigger value="reels">渔轮 ({reels.length})</TabsTrigger>
-        </TabsList>
-      </div>
+    <div className="space-y-6 pb-24 md:pb-8">
+      {/* 顶部标题和标签 - 匹配 Demo GearView */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        {/* Custom Tabs - 匹配 Demo 样式 */}
+        <div className="flex p-1 bg-slate-200/60 rounded-xl md:w-auto w-full">
+          {[
+            { key: "combos" as const, label: "组合", count: combos.length },
+            { key: "rods" as const, label: "鱼竿", count: rods.length },
+            { key: "reels" as const, label: "渔轮", count: reels.length },
+          ].map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setGearTab(t.key)}
+              className={cn(
+                "flex-1 md:flex-none md:w-24 py-2 text-sm font-medium rounded-lg transition-all",
+                gearTab === t.key
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              {t.label} ({t.count})
+            </button>
+          ))}
+        </div>
 
-      <TabsContent value="combos" className="space-y-4">
-        <div className="flex justify-end">
+        {/* 添加按钮 */}
+        {gearTab === "combos" && (
           <Dialog>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="hidden md:flex gap-2 h-10 text-sm">
                 <Plus className="h-4 w-4" />
                 新建组合
               </Button>
@@ -154,33 +165,11 @@ export function GearDashboard({ initialRods, initialReels, initialCombos }: Gear
               />
             </DialogContent>
           </Dialog>
-        </div>
-
-        {combos.length === 0 ? (
-          <EmptyState description="还没有组合，点击右上角创建一个吧" />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {combos.map((combo) => (
-              <ComboCard
-                key={combo.id}
-                combo={combo}
-                rods={rods}
-                reels={reels}
-                onUpdated={(next) =>
-                  setCombos((prev) => prev.map((item) => (item.id === next.id ? next : item)))
-                }
-                onDeleted={() => setCombos((prev) => prev.filter((item) => item.id !== combo.id))}
-              />
-            ))}
-          </div>
         )}
-      </TabsContent>
-
-      <TabsContent value="rods" className="space-y-4">
-        <div className="flex justify-end">
+        {gearTab === "rods" && (
           <Dialog>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="hidden md:flex gap-2 h-10 text-sm">
                 <Plus className="h-4 w-4" />
                 新增鱼竿
               </Button>
@@ -190,36 +179,14 @@ export function GearDashboard({ initialRods, initialReels, initialCombos }: Gear
                 <DialogTitle>新增鱼竿</DialogTitle>
                 <DialogDescription>记录你的鱼竿参数。</DialogDescription>
               </DialogHeader>
-              <RodForm
-                onSuccess={(rod) => setRods((prev) => [rod, ...prev])}
-              />
+              <RodForm onSuccess={(rod) => setRods((prev) => [rod, ...prev])} />
             </DialogContent>
           </Dialog>
-        </div>
-
-        {rods.length === 0 ? (
-          <EmptyState description="尚未创建鱼竿" />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {rods.map((rod) => (
-              <RodCard
-                key={rod.id}
-                rod={rod}
-                onUpdated={(next) =>
-                  setRods((prev) => prev.map((item) => (item.id === next.id ? next : item)))
-                }
-                onDeleted={() => setRods((prev) => prev.filter((item) => item.id !== rod.id))}
-              />
-            ))}
-          </div>
         )}
-      </TabsContent>
-
-      <TabsContent value="reels" className="space-y-4">
-        <div className="flex justify-end">
+        {gearTab === "reels" && (
           <Dialog>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="hidden md:flex gap-2 h-10 text-sm">
                 <Plus className="h-4 w-4" />
                 新增渔轮
               </Button>
@@ -232,26 +199,134 @@ export function GearDashboard({ initialRods, initialReels, initialCombos }: Gear
               <ReelForm onSuccess={(reel) => setReels((prev) => [reel, ...prev])} />
             </DialogContent>
           </Dialog>
-        </div>
-
-        {reels.length === 0 ? (
-          <EmptyState description="尚未创建渔轮" />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {reels.map((reel) => (
-              <ReelCard
-                key={reel.id}
-                reel={reel}
-                onUpdated={(next) =>
-                  setReels((prev) => prev.map((item) => (item.id === next.id ? next : item)))
-                }
-                onDeleted={() => setReels((prev) => prev.filter((item) => item.id !== reel.id))}
-              />
-            ))}
-          </div>
         )}
-      </TabsContent>
-    </Tabs>
+      </div>
+
+      {/* 组合列表 */}
+      {gearTab === "combos" && (
+        <div className="space-y-4">
+          {/* Mobile 添加按钮 */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="md:hidden w-full gap-2">
+                <Plus className="h-4 w-4" />
+                新建组合
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>创建新组合</DialogTitle>
+                <DialogDescription>
+                  将鱼竿和渔轮搭配，并记录线组信息。
+                </DialogDescription>
+              </DialogHeader>
+              <ComboForm
+                rods={rods}
+                reels={reels}
+                onSuccess={(combo) => setCombos((prev) => [combo, ...prev])}
+              />
+            </DialogContent>
+          </Dialog>
+
+          {combos.length === 0 ? (
+            <EmptyState description="还没有组合，点击上方按钮创建一个吧" />
+          ) : (
+            <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4">
+              {combos.map((combo) => (
+                <ComboCard
+                  key={combo.id}
+                  combo={combo}
+                  rods={rods}
+                  reels={reels}
+                  onUpdated={(next) =>
+                    setCombos((prev) => prev.map((item) => (item.id === next.id ? next : item)))
+                  }
+                  onDeleted={() => setCombos((prev) => prev.filter((item) => item.id !== combo.id))}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 鱼竿列表 */}
+      {gearTab === "rods" && (
+        <div className="space-y-4">
+          {/* Mobile 添加按钮 */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="md:hidden w-full gap-2">
+                <Plus className="h-4 w-4" />
+                新增鱼竿
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>新增鱼竿</DialogTitle>
+                <DialogDescription>记录你的鱼竿参数。</DialogDescription>
+              </DialogHeader>
+              <RodForm onSuccess={(rod) => setRods((prev) => [rod, ...prev])} />
+            </DialogContent>
+          </Dialog>
+
+          {rods.length === 0 ? (
+            <EmptyState description="尚未创建鱼竿" />
+          ) : (
+            <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4">
+              {rods.map((rod) => (
+                <RodCard
+                  key={rod.id}
+                  rod={rod}
+                  onUpdated={(next) =>
+                    setRods((prev) => prev.map((item) => (item.id === next.id ? next : item)))
+                  }
+                  onDeleted={() => setRods((prev) => prev.filter((item) => item.id !== rod.id))}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 渔轮列表 */}
+      {gearTab === "reels" && (
+        <div className="space-y-4">
+          {/* Mobile 添加按钮 */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="md:hidden w-full gap-2">
+                <Plus className="h-4 w-4" />
+                新增渔轮
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>新增渔轮</DialogTitle>
+                <DialogDescription>记录你的渔轮参数。</DialogDescription>
+              </DialogHeader>
+              <ReelForm onSuccess={(reel) => setReels((prev) => [reel, ...prev])} />
+            </DialogContent>
+          </Dialog>
+
+          {reels.length === 0 ? (
+            <EmptyState description="尚未创建渔轮" />
+          ) : (
+            <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4">
+              {reels.map((reel) => (
+                <ReelCard
+                  key={reel.id}
+                  reel={reel}
+                  onUpdated={(next) =>
+                    setReels((prev) => prev.map((item) => (item.id === next.id ? next : item)))
+                  }
+                  onDeleted={() => setReels((prev) => prev.filter((item) => item.id !== reel.id))}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -259,11 +334,11 @@ type StatusState = { type: "success" | "error"; message: string } | null;
 
 function EmptyState({ description }: { description: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
-      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-        <Settings2 className="w-6 h-6 text-gray-400" />
+    <div className="flex flex-col items-center justify-center py-16 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+      <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+        <Settings2 className="w-6 h-6 text-slate-400" />
       </div>
-      <p className="text-gray-500 text-sm">{description}</p>
+      <p className="text-slate-500 text-sm">{description}</p>
     </div>
   );
 }
@@ -364,7 +439,7 @@ function RodForm({ onSuccess, initialData, closeDialog }: { onSuccess: (rod: Rod
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
-      <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50/60 p-3 space-y-2">
+      <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-3 space-y-2">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-sm font-medium">快速复制</p>
@@ -576,7 +651,7 @@ function ReelForm({ onSuccess, initialData, closeDialog }: { onSuccess: (reel: R
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
-      <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50/60 p-3 space-y-2">
+      <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-3 space-y-2">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-sm font-medium">快速复制</p>
@@ -934,7 +1009,7 @@ function ComboForm({
 
   if (!canSubmit) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-slate-500">
         <p>创建组合前，请先添加至少一根鱼竿和一个渔轮。</p>
       </div>
     );
@@ -1396,18 +1471,18 @@ function ComboCard({
 
         <div className="space-y-2 mb-3">
           <div className="flex items-center gap-2 text-xs">
-            <span className="shrink-0 w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500">
+            <span className="shrink-0 w-5 h-5 rounded bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">
               竿
             </span>
-            <span className="truncate text-gray-700">
+            <span className="truncate text-slate-700">
               {combo.rod?.name || "未关联"}
             </span>
           </div>
           <div className="flex items-center gap-2 text-xs">
-            <span className="shrink-0 w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500">
+            <span className="shrink-0 w-5 h-5 rounded bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">
               轮
             </span>
-            <span className="truncate text-gray-700">
+            <span className="truncate text-slate-700">
               {combo.reel?.name || "未关联"}
             </span>
           </div>
