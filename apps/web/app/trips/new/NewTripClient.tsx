@@ -137,6 +137,8 @@ export default function NewTripClient() {
             comboId: c.comboId || undefined,
             lureText: c.lureText || undefined,
             note: c.note || undefined,
+            photoUrls: c.photoUrls || undefined,
+            caughtAt: c.caughtAt || undefined,
           })),
         }),
       });

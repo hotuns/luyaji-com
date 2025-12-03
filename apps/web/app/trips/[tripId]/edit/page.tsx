@@ -45,6 +45,7 @@ export default function EditTripPage({ params }: { params: Promise<{ tripId: str
             comboId: c.comboId || "",
             lureText: c.lureText || "",
             note: c.note || "",
+            caughtAt: c.caughtAt || undefined,
           })),
           currentStep: 1,
           isDraft: false,
@@ -107,6 +108,7 @@ export default function EditTripPage({ params }: { params: Promise<{ tripId: str
             comboId: c.comboId || undefined,
             lureText: c.lureText || undefined,
             note: c.note || undefined,
+            caughtAt: c.caughtAt || undefined,
           })),
         }),
       });

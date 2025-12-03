@@ -1,0 +1,79 @@
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import OSS from "ali-oss";
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+// 允许的图片类型
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+const OSS_BUCKET_NAME = process.env.OSS_BUCKET_NAME || "the-weapplyj";
+const OSS_ENDPOINT = process.env.OSS_ENDPOINT || "http://oss-cn-beijing.aliyuncs.com";
+const OSS_ACCESS_KEY_ID = process.env.OSS_ACCESS_KEY_ID || "";
+const OSS_ACCESS_KEY_SECRET = process.env.OSS_ACCESS_KEY_SECRET || "";
+
+const regionMatch = OSS_ENDPOINT.match(/oss-([a-z0-9-]+)\.aliyuncs\.com/);
+const OSS_REGION = regionMatch ? `oss-${regionMatch[1]}` : "oss-cn-beijing";
+
+const ossClient = new OSS({
+  region: OSS_REGION,
+  accessKeyId: OSS_ACCESS_KEY_ID,
+  accessKeySecret: OSS_ACCESS_KEY_SECRET,
+  bucket: OSS_BUCKET_NAME,
+  secure: true,
+});
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ success: false, error: "未登录" }, { status: 401 });
+    }
+
+    const formData = await request.formData();
+    const file = formData.get("file") as File | null;
+
+    if (!file) {
+      return NextResponse.json({ success: false, error: "没有上传文件" }, { status: 400 });
+    }
+
+    // 验证文件类型
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return NextResponse.json({ success: false, error: "不支持的文件类型" }, { status: 400 });
+    }
+
+    // 验证文件大小
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ success: false, error: "文件大小超过限制（10MB）" }, { status: 400 });
+    }
+
+    if (!OSS_ACCESS_KEY_ID || !OSS_ACCESS_KEY_SECRET) {
+      return NextResponse.json({ success: false, error: "OSS 配置缺失" }, { status: 500 });
+    }
+
+    // 生成唯一文件名
+    const timestamp = Date.now();
+    const randomId = Math.random().toString(36).substring(2, 8);
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const objectKey = `catches/${session.user.id}_${timestamp}_${randomId}.${ext}`;
+
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    const result = await ossClient.put(objectKey, buffer);
+    const url = (result.url || "").replace("http://", "https://");
+
+    return NextResponse.json({
+      success: true,
+      data: { url },
+    });
+  } catch (error) {
+    console.error("上传文件失败:", error);
+    return NextResponse.json({ success: false, error: "上传失败" }, { status: 500 });
+  }
+}

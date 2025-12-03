@@ -6,6 +6,7 @@ export type ProfileOverview = {
     nickname: string | null;
     phone: string | null;
     avatarUrl: string | null;
+    bio: string | null;
     createdAt: Date;
   };
   stats: {
@@ -39,6 +40,7 @@ export async function getProfileOverview(userId: string): Promise<ProfileOvervie
           nickname: true,
           phone: true,
           avatarUrl: true,
+          bio: true,
           createdAt: true,
         },
       }),

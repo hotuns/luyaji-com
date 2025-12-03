@@ -30,6 +30,7 @@ const updateTripSchema = z.object({
         comboId: z.string().optional(),
         lureText: z.string().optional(),
         note: z.string().optional(),
+        caughtAt: z.string().optional(),
       })
     )
     .optional(),
@@ -150,6 +151,7 @@ export async function PATCH(
               speciesName: speciesMap.get(c.speciesId) || "未知",
               count: c.count,
               sizeText: c.sizeText,
+              caughtAt: c.caughtAt ? new Date(c.caughtAt) : null,
               comboId: c.comboId,
               lureText: c.lureText,
               note: c.note,

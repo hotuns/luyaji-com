@@ -1,8 +1,6 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
-import { getFishDex } from "@/lib/dex";
-
 import { DexDashboard } from "./dex-dashboard";
 
 export default async function DexPage() {
@@ -11,9 +9,6 @@ export default async function DexPage() {
     redirect("/auth/signin");
   }
 
-  const dexPayload = await getFishDex(session.user.id);
-
-  return (
-    <DexDashboard summary={dexPayload.summary} species={dexPayload.species} />
-  );
+  // 数据获取移至客户端组件，减少服务端渲染压力
+  return <DexDashboard />;
 }

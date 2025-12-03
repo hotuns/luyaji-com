@@ -28,6 +28,8 @@ const createTripSchema = z.object({
         comboId: z.string().optional(),
         lureText: z.string().optional(),
         note: z.string().optional(),
+        caughtAt: z.string().optional(),
+        photoUrls: z.array(z.string()).optional(),
       })
     )
     .optional(),
@@ -121,9 +123,11 @@ export async function POST(request: NextRequest) {
           speciesName: speciesMap.get(c.speciesId) || "未知",
           count: c.count,
           sizeText: c.sizeText,
+          caughtAt: c.caughtAt ? new Date(c.caughtAt) : null,
           comboId: c.comboId,
           lureText: c.lureText,
           note: c.note,
+          photoUrls: c.photoUrls && c.photoUrls.length > 0 ? c.photoUrls : undefined,
         })),
       });
     }

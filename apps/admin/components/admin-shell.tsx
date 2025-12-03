@@ -8,6 +8,7 @@ import {
   MenuUnfoldOutlined,
   RadarChartOutlined,
   SettingOutlined,
+  NotificationOutlined,
   TeamOutlined,
   UnorderedListOutlined,
   UserOutlined,
@@ -35,6 +36,7 @@ const NAV_ITEMS = [
   { key: "/trips", label: "出击记录", icon: <UnorderedListOutlined /> },
   { key: "/fish-species", label: "鱼种管理", icon: <RadarChartOutlined /> },
   { key: "/gear", label: "装备管理", icon: <InboxOutlined /> },
+   { key: "/announcements", label: "公告管理", icon: <NotificationOutlined /> },
   { key: "/settings", label: "系统设置", icon: <SettingOutlined /> },
 ];
 
@@ -44,6 +46,7 @@ const BREADCRUMB_NAME_MAP: Record<string, string> = {
   "/trips": "出击记录",
   "/fish-species": "鱼种管理",
   "/gear": "装备管理",
+  "/announcements": "公告管理",
   "/settings": "系统设置",
 };
 

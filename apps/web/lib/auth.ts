@@ -38,6 +38,10 @@ const authConfig = {
           throw new Error("账号或密码错误");
         }
 
+        if (user.isBanned) {
+          throw new Error("账号已被封禁，如有疑问请联系管理员");
+        }
+
         const isValid = await bcrypt.compare(password, user.passwordHash);
         if (!isValid) {
           throw new Error("账号或密码错误");

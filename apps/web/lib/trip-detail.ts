@@ -34,6 +34,7 @@ export type TripDetail = {
     lureText: string | null;
     note: string | null;
     caughtAt: string | null;
+    photoUrls: string[] | null;
   }>;
 };
 
@@ -118,6 +119,7 @@ export async function getTripDetail(userId: string, tripId: string): Promise<Tri
       lureText: catchItem.lureText,
       note: catchItem.note,
       caughtAt: catchItem.caughtAt ? catchItem.caughtAt.toISOString() : null,
+      photoUrls: Array.isArray(catchItem.photoUrls) ? (catchItem.photoUrls as string[]) : null,
     })),
   };
 }

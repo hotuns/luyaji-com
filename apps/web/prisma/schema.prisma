@@ -23,8 +23,11 @@ model User {
   // 登录密码（BCrypt 哈希），为空表示仅支持短信登录
   passwordHash  String?   @db.Text
   avatarUrl     String?   @db.Text
+  bio           String?   @db.Text // 个人简介
   // 是否为后台管理员
   isAdmin       Boolean   @default(false)
+  // 是否被封禁（封禁后不可登录和使用服务）
+  isBanned      Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -40,6 +43,7 @@ model User {
   catches Catch[]
 
   @@index([phone])
+  @@unique([nickname])
   @@map("users")
 }
 
@@ -265,4 +269,25 @@ model Catch {
   @@index([userId])
   @@index([speciesId])
   @@map("catches")
+}
+
+// ==================== 系统公告 ====================
+
+model Announcement {
+  id          String   @id @default(uuid())
+  title       String   // 公告标题
+  content     String   @db.Text // 公告内容
+  isActive    Boolean  @default(true) // 是否当前有效
+  // 公告开始生效时间，为空表示立即生效
+  startsAt    DateTime?
+  // 公告结束时间，为空表示长期有效
+  endsAt      DateTime?
+  // 是否作为首页顶部横幅展示
+  showAsBanner Boolean @default(false)
+  createdAt   DateTime @default(now())
+  publishedAt DateTime?
+
+  @@index([isActive, createdAt])
+  @@index([showAsBanner, isActive])
+  @@map("announcements")
 }

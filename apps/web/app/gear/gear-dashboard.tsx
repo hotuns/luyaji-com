@@ -8,6 +8,7 @@ import { Label } from "@workspace/ui/components/label";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { Card } from "@workspace/ui/components/card";
 import { Badge } from "@workspace/ui/components/badge";
+import { Skeleton } from "@workspace/ui/components/skeleton";
 import {
   Select,
   SelectContent,
@@ -26,7 +27,7 @@ import {
 } from "@workspace/ui/components/dialog";
 
 import { cn } from "@workspace/ui/lib/utils";
-import { Plus, Pencil, Trash2, Settings2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Settings2, Library } from "lucide-react";
 
 export type RodSummary = {
   id: string;
@@ -104,6 +105,76 @@ type GearLibraryItemBase = {
   updatedAt: string;
 };
 
+interface GearData {
+  rods: RodSummary[];
+  reels: ReelSummary[];
+  combos: ComboSummary[];
+}
+
+// 入口组件 - 自动获取数据
+export function GearDashboardWrapper() {
+  const [data, setData] = useState<GearData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const res = await fetch("/api/gear", { cache: "no-store" });
+        const json = await res.json();
+        if (json.success) {
+          setData(json.data);
+        }
+      } catch (error) {
+        console.error("获取装备数据失败:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return <GearSkeleton />;
+  }
+
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-slate-500">加载失败，请刷新重试</p>
+      </div>
+    );
+  }
+
+  return <GearDashboard initialRods={data.rods} initialReels={data.reels} initialCombos={data.combos} />;
+}
+
+function GearSkeleton() {
+  return (
+    <div className="space-y-6 pb-24 md:pb-8">
+      {/* Tabs 骨架 */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <Skeleton className="h-10 w-full md:w-80 rounded-xl" />
+      </div>
+      
+      {/* 卡片网格骨架 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i} className="p-4 space-y-3">
+            <div className="flex justify-between items-start">
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-4 w-48" />
+              </div>
+              <Skeleton className="h-6 w-12 rounded-full" />
+            </div>
+            <Skeleton className="h-4 w-24" />
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 type GearDashboardProps = {
   initialRods: RodSummary[];
   initialReels: ReelSummary[];
@@ -141,6 +212,21 @@ export function GearDashboard({ initialRods, initialReels, initialCombos }: Gear
             </button>
           ))}
         </div>
+
+        {/* 公共装备库入口 */}
+        <Button
+          type="button"
+          variant="outline"
+          className="md:ml-4 flex items-center gap-1 h-10 text-xs md:text-sm"
+          onClick={() => {
+            if (typeof window !== "undefined") {
+              window.location.href = "/gear/library";
+            }
+          }}
+        >
+          <Library className="h-4 w-4" />
+          公共装备库
+        </Button>
 
         {/* 添加按钮 */}
         {gearTab === "combos" && (

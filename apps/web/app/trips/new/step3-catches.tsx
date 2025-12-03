@@ -1,7 +1,8 @@
 "use client";
 
 import { TripFormState, TripCatchDraft, FishSpecies } from "@/lib/types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Camera, X, Loader2 } from "lucide-react";
 
 interface Step3Props {
   formState: TripFormState;
@@ -25,6 +26,42 @@ export default function Step3Catches({
   const [selectedSpecies, setSelectedSpecies] = useState<FishSpecies | null>(null);
   const [count, setCount] = useState(1);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [caughtAt] = useState<string>(() => new Date().toISOString());
+
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload/catch-photo", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setPhotoUrl(data.data.url);
+      } else {
+        alert(data.error || "上传失败");
+      }
+    } catch (error) {
+      console.error("上传失败:", error);
+      alert("上传失败，请重试");
+    } finally {
+      setIsUploading(false);
+      // 清空 input 以便重复选择相同文件
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
 
   const handleAddCatch = () => {
     if (!selectedSpecies) return;
@@ -34,11 +71,14 @@ export default function Step3Catches({
       speciesId: selectedSpecies.id,
       speciesName: selectedSpecies.name,
       count,
+      caughtAt,
+      photoUrls: photoUrl ? [photoUrl] : undefined,
     };
 
     addCatch(newCatch);
     setSelectedSpecies(null);
     setCount(1);
+    setPhotoUrl(null);
   };
 
   const handleSubmit = () => {
@@ -54,7 +94,7 @@ export default function Step3Catches({
       <div>
         <h2 className="text-lg font-semibold text-slate-900 mb-1">渔获记录</h2>
         <p className="text-sm text-slate-500 mb-4">
-          添加这次出击的渔获（可选）
+          建议每次上鱼都记录一条渔获，方便统计时间、装备和照片；同一时刻上来的多条同种鱼，可以在一条里调整条数。
         </p>
       </div>
 
@@ -111,6 +151,52 @@ export default function Step3Catches({
           </div>
         </div>
 
+        {/* 照片上传（可选） */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            照片 <span className="text-slate-400 font-normal">（可选）</span>
+          </label>
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/*"
+            capture="environment"
+            onChange={handlePhotoSelect}
+            className="hidden"
+          />
+          {photoUrl ? (
+            <div className="relative w-24 h-24 rounded-xl overflow-hidden border border-slate-200">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={photoUrl}
+                alt="渔获照片"
+                className="w-full h-full object-cover"
+              />
+              <button
+                onClick={() => setPhotoUrl(null)}
+                className="absolute top-1 right-1 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center text-white"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-colors disabled:opacity-50"
+            >
+              {isUploading ? (
+                <Loader2 size={24} className="animate-spin" />
+              ) : (
+                <>
+                  <Camera size={24} />
+                  <span className="text-xs mt-1">添加照片</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
+
         {/* 添加按钮 */}
         <button
           onClick={handleAddCatch}
@@ -130,15 +216,27 @@ export default function Step3Catches({
           <div className="text-center py-8 text-slate-400">
             <span className="text-4xl">🐟</span>
             <p className="mt-2 text-sm">还没有添加渔获</p>
+            <p className="mt-1 text-xs">第一次上鱼时，可以点击上方“添加渔获”来记录这一条。</p>
           </div>
         ) : (
           <div className="space-y-2">
             {catches.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between bg-white rounded-xl p-4 border border-slate-100"
+                className="flex items-center gap-3 bg-white rounded-xl p-4 border border-slate-100"
               >
-                <div>
+                {/* 照片缩略图 */}
+                {item.photoUrls && item.photoUrls.length > 0 && (
+                  <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={item.photoUrls[0]}
+                      alt="渔获照片"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div className="flex-1">
                   <span className="font-medium text-slate-900">
                     {item.speciesName}
                   </span>

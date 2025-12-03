@@ -169,6 +169,7 @@ export interface TripCatchDraft {
   lureText?: string;
   note?: string;
   photoUrls?: string[]; // 渔获照片 URL 列表
+  caughtAt?: string; // ISO 字符串，单条渔获时间
 }
 
 // 天气类型选项
@@ -209,6 +210,7 @@ export interface CreateTripRequest {
     comboId?: string;
     lureText?: string;
     note?: string;
+    caughtAt?: string;
   }>;
 }
 

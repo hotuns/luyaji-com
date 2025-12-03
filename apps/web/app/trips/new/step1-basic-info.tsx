@@ -3,6 +3,7 @@
 import { TripFormState } from "@/lib/types";
 import { useState, useEffect } from "react";
 import { LocationPicker } from "@/components/map";
+import { DateTimeField } from "@/components/date-time-field";
 
 interface Step1Props {
   formState: TripFormState;
@@ -98,16 +99,10 @@ export default function Step1BasicInfo({
           出击时间
           <span className="text-red-500 ml-0.5">*</span>
         </label>
-        <div className="relative">
-          <input
-            type="datetime-local"
-            value={formState.startTime.slice(0, 16)}
-            onChange={(e) =>
-              updateForm({ startTime: new Date(e.target.value).toISOString() })
-            }
-            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-          />
-        </div>
+        <DateTimeField
+          value={formState.startTime}
+          onChange={(iso) => updateForm({ startTime: iso })}
+        />
         <p className="text-xs text-slate-400 mt-1">
           当前选择：{formatDateTime(formState.startTime)}
         </p>

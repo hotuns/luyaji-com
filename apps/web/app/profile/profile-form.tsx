@@ -17,6 +17,7 @@ export function ProfileForm({ initialNickname, initialAvatarUrl }: ProfileFormPr
   const router = useRouter();
   const [nickname, setNickname] = useState(initialNickname ?? "");
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl ?? defaultAvatar?.url ?? "");
+  const [bio, setBio] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -28,6 +29,7 @@ export function ProfileForm({ initialNickname, initialAvatarUrl }: ProfileFormPr
     const payload = {
       nickname: nickname.trim() ? nickname.trim() : null,
       avatarUrl: avatarUrl.trim() ? avatarUrl.trim() : null,
+      bio: bio.trim() ? bio.trim() : null,
     };
 
     try {
@@ -77,6 +79,19 @@ export function ProfileForm({ initialNickname, initialAvatarUrl }: ProfileFormPr
           placeholder="钓友昵称"
           onChange={(event) => setNickname(event.target.value)}
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="bio">个人简介</Label>
+        <textarea
+          id="bio"
+          className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          maxLength={200}
+          placeholder="简单介绍一下自己，比如常钓水域、目标鱼种等"
+          value={bio}
+          onChange={(event) => setBio(event.target.value)}
+        />
+        <p className="text-xs text-slate-400">最多 200 字</p>
       </div>
 
       {status ? (

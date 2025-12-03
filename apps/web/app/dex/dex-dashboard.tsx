@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { FishDexEntry, FishDexPayload } from "@/lib/dex";
 import { cn } from "@workspace/ui/lib/utils";
 import { Card } from "@workspace/ui/components/card";
 import { Badge } from "@workspace/ui/components/badge";
+import { Skeleton } from "@workspace/ui/components/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -20,10 +22,101 @@ const FILTERS = [
   { key: "unlocked", label: "已解锁" },
 ];
 
-type DexDashboardProps = FishDexPayload;
-
-export function DexDashboard({ summary, species }: DexDashboardProps) {
+export function DexDashboard() {
+  const [data, setData] = useState<FishDexPayload | null>(null);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]["key"]>("all");
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const res = await fetch("/api/dex", { cache: "no-store" });
+        const json = await res.json();
+        if (json.success) {
+          setData(json.data);
+        }
+      } catch (error) {
+        console.error("获取图鉴数据失败:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return <DexSkeleton />;
+  }
+
+  if (!data) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+        <p className="text-slate-700 font-medium mb-2">图鉴数据加载失败</p>
+        <p className="text-slate-400 text-sm mb-4">可能是网络问题或暂时的服务异常，稍后再试试。</p>
+        <button
+          className="px-4 py-2 rounded-full border border-slate-200 text-sm text-slate-600 hover:bg-slate-50"
+          onClick={() => location.reload()}
+        >
+          刷新重试
+        </button>
+      </div>
+    );
+  }
+
+  return <DexContent summary={data.summary} species={data.species} filter={filter} setFilter={setFilter} />;
+}
+
+function DexSkeleton() {
+  return (
+    <div className="space-y-6 pb-24 md:pb-8">
+      {/* 顶部统计区骨架 */}
+      <div className="bg-slate-900 p-6 md:p-10 rounded-2xl">
+        <Skeleton className="h-8 w-32 bg-slate-700 mb-2" />
+        <Skeleton className="h-5 w-48 bg-slate-700 mb-6" />
+        <Skeleton className="h-3 w-full bg-slate-700 rounded-full" />
+      </div>
+
+      {/* 统计卡片骨架 */}
+      <div className="grid grid-cols-3 gap-3">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="bg-white border-none shadow-sm p-3 text-center">
+            <Skeleton className="h-7 w-12 mx-auto mb-1" />
+            <Skeleton className="h-4 w-10 mx-auto" />
+          </Card>
+        ))}
+      </div>
+
+      {/* 鱼种网格骨架 */}
+      <div className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-5 w-20 mb-1" />
+            <Skeleton className="h-3 w-16" />
+          </div>
+          <Skeleton className="h-10 w-32 rounded-xl" />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="p-4 rounded-xl border border-slate-200">
+              <Skeleton className="h-12 w-12 mx-auto mb-3 rounded-full" />
+              <Skeleton className="h-4 w-16 mx-auto mb-1" />
+              <Skeleton className="h-3 w-12 mx-auto" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type DexContentProps = {
+  summary: FishDexPayload["summary"];
+  species: FishDexPayload["species"];
+  filter: string;
+  setFilter: (filter: string) => void;
+};
+
+function DexContent({ summary, species, filter, setFilter }: DexContentProps) {
 
   const filteredSpecies = useMemo(() => {
     if (filter === "unlocked") {
@@ -98,7 +191,9 @@ export function DexDashboard({ summary, species }: DexDashboardProps) {
               <Fish size={32} className="text-slate-400" />
             </div>
             <p className="text-sm text-slate-500">
-              {filter === "unlocked" ? "你还没有解锁任何鱼种，快去钓鱼吧！" : "暂无鱼种数据"}
+              {filter === "unlocked"
+                ? "你还没有解锁任何鱼种，先去完成一两次出击吧～"
+                : "暂无鱼种数据，可以在后台添加鱼种基础信息。"}
             </p>
           </div>
         ) : (
@@ -220,16 +315,27 @@ function FishCard({ entry }: { entry: FishDexEntry }) {
           </div>
 
           {isUnlocked && (
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="space-y-1">
-                <p className="text-xs text-slate-500">首次捕获</p>
-                <p className="font-medium text-slate-800">{formatDate(entry.firstCaughtAt)}</p>
+            <>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="space-y-1">
+                  <p className="text-xs text-slate-500">首次捕获</p>
+                  <p className="font-medium text-slate-800">{formatDate(entry.firstCaughtAt)}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-slate-500">最近捕获</p>
+                  <p className="font-medium text-slate-800">{formatDate(entry.lastCaughtAt)}</p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <p className="text-xs text-slate-500">最近捕获</p>
-                <p className="font-medium text-slate-800">{formatDate(entry.lastCaughtAt)}</p>
+
+              <div className="mt-2 flex justify-end">
+                <Link
+                  href={`/stats?speciesId=${encodeURIComponent(entry.id)}`}
+                  className="text-xs text-blue-600 hover:text-blue-700 hover:underline"
+                >
+                  查看该鱼的历史钓鱼记录
+                </Link>
               </div>
-            </div>
+            </>
           )}
         </div>
       </DialogContent>

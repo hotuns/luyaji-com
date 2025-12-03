@@ -30,6 +30,7 @@ export function ProfileEditModal({
   const [mounted, setMounted] = useState(false);
   const [nickname, setNickname] = useState(initialNickname ?? "");
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl ?? defaultAvatar?.url ?? "");
+  const [bio, setBio] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +64,7 @@ export function ProfileEditModal({
     const payload = {
       nickname: nickname.trim() ? nickname.trim() : null,
       avatarUrl: avatarUrl.trim() ? avatarUrl.trim() : null,
+      bio: bio.trim() ? bio.trim() : null,
     };
 
     try {
@@ -182,7 +184,7 @@ export function ProfileEditModal({
             </div>
 
             {/* 昵称输入 */}
-            <div className="mb-6 space-y-2">
+            <div className="mb-4 space-y-2">
               <Label htmlFor="edit-nickname">昵称</Label>
               <Input
                 id="edit-nickname"
@@ -191,6 +193,20 @@ export function ProfileEditModal({
                 placeholder="给自己取个钓鱼名字吧"
                 onChange={(e) => setNickname(e.target.value)}
               />
+            </div>
+
+            {/* 个人简介 */}
+            <div className="mb-6 space-y-2">
+              <Label htmlFor="edit-bio">个人简介</Label>
+              <textarea
+                id="edit-bio"
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                maxLength={200}
+                placeholder="简单介绍一下自己，比如常钓水域、目标鱼种等"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+              />
+              <p className="text-xs text-slate-400">最多 200 字</p>
             </div>
 
             {/* 错误提示 */}
