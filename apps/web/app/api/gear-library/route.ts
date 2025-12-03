@@ -6,30 +6,53 @@ import { prisma } from "@/lib/prisma";
 const MAX_LIMIT = 50;
 
 export async function GET(request: Request) {
+    console.log("ENV DATABASE_URL:", process.env.DATABASE_URL);
+
+    
   const session = await auth();
   const userId = (session?.user as { id?: string })?.id;
-
-  if (!userId) {
-    return NextResponse.json({ success: false, error: "未登录" }, { status: 401 });
-  }
 
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type");
   const keyword = searchParams.get("q")?.trim();
-  const limitParam = Number(searchParams.get("limit"));
+  const limitRaw = searchParams.get("limit");
+  const pageRaw = searchParams.get("page");
+
+  const limitParam = limitRaw ? Number(limitRaw) : NaN;
+  const pageParam = pageRaw ? Number(pageRaw) : 1;
+
   const take = Number.isFinite(limitParam)
     ? Math.min(Math.max(limitParam, 1), MAX_LIMIT)
-    : 20;
+    : MAX_LIMIT;
+
+  const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+  const skip = (page - 1) * take;
 
   if (type !== "rod" && type !== "reel") {
     return NextResponse.json({ success: false, error: "无效的 type 参数" }, { status: 400 });
   }
 
   if (type === "rod") {
+    const total = await prisma.rod.count({
+      where: {
+        visibility: "public",
+        ...(keyword
+          ? {
+              OR: [
+                { name: { contains: keyword } },
+                { brand: { contains: keyword } },
+                { power: { contains: keyword } },
+                { note: { contains: keyword } },
+              ],
+            }
+          : {}),
+      },
+    });
+
     const rods = await prisma.rod.findMany({
       where: {
         visibility: "public",
-        userId: { not: userId },
+        // 不再排除当前用户，方便运营账号检查公共库中所有内容
         ...(keyword
           ? {
               OR: [
@@ -43,13 +66,18 @@ export async function GET(request: Request) {
       },
       orderBy: { updatedAt: "desc" },
       take,
+      skip,
       include: {
         user: { select: { nickname: true, phone: true } },
       },
     });
 
+        console.log("gear-library rods count:", rods.length);
+
+
     return NextResponse.json({
       success: true,
+      total,
       data: rods.map((rod) => ({
         id: rod.id,
         name: rod.name,
@@ -67,10 +95,27 @@ export async function GET(request: Request) {
     });
   }
 
+  const total = await prisma.reel.count({
+    where: {
+      visibility: "public",
+      ...(keyword
+        ? {
+            OR: [
+              { name: { contains: keyword } },
+              { brand: { contains: keyword } },
+              { model: { contains: keyword } },
+              { gearRatioText: { contains: keyword } },
+              { note: { contains: keyword } },
+            ],
+          }
+        : {}),
+    },
+  });
+
   const reels = await prisma.reel.findMany({
     where: {
       visibility: "public",
-      userId: { not: userId },
+      // 同上，不再排除当前用户
       ...(keyword
         ? {
             OR: [
@@ -85,6 +130,7 @@ export async function GET(request: Request) {
     },
     orderBy: { updatedAt: "desc" },
     take,
+    skip,
     include: {
       user: { select: { nickname: true, phone: true } },
     },
@@ -92,6 +138,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     success: true,
+    total,
     data: reels.map((reel) => ({
       id: reel.id,
       name: reel.name,
