@@ -41,6 +41,7 @@ model User {
   combos  Combo[]
   trips   Trip[]
   catches Catch[]
+  comboLikes ComboLike[]
 
   @@index([phone])
   @@unique([nickname])
@@ -162,6 +163,7 @@ model Combo {
   visibility     String   @default("private") // private | public
   sourceType     String   @default("user") // user | template | copied
   photoUrls      Json?    // 组合图片 URL 列表 string[]
+  likeCount      Int      @default(0) // 点赞数量（冗余计数）
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -170,10 +172,26 @@ model Combo {
   reel       Reel        @relation(fields: [reelId], references: [id])
   tripCombos TripCombo[]
   catches    Catch[]
+  likes      ComboLike[]
 
   @@index([userId])
   @@index([visibility])
   @@map("combos")
+}
+
+// 组合点赞记录
+model ComboLike {
+  id        String   @id @default(uuid())
+  comboId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  combo Combo @relation(fields: [comboId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([comboId, userId])
+  @@index([userId])
+  @@map("combo_likes")
 }
 
 // ==================== 出击记录 ====================

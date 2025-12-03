@@ -6,13 +6,14 @@ import { useSession } from "next-auth/react";
 import { cn } from "@workspace/ui/lib/utils";
 import { 
   MapPin, Anchor, BookOpen, User, 
-  List, ChevronRight, Search, Settings 
+  List, ChevronRight, Search, Settings, Share2 
 } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "数据概览", mobileLabel: "首页", icon: List },
   { href: "/trips", label: "出击记录", mobileLabel: "出击", icon: MapPin },
   { href: "/gear", label: "装备管理", mobileLabel: "装备", icon: Anchor },
+  { href: "/square", label: "装备广场", mobileLabel: "广场", icon: Share2 },
   { href: "/dex", label: "渔获图鉴", mobileLabel: "图鉴", icon: BookOpen },
 ];
 
@@ -168,6 +169,7 @@ export function AppHeader() {
     if (pathname === "/") return "数据概览";
     if (pathname.startsWith("/trips")) return "出击记录";
     if (pathname.startsWith("/gear")) return "装备管理";
+    if (pathname.startsWith("/square")) return "装备广场";
     if (pathname.startsWith("/dex")) return "渔获图鉴";
     if (pathname.startsWith("/profile")) return "个人中心";
     return "路亚记";

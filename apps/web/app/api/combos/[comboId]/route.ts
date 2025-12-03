@@ -16,6 +16,80 @@ const updateComboSchema = z.object({
   visibility: z.enum(["private", "public"]).optional(),
 });
 
+// 公共：获取单个组合详情（含竿/轮/线/钩信息）
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ comboId: string }> },
+) {
+  try {
+    const { comboId } = await params;
+
+    const combo = await prisma.combo.findFirst({
+      where: {
+        id: comboId,
+        visibility: "public",
+      },
+      include: {
+        rod: true,
+        reel: true,
+      },
+    });
+
+    if (!combo) {
+      return NextResponse.json(
+        { success: false, error: "组合不存在或未公开" },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: combo.id,
+        name: combo.name,
+        visibility: combo.visibility,
+        detailNote: combo.detailNote,
+        mainLineText: combo.mainLineText,
+        leaderLineText: combo.leaderLineText,
+        hookText: combo.hookText,
+        lures: combo.lures,
+        sceneTags: combo.sceneTags,
+        photoUrls: combo.photoUrls,
+        likeCount: combo.likeCount,
+        createdAt: combo.createdAt,
+        updatedAt: combo.updatedAt,
+        rod: {
+          id: combo.rod.id,
+          name: combo.rod.name,
+          brand: combo.rod.brand,
+          length: combo.rod.length,
+          lengthUnit: combo.rod.lengthUnit,
+          power: combo.rod.power,
+          lureWeightMin: combo.rod.lureWeightMin,
+          lureWeightMax: combo.rod.lureWeightMax,
+          lineWeightText: combo.rod.lineWeightText,
+          note: combo.rod.note,
+        },
+        reel: {
+          id: combo.reel.id,
+          name: combo.reel.name,
+          brand: combo.reel.brand,
+          model: combo.reel.model,
+          gearRatioText: combo.reel.gearRatioText,
+          lineCapacityText: combo.reel.lineCapacityText,
+          note: combo.reel.note,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("获取组合详情失败:", error);
+    return NextResponse.json(
+      { success: false, error: "获取失败" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ comboId: string }> }

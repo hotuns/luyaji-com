@@ -187,7 +187,10 @@ export async function GET(request: Request) {
           }
         : {}),
     },
-    orderBy: { updatedAt: "desc" },
+    orderBy: [
+      { likeCount: "desc" },
+      { updatedAt: "desc" },
+    ],
     take,
     skip,
     include: {
@@ -206,6 +209,7 @@ export async function GET(request: Request) {
       hookText: combo.hookText,
       detailNote: combo.detailNote,
       photoUrls: (combo.photoUrls as string[] | null) ?? null,
+      likeCount: combo.likeCount ?? 0,
       updatedAt: combo.updatedAt,
       ownerName: combo.user?.nickname || maskPhone(combo.user?.phone),
     })),
