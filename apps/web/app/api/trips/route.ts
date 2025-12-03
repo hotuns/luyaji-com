@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { ensureSafeText } from "@/lib/sensitive-words";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -80,6 +81,23 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const validatedData = createTripSchema.parse(body);
+
+    // 敏感词校验：出击标题、备注
+    if (validatedData.title) {
+      ensureSafeText("出击标题", validatedData.title);
+    }
+    if (validatedData.note) {
+      ensureSafeText("出击备注", validatedData.note);
+    }
+
+    // 渔获备注（逐条检查）
+    if (validatedData.catches) {
+      for (const c of validatedData.catches) {
+        if (c.note) {
+          ensureSafeText("渔获备注", c.note);
+        }
+      }
+    }
 
     // 创建出击记录
     const trip = await prisma.trip.create({

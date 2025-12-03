@@ -35,15 +35,29 @@ type ReelLibraryItem = {
   ownerName: string;
 };
 
-type TabKey = "rods" | "reels";
+type ComboLibraryItem = {
+  id: string;
+  name: string;
+  mainLineText: string | null;
+  leaderLineText: string | null;
+  hookText: string | null;
+  detailNote: string | null;
+  photoUrls: string[] | null;
+  updatedAt: string;
+  ownerName: string;
+};
+
+type TabKey = "rods" | "reels" | "combos";
 
 export function GearLibraryDashboard() {
   const [tab, setTab] = useState<TabKey>("rods");
   const [keyword, setKeyword] = useState("");
   const [rodItems, setRodItems] = useState<RodLibraryItem[] | null>(null);
   const [reelItems, setReelItems] = useState<ReelLibraryItem[] | null>(null);
+  const [comboItems, setComboItems] = useState<ComboLibraryItem[] | null>(null);
   const [rodTotal, setRodTotal] = useState<number | null>(null);
   const [reelTotal, setReelTotal] = useState<number | null>(null);
+  const [comboTotal, setComboTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -57,7 +71,10 @@ export function GearLibraryDashboard() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      params.set("type", tab === "rods" ? "rod" : "reel");
+      params.set(
+        "type",
+        tab === "rods" ? "rod" : tab === "reels" ? "reel" : "combo",
+      );
       params.set("limit", String(pageSize));
       params.set("page", String(page));
       if (keyword.trim()) params.set("q", keyword.trim());
@@ -68,11 +85,16 @@ export function GearLibraryDashboard() {
       const json = await res.json();
       if (!json.success) return;
       if (tab === "rods") {
+      if (!json.success) return;
+      if (tab === "rods") {
         setRodItems(json.data as RodLibraryItem[]);
         setRodTotal(typeof json.total === "number" ? json.total : null);
-      } else {
+      } else if (tab === "reels") {
         setReelItems(json.data as ReelLibraryItem[]);
         setReelTotal(typeof json.total === "number" ? json.total : null);
+      } else {
+        setComboItems(json.data as ComboLibraryItem[]);
+        setComboTotal(typeof json.total === "number" ? json.total : null);
       }
     } finally {
       setLoading(false);
@@ -93,7 +115,8 @@ export function GearLibraryDashboard() {
   }
 
   const items = tab === "rods" ? rodItems : reelItems;
-  const total = tab === "rods" ? rodTotal : reelTotal;
+  const items = tab === "rods" ? rodItems : tab === "reels" ? reelItems : comboItems;
+  const total = tab === "rods" ? rodTotal : tab === "reels" ? reelTotal : comboTotal;
   const totalPages = total != null ? Math.max(1, Math.ceil(total / pageSize)) : null;
 
   return (
@@ -103,6 +126,7 @@ export function GearLibraryDashboard() {
           {[
             { key: "rods" as const, label: "鱼竿库" },
             { key: "reels" as const, label: "渔轮库" },
+            { key: "combos" as const, label: "组合库" },
           ].map((t) => (
             <button
               key={t.key}
@@ -139,7 +163,8 @@ export function GearLibraryDashboard() {
 
       {total != null && (
         <div className="text-xs text-slate-500">
-          共 {total} 条{tab === "rods" ? "鱼竿" : "渔轮"}，每页 {pageSize} 条
+          共 {total} 条
+          {tab === "rods" ? "鱼竿" : tab === "reels" ? "渔轮" : "组合"}，每页 {pageSize} 条
         </div>
       )}
 
@@ -157,7 +182,9 @@ export function GearLibraryDashboard() {
 
       {!loading && items && items.length === 0 && (
         <div className="py-16 text-center text-slate-500 text-sm">
-          暂无公开的{tab === "rods" ? "鱼竿" : "渔轮"}，你可以先去创建并公开自己的装备。
+          暂无公开的
+          {tab === "rods" ? "鱼竿" : tab === "reels" ? "渔轮" : "组合"}
+          ，你可以先去创建并公开自己的装备。
         </div>
       )}
 
@@ -186,7 +213,7 @@ export function GearLibraryDashboard() {
                     </Button>
                   </div>
                   <div className="flex flex-wrap gap-2 text-xs text-slate-500 mt-1">
-                    {item.power && <Badge variant="outline">调性 {item.power}</Badge>}
+                    {item.power && <Badge variant="outline">硬度 {item.power}</Badge>}
                     {item.length && (
                       <Badge variant="outline">
                         长度 {item.length}
@@ -204,7 +231,9 @@ export function GearLibraryDashboard() {
                   )}
                 </Card>
               ))
-              : (items as ReelLibraryItem[]).map((item) => (
+              ))
+              : tab === "reels"
+              ? (items as ReelLibraryItem[]).map((item) => (
                 <Card key={item.id} className="p-4 space-y-2">
                   <div className="flex justify-between items-start gap-3">
                     <div>
@@ -231,7 +260,47 @@ export function GearLibraryDashboard() {
                     )}
                   </div>
                   {item.note && (
+                  {item.note && (
                     <p className="text-xs text-slate-500 mt-1 line-clamp-2">{item.note}</p>
+                  )}
+                </Card>
+              ))
+              : (items as ComboLibraryItem[]).map((item) => (
+                <Card key={item.id} className="p-4 space-y-2">
+                  <div className="flex justify-between items-start gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-slate-900">{item.name}</span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-1">来自：{item.ownerName}</p>
+                    </div>
+                  </div>
+
+                  {item.photoUrls && item.photoUrls.length > 0 && (
+                    <div className="mt-2 flex gap-2 overflow-x-auto">
+                      {item.photoUrls.slice(0, 3).map((url) => (
+                        <img
+                          key={url}
+                          src={url}
+                          alt={item.name}
+                          className="h-20 w-20 rounded-md object-cover flex-shrink-0"
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-2 text-xs text-slate-500 mt-2">
+                    {item.mainLineText && (
+                      <Badge variant="outline">主线 {item.mainLineText}</Badge>
+                    )}
+                    {item.leaderLineText && (
+                      <Badge variant="outline">子线 {item.leaderLineText}</Badge>
+                    )}
+                    {item.hookText && <Badge variant="outline">钩类 {item.hookText}</Badge>}
+                  </div>
+
+                  {item.detailNote && (
+                    <p className="text-xs text-slate-500 mt-1 line-clamp-3">{item.detailNote}</p>
                   )}
                 </Card>
               ))}

@@ -33,7 +33,8 @@ export default function SignInPage() {
       });
 
       if (result?.error) {
-        setError("登录失败，请稍后重试");
+        // 后端已区分账号封禁、账号或密码错误等，这里直接透传
+        setError(result.error);
       } else {
         router.push("/");
         router.refresh();

@@ -105,7 +105,7 @@ model Rod {
   brand         String?  // 品牌
   length        Float?   // 长度数值（米）
   lengthUnit    String?  @default("m") // 长度单位 m | ft
-  power         String?  // 调性/硬度 UL/L/ML/M/MH/H
+  power         String?  // 硬度/硬度 UL/L/ML/M/MH/H
   lureWeightMin Float?   // 适用饵重下限（g）
   lureWeightMax Float?   // 适用饵重上限（g）
   lineWeightText String? // 适用线号描述
@@ -161,6 +161,7 @@ model Combo {
   detailNote     String?  @db.Text // 组合详细说明
   visibility     String   @default("private") // private | public
   sourceType     String   @default("user") // user | template | copied
+  photoUrls      Json?    // 组合图片 URL 列表 string[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

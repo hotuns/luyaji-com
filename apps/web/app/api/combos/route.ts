@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { ensureSafeText } from "@/lib/sensitive-words";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -60,6 +61,12 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const validatedData = createComboSchema.parse(body);
+
+    // 敏感词校验：组合名称、说明
+    ensureSafeText("组合名称", validatedData.name);
+    if (validatedData.detailNote) {
+      ensureSafeText("组合说明", validatedData.detailNote);
+    }
 
     const combo = await prisma.combo.create({
       data: {

@@ -185,7 +185,7 @@ export const WEATHER_TYPES = [
 
 export type WeatherType = (typeof WEATHER_TYPES)[number];
 
-// 鱼竿调性选项
+// 鱼竿硬度选项
 export const ROD_POWERS = ["UL", "L", "ML", "M", "MH", "H", "XH"] as const;
 
 export type RodPower = (typeof ROD_POWERS)[number];

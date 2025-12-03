@@ -21,7 +21,7 @@ export default function RegisterPage() {
     setError("");
 
     if (!identifier.trim() || !password) {
-      setError("请输入账号/手机号和密码");
+      setError("请输入手机号和密码");
       return;
     }
 
@@ -94,7 +94,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label className="text-xs font-semibold text-slate-500 uppercase">
-              手机号 / 账号
+              手机号
             </label>
             <div className="relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
@@ -105,21 +105,21 @@ export default function RegisterPage() {
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 className="w-full px-4 py-3 pl-12 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-800 placeholder:text-slate-400"
-                placeholder="请输入账号"
+                placeholder="请输入 11 位手机号"
               />
             </div>
           </div>
 
           <div className="space-y-2">
             <label className="text-xs font-semibold text-slate-500 uppercase">
-              昵称（可选）
+              用户名 / 昵称（可选）
             </label>
             <input
               type="text"
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-800 placeholder:text-slate-400"
-              placeholder="用于展示的昵称"
+              placeholder="用于展示的用户名或昵称"
             />
           </div>
           

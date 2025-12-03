@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { ensureSafeText } from "@/lib/sensitive-words";
 
 export async function POST(request: Request) {
   try {
@@ -8,7 +9,7 @@ export async function POST(request: Request) {
 
     if (!identifier || !password) {
       return NextResponse.json(
-        { success: false, message: "请输入账号/手机号和密码" },
+        { success: false, message: "请输入手机号和密码" },
         { status: 400 }
       );
     }
@@ -25,21 +26,27 @@ export async function POST(request: Request) {
 
     if (existingUser) {
       return NextResponse.json(
-        { success: false, message: "账号已存在" },
+        {
+          success: false,
+          message: isPhone ? "该手机号已被注册" : "该昵称已被占用，请更换",
+        },
         { status: 400 }
       );
     }
+
+    // 敏感词校验：昵称/用户名
+    const finalNickname =
+      nickname?.trim() ||
+      (isPhone ? `用户${trimmedIdentifier.slice(-4)}` : trimmedIdentifier);
+
+    ensureSafeText("昵称", finalNickname);
 
     const passwordHash = await bcrypt.hash(String(password), 10);
 
     const user = await prisma.user.create({
       data: {
         phone: isPhone ? trimmedIdentifier : null,
-        nickname:
-          nickname?.trim() ||
-          (isPhone
-            ? `用户${trimmedIdentifier.slice(-4)}`
-            : trimmedIdentifier),
+        nickname: finalNickname,
         passwordHash,
         isAdmin: false,
       },

@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { ensureSafeText } from "@/lib/sensitive-words";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -45,6 +46,11 @@ export async function POST(request: NextRequest) {
     const json = await request.json();
     const payload = createReelSchema.parse(json);
 
+    ensureSafeText("渔轮名称", payload.name);
+    if (payload.note) {
+      ensureSafeText("渔轮备注", payload.note);
+    }
+
     const reel = await prisma.reel.create({
       data: {
         userId: session.user.id,
@@ -65,6 +71,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: error.issues[0]?.message ?? "数据验证失败" },
         { status: 400 }
+      );
+    }
+    if (error instanceof Error && error.message.includes("包含敏感内容")) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 400 },
       );
     }
     return NextResponse.json({ success: false, error: "创建失败" }, { status: 500 });

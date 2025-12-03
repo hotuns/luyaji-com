@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
   const skip = (page - 1) * take;
 
-  if (type !== "rod" && type !== "reel") {
+  if (type !== "rod" && type !== "reel" && type !== "combo") {
     return NextResponse.json({ success: false, error: "无效的 type 参数" }, { status: 400 });
   }
 
@@ -95,6 +95,7 @@ export async function GET(request: Request) {
     });
   }
 
+  if (type === "reel") {
   const total = await prisma.reel.count({
     where: {
       visibility: "public",
@@ -149,6 +150,64 @@ export async function GET(request: Request) {
       note: reel.note,
       updatedAt: reel.updatedAt,
       ownerName: reel.user?.nickname || maskPhone(reel.user?.phone),
+    })),
+  });
+}
+
+  // combo 公共库
+  const total = await prisma.combo.count({
+    where: {
+      visibility: "public",
+      ...(keyword
+        ? {
+            OR: [
+              { name: { contains: keyword } },
+              { mainLineText: { contains: keyword } },
+              { leaderLineText: { contains: keyword } },
+              { hookText: { contains: keyword } },
+              { detailNote: { contains: keyword } },
+            ],
+          }
+        : {}),
+    },
+  });
+
+  const combos = await prisma.combo.findMany({
+    where: {
+      visibility: "public",
+      ...(keyword
+        ? {
+            OR: [
+              { name: { contains: keyword } },
+              { mainLineText: { contains: keyword } },
+              { leaderLineText: { contains: keyword } },
+              { hookText: { contains: keyword } },
+              { detailNote: { contains: keyword } },
+            ],
+          }
+        : {}),
+    },
+    orderBy: { updatedAt: "desc" },
+    take,
+    skip,
+    include: {
+      user: { select: { nickname: true, phone: true } },
+    },
+  });
+
+  return NextResponse.json({
+    success: true,
+    total,
+    data: combos.map((combo) => ({
+      id: combo.id,
+      name: combo.name,
+      mainLineText: combo.mainLineText,
+      leaderLineText: combo.leaderLineText,
+      hookText: combo.hookText,
+      detailNote: combo.detailNote,
+      photoUrls: (combo.photoUrls as string[] | null) ?? null,
+      updatedAt: combo.updatedAt,
+      ownerName: combo.user?.nickname || maskPhone(combo.user?.phone),
     })),
   });
 }

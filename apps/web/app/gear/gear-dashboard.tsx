@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
@@ -27,7 +27,7 @@ import {
 } from "@workspace/ui/components/dialog";
 
 import { cn } from "@workspace/ui/lib/utils";
-import { Plus, Pencil, Trash2, Settings2, Library } from "lucide-react";
+import { Plus, Pencil, Trash2, Settings2, Library, Camera, Loader2, X } from "lucide-react";
 
 export type RodSummary = {
   id: string;
@@ -194,9 +194,9 @@ export function GearDashboard({ initialRods, initialReels, initialCombos }: Gear
         {/* Custom Tabs - 匹配 Demo 样式 */}
         <div className="flex p-1 bg-slate-200/60 rounded-xl md:w-auto w-full">
           {[
-            { key: "combos" as const, label: "组合", count: combos.length },
             { key: "rods" as const, label: "鱼竿", count: rods.length },
             { key: "reels" as const, label: "渔轮", count: reels.length },
+            { key: "combos" as const, label: "组合", count: combos.length },
           ].map((t) => (
             <button
               key={t.key}
@@ -1028,8 +1028,46 @@ function ComboForm({
   });
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<StatusState>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(
+    initialData?.sceneTags && Array.isArray(initialData.sceneTags) && (initialData as any).photoUrls?.[0]
+      ? (initialData as any).photoUrls[0]
+      : null,
+  );
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const canSubmit = rods.length > 0 && reels.length > 0;
+
+  async function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload/catch-photo", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setPhotoUrl(data.data.url as string);
+      } else {
+        alert(data.error || "上传失败");
+      }
+    } catch (error) {
+      console.error("上传失败:", error);
+      alert("上传失败，请重试");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1050,6 +1088,7 @@ function ComboForm({
       detailNote: nullableString(form.detailNote),
       visibility: form.visibility,
       sceneTags: parseSceneTags(form.sceneTags),
+      photoUrls: photoUrl ? [photoUrl] : undefined,
     };
 
     const url = initialData ? `/api/combos/${initialData.id}` : "/api/combos";
@@ -1078,6 +1117,7 @@ function ComboForm({
           sceneTags: "",
           visibility: "private",
         });
+        setPhotoUrl(null);
       }
       setStatus({ type: "success", message: "保存成功" });
       if (closeDialog) {
@@ -1188,6 +1228,52 @@ function ComboForm({
           onChange={(event) => setForm((prev) => ({ ...prev, detailNote: event.target.value }))}
           placeholder="记录一些额外信息..."
         />
+      </div>
+
+      {/* 组合照片：单张，上传到 OSS */}
+      <div className="space-y-2">
+        <Label>
+          组合照片 <span className="text-xs text-slate-400 font-normal">（可选，单张）</span>
+        </Label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handlePhotoSelect}
+          className="hidden"
+        />
+        {photoUrl ? (
+          <div className="flex items-center gap-3">
+            <div className="relative w-24 h-24 rounded-xl overflow-hidden border border-slate-200">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={photoUrl} alt="组合照片" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => setPhotoUrl(null)}
+                className="absolute top-1 right-1 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center text-white"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify中心 text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-colors disabled:opacity-50"
+          >
+            {isUploading ? (
+              <Loader2 size={24} className="animate-spin" />
+            ) : (
+              <>
+                <Camera size={24} />
+                <span className="text-xs mt-1">添加照片</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       <div className="space-y-2">

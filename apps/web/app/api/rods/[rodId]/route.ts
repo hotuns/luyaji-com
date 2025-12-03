@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { ensureSafeText } from "@/lib/sensitive-words";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -30,6 +31,13 @@ export async function PATCH(
     const json = await request.json();
     const payload = updateRodSchema.parse(json);
 
+    if (payload.name) {
+      ensureSafeText("鱼竿名称", payload.name);
+    }
+    if (payload.note) {
+      ensureSafeText("鱼竿备注", payload.note);
+    }
+
     const existing = await prisma.rod.findFirst({
       where: { id: rodId, userId: session.user.id },
     });
@@ -50,6 +58,12 @@ export async function PATCH(
       return NextResponse.json(
         { success: false, error: error.issues[0]?.message ?? "数据验证失败" },
         { status: 400 }
+      );
+    }
+    if (error instanceof Error && error.message.includes("包含敏感内容")) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 400 },
       );
     }
     return NextResponse.json({ success: false, error: "更新失败" }, { status: 500 });

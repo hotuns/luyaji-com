@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getProfileOverview } from "@/lib/profile";
+import { ensureSafeText } from "@/lib/sensitive-words";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -85,12 +86,18 @@ export async function PATCH(request: NextRequest) {
       phone?: string | null;
     } = {};
     if (payload.nickname !== undefined) {
+      if (payload.nickname) {
+        ensureSafeText("昵称", payload.nickname);
+      }
       data.nickname = payload.nickname;
     }
     if (payload.avatarUrl !== undefined) {
       data.avatarUrl = payload.avatarUrl;
     }
     if (payload.bio !== undefined) {
+      if (payload.bio) {
+        ensureSafeText("个人简介", payload.bio);
+      }
       data.bio = payload.bio;
     }
 
@@ -123,6 +130,12 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: error.issues[0]?.message || "数据校验失败" },
         { status: 400 }
+      );
+    }
+    if (error instanceof Error && error.message.includes("包含敏感内容")) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 400 },
       );
     }
     return NextResponse.json({ success: false, error: "更新失败" }, { status: 500 });

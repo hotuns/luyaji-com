@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import { DatePicker as AntdDatePicker } from "antd";
+import type { DateTimePickerProps } from "react-vant";
 import { DatetimePicker as VantDatePicker } from "react-vant";
 import "react-vant/lib/index.css";
 
@@ -52,7 +53,11 @@ export function DateTimeField({ label, value, onChange }: DateTimeFieldProps) {
           value={localValue.toDate()}
           onConfirm={(date: Date) => emitChange(dayjs(date))}
         >
-          {(val?: Date, _columns, actions) => (
+          {(
+            val: Parameters<NonNullable<DateTimePickerProps["children"]>>[0],
+            _columns: any,
+            actions: any,
+          ) => (
             <button
               type="button"
               onClick={() => actions.open()}
