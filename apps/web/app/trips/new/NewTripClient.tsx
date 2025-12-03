@@ -114,12 +114,16 @@ export default function NewTripClient() {
   const submitTrip = async () => {
     setIsSubmitting(true);
     try {
+      // 点击"完成出击"时，自动设置结束时间为当前时间
+      const endTime = new Date().toISOString();
+      
       const response = await fetch("/api/trips", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: formState.title || undefined,
           startTime: formState.startTime,
+          endTime: endTime,
           locationName: formState.locationName,
           locationLat: formState.locationLat,
           locationLng: formState.locationLng,

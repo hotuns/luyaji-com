@@ -4,19 +4,23 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  CalendarDays,
+  Calendar,
   ChevronLeft,
   Clock,
   Fish,
-  MapPinned,
-  NotebookText,
+  MapPin,
+  NotebookPen,
   Pencil,
   Wind,
+  Thermometer,
+  Cloud,
+  Share2,
+  Anchor
 } from "lucide-react";
 
 import type { TripDetail } from "@/lib/trip-detail";
 import { Badge } from "@workspace/ui/components/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import { Button } from "@workspace/ui/components/button";
 import { Skeleton } from "@workspace/ui/components/skeleton";
 import { cn } from "@workspace/ui/lib/utils";
@@ -37,9 +41,9 @@ function formatDuration(start: string, end: string | null) {
   if (duration <= 0) return "-";
   const hours = Math.floor(duration / (1000 * 60 * 60));
   const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
-  if (hours === 0) return `${minutes} 分钟`;
-  if (minutes === 0) return `${hours} 小时`;
-  return `${hours} 小时 ${minutes} 分钟`;
+  if (hours === 0) return `${minutes}m`;
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
 }
 
 export default function TripDetailClient() {
@@ -102,14 +106,16 @@ export default function TripDetailClient() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24 md:pb-8">
-      <div className="relative overflow-hidden rounded-b-[2.5rem] md:rounded-3xl bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-500 px-6 pt-10 pb-12 shadow-xl">
-        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10" />
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute -left-20 top-20 h-48 w-48 rounded-full bg-indigo-500/20 blur-2xl" />
+    <div className="min-h-screen bg-slate-50 pb-24 md:pb-12">
+      {/* Header Section - Dark Theme */}
+      <div className="relative overflow-hidden rounded-b-[2.5rem] md:rounded-3xl bg-slate-900 text-white shadow-xl">
+         {/* Background Effects */}
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-blue-500 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-64 h-64 bg-emerald-500 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
         
-        <div className="container relative px-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="relative z-10 container max-w-5xl mx-auto px-6 pt-8 pb-10">
+          {/* Nav Bar */}
+          <div className="flex items-center justify-between mb-8">
             <Button
               asChild
               variant="ghost"
@@ -117,388 +123,260 @@ export default function TripDetailClient() {
               className="h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm"
             >
               <Link href="/trips">
-                <ChevronLeft className="size-6" />
-                <span className="sr-only">返回</span>
+                <ChevronLeft className="size-5" />
               </Link>
             </Button>
-            <Button
-              asChild
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm"
-            >
-              <Link href={`/trips/${tripId}/edit`}>
-                <Pencil className="size-5" />
-                <span className="sr-only">编辑</span>
-              </Link>
-            </Button>
+            <div className="flex gap-2">
+               <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm"
+              >
+                <Share2 className="size-5" />
+              </Button>
+              <Button
+                asChild
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-full bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-900/20"
+              >
+                <Link href={`/trips/${tripId}/edit`}>
+                  <Pencil className="size-5" />
+                </Link>
+              </Button>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-blue-50/80">
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-                  <MapPinned className="size-3.5 text-white" />
-                </div>
-                <span>出击地点</span>
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight text-white">
-                {trip.title || trip.locationName}
-              </h1>
-              <p className="text-base text-blue-50/90">{trip.locationName}</p>
+          {/* Title & Location */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-blue-200/80 text-sm font-medium">
+              <MapPin className="size-4" />
+              <span>{trip.locationName}</span>
             </div>
-            <div className="flex flex-wrap gap-3 text-sm">
-              <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-white backdrop-blur-sm">
-                <CalendarDays className="size-3.5" />
-                <span>{formatDateTime(trip.startTime)}</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-white backdrop-blur-sm">
-                <Clock className="size-3.5" />
-                <span>{formatDuration(trip.startTime, trip.endTime)}</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-white backdrop-blur-sm">
-                <Fish className="size-3.5" />
-                <span>
-                  {trip.totalCatchCount} 尾 / {trip.fishSpeciesCount} 种
-                </span>
-              </div>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white leading-tight">
+              {trip.title || trip.locationName}
+            </h1>
+            
+            {/* Key Stats Row */}
+            <div className="flex flex-wrap gap-3 pt-2">
+               <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full text-sm border border-white/5">
+                  <Calendar className="size-3.5 text-blue-300" />
+                  <span>{formatDateTime(trip.startTime)}</span>
+               </div>
+               <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full text-sm border border-white/5">
+                  <Clock className="size-3.5 text-emerald-300" />
+                  <span>{formatDuration(trip.startTime, trip.endTime)}</span>
+               </div>
             </div>
+          </div>
+          
+          {/* Big Stats Cards in Header */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+             <StatBox label="总渔获" value={trip.totalCatchCount} unit="尾" color="text-emerald-400" />
+             <StatBox label="鱼种" value={trip.fishSpeciesCount} unit="种" color="text-blue-400" />
+             <StatBox label="天气" value={trip.weatherType || "-"} unit="" color="text-amber-400" />
+             <StatBox label="温度" value={trip.weatherTemperatureText || "-"} unit="" color="text-orange-400" />
           </div>
         </div>
       </div>
 
-      <div className="container mt-4 space-y-6 px-4">
+      {/* Main Content Grid */}
+      <div className="container max-w-5xl mx-auto px-4 mt-6 space-y-6">
+        
+        {/* Note Section (if exists) */}
+        {trip.note && (
+          <Card className="border-none shadow-sm bg-white overflow-hidden">
+             <div className="h-1 bg-amber-400 w-full"></div>
+             <CardContent className="p-5">
+                <div className="flex gap-3">
+                   <NotebookPen className="size-5 text-amber-500 shrink-0 mt-0.5" />
+                   <p className="text-slate-700 text-sm leading-relaxed">{trip.note}</p>
+                </div>
+             </CardContent>
+          </Card>
+        )}
+
         <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-          <div className="space-y-6">
-            <Card className="border-none shadow-md md:rounded-2xl">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <CardTitle>使用装备</CardTitle>
-                    <CardDescription>还原本次出击使用的整套装备组合</CardDescription>
-                  </div>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="h-8 rounded-full border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700"
-                  >
-                    <Link href="/gear">管理装备</Link>
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {trip.combos.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center">
-                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
-                      <NotebookText className="size-5 text-slate-400" />
+           {/* Left Column: Catches & Gear */}
+           <div className="space-y-8">
+              
+              {/* Catches */}
+              <div className="space-y-4">
+                 <div className="flex items-center justify-between px-1">
+                    <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                       <Fish className="size-5 text-blue-600" />
+                       渔获记录
+                    </h2>
+                    <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+                       {trip.totalCatchCount} 尾
+                    </Badge>
+                 </div>
+                 
+                 {trip.catches.length === 0 ? (
+                    <EmptyState icon={Fish} text="本次出击暂无渔获" subtext="下次一定爆护！" />
+                 ) : (
+                    <div className="grid gap-4">
+                       {trip.catches.map((item, index) => (
+                          <CatchCard key={item.id} item={item} index={index} />
+                       ))}
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      暂无关联组合，可在「编辑出击」中追加。
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid gap-4">
-                    {trip.combos.map((combo) => (
-                      <div
-                        key={combo.id}
-                        className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all hover:border-blue-200 hover:shadow-md"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="space-y-1">
-                            <p className="text-base font-semibold text-slate-900">
-                              {combo.name}
-                            </p>
-                            <div className="flex flex-wrap gap-2 text-sm">
-                              {combo.rod ? (
-                                <Badge
-                                  variant="secondary"
-                                  className="bg-blue-50 text-blue-700 hover:bg-blue-100"
-                                >
-                                  鱼竿 · {combo.rod.name}
-                                </Badge>
-                              ) : null}
-                              {combo.reel ? (
-                                <Badge
-                                  variant="secondary"
-                                  className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
-                                >
-                                  轮子 · {combo.reel.name}
-                                </Badge>
-                              ) : null}
-                            </div>
-                          </div>
-                          {combo.detailNote ? (
-                            <Badge
-                              variant="outline"
-                              className="border-slate-200 text-slate-500"
-                            >
-                              {combo.detailNote}
-                            </Badge>
-                          ) : null}
-                        </div>
-                        <div className="mt-4 grid gap-4 rounded-xl bg-slate-50/80 p-3 text-sm lg:grid-cols-3">
-                          <div>
-                            <dt className="text-xs font-medium text-slate-500">
-                              主线
-                            </dt>
-                            <dd className="mt-0.5 font-medium text-slate-900">
-                              {combo.mainLineText || "-"}
-                            </dd>
-                          </div>
-                          <div>
-                            <dt className="text-xs font-medium text-slate-500">
-                              前导
-                            </dt>
-                            <dd className="mt-0.5 font-medium text-slate-900">
-                              {combo.leaderLineText || "-"}
-                            </dd>
-                          </div>
-                          <div>
-                            <dt className="text-xs font-medium text-slate-500">
-                              钩型
-                            </dt>
-                            <dd className="mt-0.5 font-medium text-slate-900">
-                              {combo.hookText || "-"}
-                            </dd>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                 )}
+              </div>
 
-            <Card className="border-none shadow-md md:rounded-2xl">
-              <CardHeader>
-                <CardTitle>渔获记录</CardTitle>
-                <CardDescription>按照出水顺序回顾每一次收获</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {trip.catches.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center">
-                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
-                      <Fish className="size-5 text-slate-400" />
+              {/* Gear */}
+              <div className="space-y-4">
+                 <div className="flex items-center justify-between px-1">
+                    <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                       <Anchor className="size-5 text-indigo-600" />
+                       使用装备
+                    </h2>
+                 </div>
+                 
+                 {trip.combos.length === 0 ? (
+                    <EmptyState icon={Anchor} text="未关联装备组合" subtext="可在编辑中添加" />
+                 ) : (
+                    <div className="grid gap-4">
+                       {trip.combos.map((combo) => (
+                          <GearCard key={combo.id} combo={combo} />
+                       ))}
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      暂无渔获记录。
-                    </p>
-                    <p className="mt-1 text-xs text-slate-400">
-                      下次可以在出击过程中随手记录每一次上鱼的时间、数量和照片。
-                    </p>
-                  </div>
-                ) : (
-                  <ol className="space-y-4">
-                    {trip.catches.map((item, index) => (
-                      <li
-                        key={item.id}
-                        className="relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all hover:border-blue-200 hover:shadow-md"
-                      >
-                        <div className="absolute right-0 top-0 h-16 w-16 translate-x-4 translate-y-[-20%] rotate-12 rounded-full bg-gradient-to-br from-blue-50 to-indigo-50 opacity-50" />
-                        
-                        <div className="relative flex flex-wrap items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-600">
-                              #{index + 1}
-                            </div>
-                            <div>
-                              <p className="text-lg font-bold text-slate-900">
-                                {item.speciesName}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge className="bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-1 text-sm hover:from-blue-700 hover:to-indigo-700">
-                              {item.count} 尾
-                            </Badge>
-                            <Button
-                              asChild
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 rounded-full border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200"
-                            >
-                              <Link href={`/trips/${tripId}/edit`}>
-                                <Pencil className="size-4" />
-                                <span className="sr-only">编辑渔获</span>
-                              </Link>
-                            </Button>
-                          </div>
-                        </div>
+                 )}
+              </div>
+           </div>
 
-                        {item.photoUrls && item.photoUrls.length > 0 && (
-                          <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
-                            {item.photoUrls.map((url, i) => (
-                              <div
-                                key={i}
-                                className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-100"
-                              >
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src={url}
-                                  alt={`${item.speciesName} 渔获照片`}
-                                  className="h-full w-full object-cover"
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        
-                        <div className="mt-4 grid gap-3 rounded-xl bg-slate-50/80 p-4 text-sm lg:grid-cols-4">
-                          <DetailRow label="时间" value={formatDateTime(item.caughtAt)} />
-                          <DetailRow label="规格" value={item.sizeText || "-"} />
-                          <DetailRow label="重量" value={item.weightText || "-"} />
-                          <DetailRow label="所用组合" value={item.combo?.name || "-"} />
-                        </div>
-                        
-                        {(item.lureText || item.note) && (
-                          <div className="mt-3 space-y-2 px-1 text-sm">
-                            {item.lureText ? (
-                              <p className="text-slate-600">
-                                <span className="font-medium text-slate-900">
-                                  饵型：
-                                </span>
-                                {item.lureText}
-                              </p>
-                            ) : null}
-                            {item.note ? (
-                              <p className="text-slate-600">
-                                <span className="font-medium text-slate-900">
-                                  备注：
-                                </span>
-                                {item.note}
-                              </p>
-                            ) : null}
-                          </div>
-                        )}
-                      </li>
-                    ))}
-                  </ol>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="space-y-6">
-            <Card className="border-none shadow-md md:rounded-2xl">
-              <CardHeader>
-                <CardTitle>概览</CardTitle>
-                <CardDescription>本次出击的核心数据</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4">
-                  <SummaryItem
-                    label="总渔获"
-                    value={`${trip.totalCatchCount} 尾`}
-                    icon={Fish}
-                  />
-                  <SummaryItem
-                    label="目标鱼种"
-                    value={`${trip.fishSpeciesCount} 种`}
-                    icon={NotebookText}
-                  />
-                  <SummaryItem
-                    label="开始时间"
-                    value={formatDateTime(trip.startTime)}
-                    icon={CalendarDays}
-                  />
-                  <SummaryItem
-                    label="结束时间"
-                    value={formatDateTime(trip.endTime)}
-                    icon={Clock}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-none shadow-md md:rounded-2xl">
-              <CardHeader>
-                <CardTitle>天气记录</CardTitle>
-                <CardDescription>人工录入的天气信息</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4 text-sm">
-                  <DetailRow
-                    label="天气类型"
-                    value={trip.weatherType || "-"}
-                    icon={Wind}
-                  />
-                  <DetailRow
-                    label="体感温度"
-                    value={trip.weatherTemperatureText || "-"}
-                  />
-                  <DetailRow
-                    label="风向风速"
-                    value={trip.weatherWindText || "-"}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-none shadow-md md:rounded-2xl">
-              <CardHeader>
-                <CardTitle>作战记录</CardTitle>
-                <CardDescription>随手记录的灵感、心得或突发状况</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {trip.note ? (
-                  <div className="rounded-xl bg-yellow-50/50 p-4 text-sm leading-6 text-slate-700">
-                    {trip.note}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">暂无补充。</p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+           {/* Right Column: Weather & Details (Desktop) / Bottom (Mobile) */}
+           <div className="space-y-6">
+              {/* Weather Details Card */}
+              <Card className="border-none shadow-sm bg-white">
+                 <CardHeader className="pb-3 border-b border-slate-50">
+                    <CardTitle className="text-base font-medium flex items-center gap-2 text-slate-800">
+                       <Cloud className="size-4 text-slate-500" />
+                       环境信息
+                    </CardTitle>
+                 </CardHeader>
+                 <CardContent className="grid gap-4 pt-4">
+                    <DetailRow label="天气" value={trip.weatherType || "-"} icon={Cloud} />
+                    <DetailRow label="温度" value={trip.weatherTemperatureText || "-"} icon={Thermometer} />
+                    <DetailRow label="风况" value={trip.weatherWindText || "-"} icon={Wind} />
+                 </CardContent>
+              </Card>
+           </div>
         </div>
       </div>
     </div>
   );
 }
 
-function DetailRow({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  icon?: React.ComponentType<{ className?: string }>;
-}) {
+function StatBox({ label, value, unit, color }: { label: string, value: string | number, unit: string, color: string }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl border px-3 py-2 text-sm">
-      {Icon ? <Icon className="size-4 text-muted-foreground" /> : null}
-      <div>
-        <p className="text-xs uppercase tracking-wide text-muted-foreground/70">
-          {label}
-        </p>
-        <p className="text-foreground">{value}</p>
+    <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 flex flex-col items-center justify-center text-center">
+      <div className="text-slate-400 text-xs mb-1">{label}</div>
+      <div className={cn("text-xl md:text-2xl font-bold", color)}>
+        {value} <span className="text-xs font-normal text-slate-500">{unit}</span>
       </div>
     </div>
   );
 }
 
-function SummaryItem({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  icon: React.ComponentType<{ className?: string }>;
-}) {
+function EmptyState({ icon: Icon, text, subtext }: { icon: any, text: string, subtext: string }) {
   return (
-    <div className="flex items-center gap-4 rounded-2xl border px-4 py-3">
-      <div className={cn("rounded-xl p-3", "bg-primary/10 text-primary")}>
-        {Icon ? <Icon className="size-5" /> : null}
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center">
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm">
+        <Icon className="size-6 text-slate-400" />
       </div>
-      <div>
-        <p className="text-xs uppercase tracking-wide text-muted-foreground/70">
-          {label}
-        </p>
-        <p className="text-lg font-semibold">{value}</p>
+      <p className="text-sm font-medium text-slate-900">{text}</p>
+      <p className="mt-1 text-xs text-slate-500">{subtext}</p>
+    </div>
+  );
+}
+
+function CatchCard({ item, index }: { item: any, index: number }) {
+  return (
+    <Card className="border-none shadow-sm overflow-hidden hover:shadow-md transition-all">
+      <div className="flex items-center gap-4 p-4">
+        {/* 照片缩略图 */}
+        {item.photoUrls && item.photoUrls.length > 0 ? (
+          <div className="w-16 h-16 shrink-0 bg-slate-100 rounded-xl relative overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src={item.photoUrls[0]} 
+              alt={item.speciesName} 
+              className="w-full h-full object-cover"
+            />
+            {item.photoUrls.length > 1 && (
+              <div className="absolute bottom-0.5 right-0.5 bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded-full backdrop-blur-sm">
+                +{item.photoUrls.length - 1}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="w-16 h-16 shrink-0 bg-slate-100 rounded-xl flex items-center justify-center">
+            <Fish className="size-6 text-slate-300" />
+          </div>
+        )}
+        
+        {/* 内容 */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-50 text-[10px] font-bold text-blue-600">
+              #{index + 1}
+            </span>
+            <h3 className="text-base font-bold text-slate-900 truncate">{item.speciesName}</h3>
+          </div>
+          {item.note && (
+            <p className="text-xs text-slate-500 mt-1 truncate">{item.note}</p>
+          )}
+        </div>
+
+        {/* 数量 */}
+        <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-0 shrink-0">
+          {item.count} 尾
+        </Badge>
       </div>
+    </Card>
+  );
+}
+
+function GearCard({ combo }: { combo: any }) {
+  return (
+    <Card className="border-none shadow-sm p-4 hover:shadow-md transition-all">
+      <div className="flex justify-between items-start mb-3">
+        <div>
+          <h3 className="font-bold text-slate-900">{combo.name}</h3>
+          {combo.detailNote && (
+            <p className="text-xs text-slate-500 mt-0.5">{combo.detailNote}</p>
+          )}
+        </div>
+      </div>
+      
+      <div className="space-y-2 text-sm bg-slate-50 rounded-xl p-3">
+        <div className="flex justify-between">
+          <span className="text-slate-500 text-xs">竿</span>
+          <span className="font-medium text-slate-800">{combo.rod?.name || "-"}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-slate-500 text-xs">轮</span>
+          <span className="font-medium text-slate-800">{combo.reel?.name || "-"}</span>
+        </div>
+        <div className="flex justify-between pt-2 border-t border-slate-200/50">
+          <span className="text-slate-500 text-xs">线组</span>
+          <span className="text-slate-800 text-xs">
+            主 {combo.mainLineText || "-"} / 前 {combo.leaderLineText || "-"}
+          </span>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function DetailRow({ label, value, icon: Icon }: { label: string, value: string, icon: any }) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2 text-slate-500">
+        <Icon className="size-4" />
+        <span className="text-sm">{label}</span>
+      </div>
+      <span className="text-sm font-medium text-slate-900">{value}</span>
     </div>
   );
 }
@@ -506,49 +384,37 @@ function SummaryItem({
 function TripDetailSkeleton() {
   return (
     <div className="min-h-screen bg-slate-50 pb-24 md:pb-8">
-      <div className="relative overflow-hidden rounded-b-[2.5rem] md:rounded-3xl bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-500 px-6 pt-10 pb-12 shadow-xl">
-        <div className="container relative px-6 space-y-4">
-          <Skeleton className="h-10 w-10 rounded-full bg-white/20" />
-          <Skeleton className="h-8 w-48 bg-white/30" />
-          <Skeleton className="h-4 w-32 bg-white/20" />
-        </div>
-      </div>
-      <div className="container mt-4 space-y-6 px-4">
-        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-          <div className="space-y-4">
-            <Card className="border-none shadow-md md:rounded-2xl">
-              <CardHeader>
-                <Skeleton className="h-5 w-32" />
-                <Skeleton className="mt-2 h-4 w-48" />
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {Array.from({ length: 2 }).map((_, i) => (
-                  <Skeleton key={i} className="h-20 w-full rounded-2xl" />
-                ))}
-              </CardContent>
-            </Card>
-            <Card className="border-none shadow-md md:rounded-2xl">
-              <CardHeader>
-                <Skeleton className="h-5 w-24" />
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {Array.from({ length: 2 }).map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full rounded-2xl" />
-                ))}
-              </CardContent>
-            </Card>
+      <div className="relative overflow-hidden rounded-b-[2.5rem] md:rounded-3xl bg-slate-900 px-6 pt-10 pb-12 shadow-xl h-80">
+        <div className="container max-w-5xl mx-auto px-6 space-y-6">
+          <div className="flex justify-between">
+             <Skeleton className="h-10 w-10 rounded-full bg-white/20" />
+             <div className="flex gap-2">
+                <Skeleton className="h-10 w-10 rounded-full bg-white/20" />
+                <Skeleton className="h-10 w-10 rounded-full bg-white/20" />
+             </div>
           </div>
           <div className="space-y-4">
-            <Card className="border-none shadow-md md:rounded-2xl">
-              <CardHeader>
-                <Skeleton className="h-5 w-20" />
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full rounded-xl" />
-                ))}
-              </CardContent>
-            </Card>
+             <Skeleton className="h-4 w-32 bg-white/20" />
+             <Skeleton className="h-10 w-64 bg-white/30" />
+          </div>
+          <div className="grid grid-cols-4 gap-4 mt-8">
+             <Skeleton className="h-20 w-full bg-white/10 rounded-2xl" />
+             <Skeleton className="h-20 w-full bg-white/10 rounded-2xl" />
+             <Skeleton className="h-20 w-full bg-white/10 rounded-2xl" />
+             <Skeleton className="h-20 w-full bg-white/10 rounded-2xl" />
+          </div>
+        </div>
+      </div>
+      <div className="container max-w-5xl mx-auto mt-6 space-y-6 px-4">
+        <Skeleton className="h-24 w-full rounded-2xl" />
+        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+          <div className="space-y-4">
+             <Skeleton className="h-8 w-32" />
+             <Skeleton className="h-48 w-full rounded-2xl" />
+             <Skeleton className="h-48 w-full rounded-2xl" />
+          </div>
+          <div className="space-y-4">
+             <Skeleton className="h-40 w-full rounded-2xl" />
           </div>
         </div>
       </div>

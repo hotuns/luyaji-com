@@ -32,6 +32,7 @@ interface Trip {
   endTime: string | null;
   weatherType: string | null;
   weatherTemperatureText: string | null;
+  weatherWindText: string | null;
   catches: { count: number; speciesName: string }[];
 }
 
@@ -236,9 +237,13 @@ function TripCard({ trip }: { trip: Trip }) {
               <Thermometer className="w-3.5 h-3.5 text-orange-400" />
               {trip.weatherTemperatureText || "--"}
             </div>
+            <div className="flex items-center gap-1.5">
+              <Wind className="w-3.5 h-3.5 text-slate-400" />
+              {trip.weatherWindText || "--"}
+            </div>
             {durationHours !== null && (
               <div className="flex items-center gap-1.5 ml-auto">
-                <Wind className="w-3.5 h-3.5 text-slate-400" />
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
                 {durationHours}h
               </div>
             )}

@@ -313,21 +313,21 @@ function FishCard({ entry }: { entry: FishDexEntry }) {
 
             {/* 鱼图片 */}
             <div className="my-4 w-24 h-24 md:w-28 md:h-28 flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
-              {isUnlocked ? (
-                entry.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img 
-                    src={entry.imageUrl} 
-                    alt={entry.name} 
-                    className="w-full h-full object-contain drop-shadow-md" 
-                  />
-                ) : (
-                  <Fish className="w-16 h-16 text-blue-300" />
-                )
+              {entry.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img 
+                  src={entry.imageUrl} 
+                  alt={entry.name} 
+                  className={cn(
+                    "w-full h-full object-contain",
+                    isUnlocked ? "drop-shadow-md" : "grayscale opacity-60"
+                  )}
+                />
               ) : (
-                <div className="w-20 h-20 rounded-full bg-slate-200 flex items-center justify-center">
-                  <Fish className="w-10 h-10 text-slate-400 opacity-50" />
-                </div>
+                <Fish className={cn(
+                  "w-16 h-16",
+                  isUnlocked ? "text-blue-300" : "text-slate-400 opacity-50"
+                )} />
               )}
             </div>
 
@@ -337,11 +337,11 @@ function FishCard({ entry }: { entry: FishDexEntry }) {
                 "font-bold text-base truncate px-2",
                 isUnlocked ? "text-slate-800" : "text-slate-400"
               )}>
-                {isUnlocked ? entry.name : "???"}
+                {entry.name}
               </h3>
               
               <p className="text-xs text-slate-400 h-4 truncate px-2">
-                {isUnlocked ? (entry.aliasNames[0] || "") : "未知鱼种"}
+                {entry.aliasNames[0] || ""}
               </p>
 
               {isUnlocked && (
@@ -364,10 +364,11 @@ function FishCard({ entry }: { entry: FishDexEntry }) {
           <div className="relative z-10 flex justify-between items-start">
             <div>
               <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-                {isUnlocked ? entry.name : "未解锁鱼种"}
+                {entry.name}
+                {!isUnlocked && <Lock className="w-5 h-5 text-slate-400" />}
               </DialogTitle>
               <DialogDescription className="text-slate-400 mt-1">
-                {isUnlocked ? (entry.aliasNames.join(" / ") || "暂无别名") : "继续探索水域以解锁该鱼种"}
+                {entry.aliasNames.join(" / ") || "暂无别名"}
               </DialogDescription>
             </div>
             {isUnlocked && (
@@ -381,18 +382,18 @@ function FishCard({ entry }: { entry: FishDexEntry }) {
         <div className="p-6 bg-white">
           {/* 大图展示 */}
           <div className="flex justify-center py-8 mb-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200 relative">
-            {isUnlocked ? (
-              entry.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={entry.imageUrl} alt={entry.name} className="h-40 object-contain drop-shadow-xl" />
-              ) : (
-                <Fish size={80} className="text-blue-200" />
-              )
+            {entry.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img 
+                src={entry.imageUrl} 
+                alt={entry.name} 
+                className={cn(
+                  "h-40 object-contain",
+                  isUnlocked ? "drop-shadow-xl" : "grayscale opacity-60"
+                )}
+              />
             ) : (
-              <div className="flex flex-col items-center gap-3 text-slate-300">
-                <Lock size={48} />
-                <span className="text-sm font-medium">???</span>
-              </div>
+              <Fish size={80} className={isUnlocked ? "text-blue-200" : "text-slate-300"} />
             )}
           </div>
 

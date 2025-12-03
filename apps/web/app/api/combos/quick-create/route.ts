@@ -3,14 +3,22 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-// 快速创建组合的请求验证（同时创建鱼竿和渔轮）
+// 快速创建组合的请求验证（支持选择已有或新建）
 const quickCreateSchema = z.object({
   name: z.string().min(1).max(50),
-  rodName: z.string().min(1).max(50),
-  reelName: z.string().min(1).max(50),
+  rodName: z.string().optional(),
+  rodId: z.string().optional(),
+  reelName: z.string().optional(),
+  reelId: z.string().optional(),
+}).refine((data) => data.rodName || data.rodId, {
+  message: "请提供鱼竿名称或ID",
+  path: ["rodName"],
+}).refine((data) => data.reelName || data.reelId, {
+  message: "请提供渔轮名称或ID",
+  path: ["reelName"],
 });
 
-// POST: 快速创建组合（同时创建鱼竿和渔轮）
+// POST: 快速创建组合
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
@@ -25,35 +33,47 @@ export async function POST(request: NextRequest) {
     const validatedData = quickCreateSchema.parse(body);
     const userId = session.user.id;
 
-    // 在事务中创建鱼竿、渔轮和组合
+    // 在事务中创建/关联鱼竿、渔轮和组合
     const result = await prisma.$transaction(async (tx) => {
-      // 创建鱼竿
-      const rod = await tx.rod.create({
-        data: {
-          userId,
-          name: validatedData.rodName,
-          visibility: "private",
-          sourceType: "user",
-        },
-      });
+      // 处理鱼竿：如果有ID则使用，否则创建
+      let rodId = validatedData.rodId;
+      if (!rodId && validatedData.rodName) {
+        const rod = await tx.rod.create({
+          data: {
+            userId,
+            name: validatedData.rodName,
+            visibility: "private",
+            sourceType: "user",
+          },
+        });
+        rodId = rod.id;
+      }
 
-      // 创建渔轮
-      const reel = await tx.reel.create({
-        data: {
-          userId,
-          name: validatedData.reelName,
-          visibility: "private",
-          sourceType: "user",
-        },
-      });
+      // 处理渔轮：如果有ID则使用，否则创建
+      let reelId = validatedData.reelId;
+      if (!reelId && validatedData.reelName) {
+        const reel = await tx.reel.create({
+          data: {
+            userId,
+            name: validatedData.reelName,
+            visibility: "private",
+            sourceType: "user",
+          },
+        });
+        reelId = reel.id;
+      }
+
+      if (!rodId || !reelId) {
+        throw new Error("无法确定鱼竿或渔轮");
+      }
 
       // 创建组合
       const combo = await tx.combo.create({
         data: {
           userId,
           name: validatedData.name,
-          rodId: rod.id,
-          reelId: reel.id,
+          rodId: rodId,
+          reelId: reelId,
           visibility: "private",
           sourceType: "user",
         },

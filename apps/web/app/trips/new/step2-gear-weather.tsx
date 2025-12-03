@@ -1,6 +1,6 @@
 "use client";
 
-import { TripFormState, WEATHER_TYPES, Combo } from "@/lib/types";
+import { TripFormState, WEATHER_TYPES, Combo, Rod, Reel } from "@/lib/types";
 import { useState, useEffect } from "react";
 
 interface Step2Props {
@@ -240,12 +240,37 @@ function NewComboModal({
   onCreated: (combo: Combo) => void;
 }) {
   const [name, setName] = useState("");
+  const [rodId, setRodId] = useState("");
   const [rodName, setRodName] = useState("");
+  const [reelId, setReelId] = useState("");
   const [reelName, setReelName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [rods, setRods] = useState<Rod[]>([]);
+  const [reels, setReels] = useState<Reel[]>([]);
+
+  // 加载现有装备
+  useEffect(() => {
+    const fetchGear = async () => {
+      try {
+        const [rodsRes, reelsRes] = await Promise.all([
+          fetch("/api/rods"),
+          fetch("/api/reels")
+        ]);
+        const rodsData = await rodsRes.json();
+        const reelsData = await reelsRes.json();
+        
+        if (rodsData.success) setRods(rodsData.data);
+        if (reelsData.success) setReels(reelsData.data);
+      } catch (e) {
+        console.error("Failed to fetch gear", e);
+      }
+    };
+    fetchGear();
+  }, []);
+
   const handleSubmit = async () => {
-    if (!name.trim() || !rodName.trim() || !reelName.trim()) {
+    if (!name.trim() || !rodId || !reelId) {
       alert("请填写完整信息");
       return;
     }
@@ -255,7 +280,13 @@ function NewComboModal({
       const response = await fetch("/api/combos/quick-create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, rodName, reelName }),
+        body: JSON.stringify({ 
+          name, 
+          rodId,
+          rodName,
+          reelId,
+          reelName
+        }),
       });
 
       if (!response.ok) throw new Error("创建失败");
@@ -270,11 +301,11 @@ function NewComboModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
-      <div className="bg-white w-full rounded-t-2xl p-6 animate-slide-up">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center md:justify-center">
+      <div className="bg-white w-full md:w-[480px] md:rounded-2xl rounded-t-2xl p-6 animate-slide-up md:animate-none">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold">新建装备组合</h3>
-          <button onClick={onClose} className="text-slate-400">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <svg
               className="w-6 h-6"
               fill="none"
@@ -301,43 +332,82 @@ function NewComboModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="如：黑鱼专用组合"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              鱼竿名称
-            </label>
-            <input
-              type="text"
-              value={rodName}
-              onChange={(e) => setRodName(e.target.value)}
-              placeholder="如：天元路亚竿 2.1m M调"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              渔轮名称
-            </label>
-            <input
-              type="text"
-              value={reelName}
-              onChange={(e) => setReelName(e.target.value)}
-              placeholder="如：达瓦 LT2500"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl"
-            />
-          </div>
+          
+          <GearSelect
+            label="鱼竿"
+            value={rodId}
+            onChange={(id, name) => {
+              setRodId(id);
+              setRodName(name);
+            }}
+            items={rods}
+            placeholder="请选择鱼竿"
+          />
+
+          <GearSelect
+            label="渔轮"
+            value={reelId}
+            onChange={(id, name) => {
+              setReelId(id);
+              setReelName(name);
+            }}
+            items={reels}
+            placeholder="请选择渔轮"
+          />
         </div>
 
         <button
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="w-full mt-6 py-3 bg-blue-600 text-white rounded-xl font-medium disabled:opacity-50"
+          className="w-full mt-6 py-3 bg-blue-600 text-white rounded-xl font-medium disabled:opacity-50 hover:bg-blue-700 transition-colors"
         >
           {isSubmitting ? "创建中..." : "创建组合"}
         </button>
       </div>
+    </div>
+  );
+}
+
+// 装备选择组件（纯下拉选择）
+function GearSelect({
+  label,
+  value,
+  onChange,
+  items,
+  placeholder
+}: {
+  label: string;
+  value: string;
+  onChange: (id: string, name: string) => void;
+  items: { id: string; name: string }[];
+  placeholder: string;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-700 mb-2">
+        {label}
+      </label>
+      <select
+        value={value}
+        onChange={(e) => {
+          const selected = items.find(item => item.id === e.target.value);
+          if (selected) {
+            onChange(selected.id, selected.name);
+          }
+        }}
+        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white appearance-none"
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '20px' }}
+      >
+        <option value="">{placeholder}</option>
+        {items.map(item => (
+          <option key={item.id} value={item.id}>
+            {item.name}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

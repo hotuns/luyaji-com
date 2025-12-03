@@ -137,6 +137,7 @@ export interface TripFormState {
   // Step1: 基础信息
   title?: string;
   startTime: string; // ISO string
+  endTime?: string; // ISO string, 可选，不填表示"进行中"
   locationName: string;
   locationLat?: number;
   locationLng?: number;

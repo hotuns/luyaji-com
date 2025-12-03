@@ -8,7 +8,7 @@ import { z } from "zod";
 const updateTripSchema = z.object({
   title: z.string().max(50).optional(),
   startTime: z.string().optional(),
-  endTime: z.string().optional(),
+  endTime: z.string().nullable().optional(),
   locationName: z.string().min(1).max(100).optional(),
   locationLat: z.number().optional(),
   locationLng: z.number().optional(),
@@ -105,7 +105,9 @@ export async function PATCH(
     if (payload.locationLng !== undefined) updateData.locationLng = payload.locationLng;
     if (payload.note !== undefined) updateData.note = payload.note;
     if (payload.startTime) updateData.startTime = new Date(payload.startTime);
-    if (payload.endTime) updateData.endTime = new Date(payload.endTime);
+    if (payload.endTime !== undefined) {
+      updateData.endTime = payload.endTime ? new Date(payload.endTime) : null;
+    }
     if (payload.weather) {
       updateData.weatherType = payload.weather.type;
       updateData.weatherTemperatureText = payload.weather.temperatureText;

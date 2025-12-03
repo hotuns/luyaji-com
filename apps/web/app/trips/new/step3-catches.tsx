@@ -160,7 +160,6 @@ export default function Step3Catches({
             type="file"
             ref={fileInputRef}
             accept="image/*"
-            capture="environment"
             onChange={handlePhotoSelect}
             className="hidden"
           />

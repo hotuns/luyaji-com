@@ -7,6 +7,9 @@ import Step1BasicInfo from "../../new/step1-basic-info";
 import Step2GearWeather from "../../new/step2-gear-weather";
 import Step3Catches from "../../new/step3-catches";
 import { X } from "lucide-react";
+import { Button } from "@workspace/ui/components/button";
+import { Skeleton } from "@workspace/ui/components/skeleton";
+import { cn } from "@workspace/ui/lib/utils";
 
 export default function EditTripPage({ params }: { params: Promise<{ tripId: string }> }) {
   const { tripId } = use(params);
@@ -30,6 +33,7 @@ export default function EditTripPage({ params }: { params: Promise<{ tripId: str
         setFormState({
           title: trip.title || "",
           startTime: trip.startTime,
+          endTime: trip.endTime || undefined,
           locationName: trip.locationName,
           note: trip.note || "",
           usedComboIds: trip.combos.map((c: any) => c.id),
@@ -52,7 +56,7 @@ export default function EditTripPage({ params }: { params: Promise<{ tripId: str
         });
       } catch (error) {
         console.error("加载出击详情失败:", error);
-        alert("加载失败，请重试");
+        // alert("加载失败，请重试");
         router.push(`/trips/${tripId}`);
       } finally {
         setIsLoading(false);
@@ -93,6 +97,7 @@ export default function EditTripPage({ params }: { params: Promise<{ tripId: str
         body: JSON.stringify({
           title: formState.title || undefined,
           startTime: formState.startTime,
+          endTime: formState.endTime || null,
           locationName: formState.locationName,
           note: formState.note || undefined,
           usedComboIds: formState.usedComboIds,
@@ -143,77 +148,106 @@ export default function EditTripPage({ params }: { params: Promise<{ tripId: str
   };
 
   if (isLoading || !formState) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
-      </div>
-    );
+    return <EditTripSkeleton />;
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* 顶部导航 */}
-      <header className="sticky top-0 z-10 border-b border-slate-100 bg-white/80 backdrop-blur-md">
-        <div className="flex h-14 items-center justify-between px-4">
-          <button
+    <div className="min-h-screen bg-slate-50 pb-20 md:pb-10">
+      {/* Header */}
+      <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
+          <Button 
+            variant="ghost" 
+            size="icon" 
             onClick={() => router.push(`/trips/${tripId}`)}
-            className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
+            className="text-slate-500 hover:text-slate-900 -ml-2"
           >
-            <X className="h-6 w-6" />
-          </button>
-          <h1 className="text-base font-semibold text-slate-900">
-            编辑出击 ({formState.currentStep}/3)
-          </h1>
-          <div className="w-10" /> {/* 占位，保持标题居中 */}
-        </div>
-        
-        {/* 步骤指示器 */}
-        <div className="flex gap-1.5 px-4 pb-3">
-          {[1, 2, 3].map((step) => (
-            <div
-              key={step}
-              className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                step <= formState.currentStep 
-                  ? "bg-gradient-to-r from-blue-500 to-indigo-500" 
-                  : "bg-slate-100"
-              }`}
-            />
-          ))}
+            <X className="w-6 h-6" />
+          </Button>
+          
+          <div className="flex flex-col items-center">
+            <h1 className="text-base font-bold text-slate-900">编辑出击</h1>
+            <div className="flex gap-1.5 mt-1">
+              {[1, 2, 3].map((step) => (
+                <div
+                  key={step}
+                  className={cn(
+                    "h-1.5 rounded-full transition-all duration-300",
+                    step === formState.currentStep ? "bg-blue-600 w-6" : 
+                    step < formState.currentStep ? "bg-blue-400 w-2" : "bg-slate-200 w-2"
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="w-10" /> {/* Spacer */}
         </div>
       </header>
 
-      {/* 步骤内容 */}
-      <div className="mx-auto max-w-3xl p-4 pb-24">
-        {formState.currentStep === 1 && (
-          <Step1BasicInfo
-            formState={formState}
-            updateForm={updateForm}
-            onNext={nextStep}
-            onCancel={() => router.push(`/trips/${tripId}`)}
-          />
-        )}
-        
-        {formState.currentStep === 2 && (
-          <Step2GearWeather
-            formState={formState}
-            updateForm={updateForm}
-            onNext={nextStep}
-            onPrev={prevStep}
-          />
-        )}
-        
-        {formState.currentStep === 3 && (
-          <Step3Catches
-            formState={formState}
-            catches={formState.catches}
-            addCatch={addCatch}
-            removeCatch={removeCatch}
-            onSubmit={submitTrip}
-            onPrev={prevStep}
-            isSubmitting={isSubmitting}
-          />
-        )}
-      </div>
+      {/* Content */}
+      <main className="max-w-3xl mx-auto p-4 md:p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden p-6 md:p-8">
+          {formState.currentStep === 1 && (
+            <Step1BasicInfo
+              formState={formState}
+              updateForm={updateForm}
+              onNext={nextStep}
+              onCancel={() => router.push(`/trips/${tripId}`)}
+            />
+          )}
+          
+          {formState.currentStep === 2 && (
+            <Step2GearWeather
+              formState={formState}
+              updateForm={updateForm}
+              onNext={nextStep}
+              onPrev={prevStep}
+            />
+          )}
+          
+          {formState.currentStep === 3 && (
+            <Step3Catches
+              formState={formState}
+              catches={formState.catches}
+              addCatch={addCatch}
+              removeCatch={removeCatch}
+              onSubmit={submitTrip}
+              onPrev={prevStep}
+              isSubmitting={isSubmitting}
+            />
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function EditTripSkeleton() {
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <header className="sticky top-0 z-20 bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4">
+        <Skeleton className="w-10 h-10 rounded-full" />
+        <div className="flex flex-col items-center gap-2">
+          <Skeleton className="w-24 h-5" />
+          <div className="flex gap-1">
+            <Skeleton className="w-6 h-1.5 rounded-full" />
+            <Skeleton className="w-2 h-1.5 rounded-full" />
+            <Skeleton className="w-2 h-1.5 rounded-full" />
+          </div>
+        </div>
+        <div className="w-10" />
+      </header>
+      <main className="max-w-3xl mx-auto p-4 md:p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-6">
+          <Skeleton className="w-32 h-6" />
+          <div className="space-y-4">
+            <Skeleton className="w-full h-12 rounded-xl" />
+            <Skeleton className="w-full h-12 rounded-xl" />
+            <Skeleton className="w-full h-32 rounded-xl" />
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

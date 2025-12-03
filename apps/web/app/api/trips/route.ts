@@ -8,6 +8,7 @@ import { z } from "zod";
 const createTripSchema = z.object({
   title: z.string().max(50).optional(),
   startTime: z.string(),
+  endTime: z.string().optional(),
   locationName: z.string().min(1).max(100),
   locationLat: z.number().optional(),
   locationLng: z.number().optional(),
@@ -105,6 +106,7 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         title: validatedData.title,
         startTime: new Date(validatedData.startTime),
+        endTime: validatedData.endTime ? new Date(validatedData.endTime) : null,
         locationName: validatedData.locationName,
         locationLat: validatedData.locationLat,
         locationLng: validatedData.locationLng,
