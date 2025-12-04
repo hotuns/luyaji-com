@@ -73,6 +73,7 @@ export async function GET() {
       sceneTags: Array.isArray(combo.sceneTags) ? (combo.sceneTags as string[]) : null,
       rod: combo.rod,
       reel: combo.reel,
+      photoUrls: Array.isArray(combo.photoUrls) ? (combo.photoUrls as string[]) : null,
     }));
 
     return NextResponse.json({

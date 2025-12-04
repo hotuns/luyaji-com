@@ -20,7 +20,9 @@ import {
   Clock, 
   Trophy,
   ArrowRight,
-  Filter
+  Filter,
+  Share2,
+  Lock
 } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 
@@ -33,6 +35,7 @@ interface Trip {
   weatherType: string | null;
   weatherTemperatureText: string | null;
   weatherWindText: string | null;
+  visibility: "private" | "public";
   catches: { count: number; speciesName: string }[];
 }
 
@@ -193,90 +196,103 @@ function TripCard({ trip }: { trip: Trip }) {
 
   return (
     <Link href={`/trips/${trip.id}`} className="block group h-full">
-      <Card className="h-full border-0 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden bg-white group-hover:-translate-y-1">
+      <Card className="h-full border-0 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden bg-white group-hover:-translate-y-1 flex flex-col">
         <CardContent className="p-0 flex flex-col h-full">
-          {/* 卡片头部：日期与地点 */}
-          <div className="p-5 pb-3">
-            <div className="flex justify-between items-start mb-2">
-              <div className="flex items-center gap-2 text-xs font-medium text-slate-500 bg-slate-50 px-2 py-1 rounded-md">
+          {/* 头部：日期与状态 */}
+          <div className="p-5 pb-2">
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex items-center gap-2 text-xs font-medium text-slate-500 bg-slate-50 px-2.5 py-1 rounded-full">
                 <Calendar className="w-3.5 h-3.5" />
                 {startDate.toLocaleDateString("zh-CN", { month: "long", day: "numeric" })}
                 <span className="w-px h-3 bg-slate-300 mx-1"></span>
                 <Clock className="w-3.5 h-3.5" />
                 {startDate.getHours()}:00
               </div>
-              {isAirForce ? (
-                <Badge variant="outline" className="text-slate-400 border-slate-200 font-normal text-[10px]">
-                  空军
-                </Badge>
-              ) : (
-                <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-0 font-medium text-[10px] gap-1">
-                  <Trophy className="w-3 h-3" />
-                  收获 {totalCatchCount}
-                </Badge>
-              )}
+              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                {trip.visibility === "public" ? (
+                  <Badge className="bg-blue-500/80 text-white border-0 font-normal text-[10px] gap-0.5">
+                    <Share2 className="w-2.5 h-2.5" /> 公开
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="bg-slate-100 text-slate-500 border-0 font-normal text-[10px] gap-0.5">
+                    <Lock className="w-2.5 h-2.5" /> 私有
+                  </Badge>
+                )}
+                {isAirForce ? (
+                  <Badge variant="outline" className="text-slate-400 border-slate-200 font-normal text-[10px]">
+                    空军
+                  </Badge>
+                ) : (
+                  <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-0 font-medium text-[10px] gap-1">
+                    <Trophy className="w-3 h-3" />
+                    收获 {totalCatchCount}
+                  </Badge>
+                )}
+              </div>
             </div>
             
-            <h3 className="font-bold text-lg text-slate-800 mb-1 line-clamp-1 group-hover:text-blue-600 transition-colors">
+            <h3 className="font-bold text-lg text-slate-800 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors leading-snug">
               {trip.title || trip.locationName}
             </h3>
             
-            <div className="flex items-center gap-1 text-sm text-slate-500">
-              <MapPin className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1.5 text-sm text-slate-500 mb-3">
+              <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
               <span className="truncate">{trip.locationName}</span>
             </div>
+
+            {/* 天气与时长 - 紧凑展示 */}
+            <div className="flex flex-wrap gap-3 text-xs text-slate-500 bg-slate-50/50 p-2.5 rounded-lg border border-slate-100/50">
+              <div className="flex items-center gap-1.5">
+                <Cloud className="w-3.5 h-3.5 text-blue-400" />
+                {trip.weatherType || "未知"}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Thermometer className="w-3.5 h-3.5 text-orange-400" />
+                {trip.weatherTemperatureText || "--"}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Wind className="w-3.5 h-3.5 text-slate-400" />
+                {trip.weatherWindText || "--"}
+              </div>
+              {durationHours !== null && (
+                <div className="flex items-center gap-1.5 ml-auto pl-2 border-l border-slate-200">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  {durationHours}h
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* 天气信息条 */}
-          <div className="px-5 py-2 bg-slate-50/50 border-y border-slate-50 flex items-center gap-4 text-xs text-slate-500">
-            <div className="flex items-center gap-1.5">
-              <Cloud className="w-3.5 h-3.5 text-blue-400" />
-              {trip.weatherType || "未知"}
+          {/* 渔获展示区 - 自动换行 */}
+          <div className="p-5 pt-2 mt-auto">
+            <div className="border-t border-slate-50 pt-3">
+              {trip.catches.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {trip.catches.slice(0, 5).map((c, idx) => (
+                    <div 
+                      key={idx} 
+                      className="flex items-center gap-1.5 text-xs font-medium bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full border border-amber-100/50"
+                    >
+                      <Fish className="w-3 h-3" />
+                      <span>{c.speciesName}</span>
+                      <span className="bg-white/60 px-1.5 rounded-full ml-0.5 text-[10px] min-w-[1.25rem] text-center">
+                        {c.count}
+                      </span>
+                    </div>
+                  ))}
+                  {trip.catches.length > 5 && (
+                    <div className="text-xs text-slate-400 flex items-center px-1 bg-slate-50 rounded-full py-1">
+                      +{trip.catches.length - 5}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-xs text-slate-400 italic flex items-center gap-2 opacity-60 py-1">
+                  <Wind className="w-3.5 h-3.5" />
+                  本次出击暂无收获
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-1.5">
-              <Thermometer className="w-3.5 h-3.5 text-orange-400" />
-              {trip.weatherTemperatureText || "--"}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Wind className="w-3.5 h-3.5 text-slate-400" />
-              {trip.weatherWindText || "--"}
-            </div>
-            {durationHours !== null && (
-              <div className="flex items-center gap-1.5 ml-auto">
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
-                {durationHours}h
-              </div>
-            )}
-          </div>
-
-          {/* 渔获展示区 */}
-          <div className="p-5 pt-4 mt-auto">
-            {trip.catches.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {trip.catches.slice(0, 3).map((c, idx) => (
-                  <div 
-                    key={idx} 
-                    className="flex items-center gap-1.5 text-xs font-medium bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full border border-amber-100/50"
-                  >
-                    <Fish className="w-3 h-3" />
-                    <span>{c.speciesName}</span>
-                    <span className="bg-white/60 px-1.5 rounded-full ml-0.5 text-[10px] min-w-[1.25rem] text-center">
-                      {c.count}
-                    </span>
-                  </div>
-                ))}
-                {trip.catches.length > 3 && (
-                  <div className="text-xs text-slate-400 flex items-center px-1">
-                    +{trip.catches.length - 3}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-xs text-slate-400 italic flex items-center gap-2 opacity-60">
-                <Wind className="w-3.5 h-3.5" />
-                本次出击暂无收获，下次加油！
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>

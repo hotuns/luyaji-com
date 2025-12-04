@@ -4,22 +4,24 @@ import { ensureSafeText } from "@/lib/sensitive-words";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+// 预处理：将 null 转换为 undefined
+const nullToUndefined = <T>(val: T | null | undefined): T | undefined => 
+  val === null ? undefined : val;
+
 const baseRodSchema = {
   name: z.string().min(1, "请输入名称").max(60),
-  brand: z.string().max(40).optional(),
-  length: z
-    .number()
-    .positive()
-    .max(10, "长度过大")
-    .transform((value) => Number(value))
-    .optional(),
-  lengthUnit: z.enum(["m", "ft"]).optional(),
-  power: z.string().max(20).optional(),
-  lureWeightMin: z.number().min(0).max(500).optional(),
-  lureWeightMax: z.number().min(0).max(500).optional(),
-  lineWeightText: z.string().max(60).optional(),
-  note: z.string().max(500).optional(),
-  visibility: z.enum(["private", "public"]).optional(),
+  brand: z.preprocess(nullToUndefined, z.string().max(40).optional()),
+  length: z.preprocess(
+    nullToUndefined,
+    z.number().positive().max(10, "长度过大").optional()
+  ),
+  lengthUnit: z.preprocess(nullToUndefined, z.enum(["m", "ft"]).optional()),
+  power: z.preprocess(nullToUndefined, z.string().max(20).optional()),
+  lureWeightMin: z.preprocess(nullToUndefined, z.number().min(0).max(500).optional()),
+  lureWeightMax: z.preprocess(nullToUndefined, z.number().min(0).max(500).optional()),
+  lineWeightText: z.preprocess(nullToUndefined, z.string().max(60).optional()),
+  note: z.preprocess(nullToUndefined, z.string().max(500).optional()),
+  visibility: z.preprocess(nullToUndefined, z.enum(["private", "public"]).optional()),
 };
 
 const createRodSchema = z.object(baseRodSchema);

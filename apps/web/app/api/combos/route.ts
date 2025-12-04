@@ -4,6 +4,10 @@ import { ensureSafeText } from "@/lib/sensitive-words";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+// 预处理：将 null 转换为 undefined
+const nullToUndefined = <T>(val: T | null | undefined): T | undefined => 
+  val === null ? undefined : val;
+
 // GET: 获取用户的装备组合列表
 export async function GET() {
   try {
@@ -39,13 +43,14 @@ const createComboSchema = z.object({
   name: z.string().min(1).max(50),
   rodId: z.string(),
   reelId: z.string(),
-  mainLineText: z.string().optional(),
-  leaderLineText: z.string().optional(),
-  hookText: z.string().optional(),
-  lures: z.array(z.any()).optional(),
-  sceneTags: z.array(z.string()).optional(),
-  detailNote: z.string().optional(),
-  visibility: z.enum(["private", "public"]).optional(),
+  mainLineText: z.preprocess(nullToUndefined, z.string().optional()),
+  leaderLineText: z.preprocess(nullToUndefined, z.string().optional()),
+  hookText: z.preprocess(nullToUndefined, z.string().optional()),
+  lures: z.preprocess(nullToUndefined, z.array(z.any()).optional()),
+  sceneTags: z.preprocess(nullToUndefined, z.array(z.string()).optional()),
+  detailNote: z.preprocess(nullToUndefined, z.string().optional()),
+  visibility: z.preprocess(nullToUndefined, z.enum(["private", "public"]).optional()),
+  photoUrls: z.preprocess(nullToUndefined, z.array(z.string()).optional()),
 });
 
 // POST: 创建新组合
@@ -81,6 +86,7 @@ export async function POST(request: NextRequest) {
         sceneTags: validatedData.sceneTags,
         detailNote: validatedData.detailNote,
         visibility: validatedData.visibility || "private",
+        photoUrls: validatedData.photoUrls,
       },
       include: {
         rod: { select: { id: true, name: true } },

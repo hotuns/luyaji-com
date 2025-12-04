@@ -17,6 +17,7 @@ const getInitialFormState = (): TripFormState => ({
   startTime: new Date().toISOString(),
   locationName: "",
   note: "",
+  visibility: "private",
   usedComboIds: [],
   weatherType: "",
   weatherTemperatureText: "",
@@ -128,6 +129,7 @@ export default function NewTripClient() {
           locationLat: formState.locationLat,
           locationLng: formState.locationLng,
           note: formState.note || undefined,
+          visibility: formState.visibility,
           usedComboIds: formState.usedComboIds,
           weather: {
             type: formState.weatherType || undefined,

@@ -1,39 +1,48 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { deleteOssFiles } from "@/lib/oss";
 import { Prisma } from "@prisma/client";
 import { getTripDetail } from "@/lib/trip-detail";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+// 预处理：将 null 转换为 undefined
+const nullToUndefined = <T>(val: T | null | undefined): T | undefined => 
+  val === null ? undefined : val;
+
 const updateTripSchema = z.object({
-  title: z.string().max(50).optional(),
-  startTime: z.string().optional(),
-  endTime: z.string().nullable().optional(),
-  locationName: z.string().min(1).max(100).optional(),
-  locationLat: z.number().optional(),
-  locationLng: z.number().optional(),
-  note: z.string().optional(),
-  weather: z
-    .object({
-      type: z.string().optional(),
-      temperatureText: z.string().optional(),
-      windText: z.string().optional(),
-    })
-    .optional(),
-  usedComboIds: z.array(z.string()).min(1).optional(),
-  catches: z
-    .array(
+  title: z.preprocess(nullToUndefined, z.string().max(50).optional()),
+  startTime: z.preprocess(nullToUndefined, z.string().optional()),
+  endTime: z.preprocess(nullToUndefined, z.string().nullable().optional()),
+  locationName: z.preprocess(nullToUndefined, z.string().min(1).max(100).optional()),
+  locationLat: z.preprocess(nullToUndefined, z.number().optional()),
+  locationLng: z.preprocess(nullToUndefined, z.number().optional()),
+  note: z.preprocess(nullToUndefined, z.string().optional()),
+  visibility: z.preprocess(nullToUndefined, z.enum(["private", "public"]).optional()),
+  weather: z.preprocess(
+    nullToUndefined,
+    z.object({
+      type: z.preprocess(nullToUndefined, z.string().optional()),
+      temperatureText: z.preprocess(nullToUndefined, z.string().optional()),
+      windText: z.preprocess(nullToUndefined, z.string().optional()),
+    }).optional()
+  ),
+  usedComboIds: z.preprocess(nullToUndefined, z.array(z.string()).min(1).optional()),
+  catches: z.preprocess(
+    nullToUndefined,
+    z.array(
       z.object({
         speciesId: z.string(),
         count: z.number().min(1),
-        sizeText: z.string().optional(),
-        comboId: z.string().optional(),
-        lureText: z.string().optional(),
-        note: z.string().optional(),
-        caughtAt: z.string().optional(),
+        sizeText: z.preprocess(nullToUndefined, z.string().optional()),
+        comboId: z.preprocess(nullToUndefined, z.string().optional()),
+        lureText: z.preprocess(nullToUndefined, z.string().optional()),
+        note: z.preprocess(nullToUndefined, z.string().optional()),
+        caughtAt: z.preprocess(nullToUndefined, z.string().optional()),
+        photoUrls: z.preprocess(nullToUndefined, z.array(z.string()).optional()),
       })
-    )
-    .optional(),
+    ).optional()
+  ),
 });
 
 export async function GET(
@@ -104,6 +113,7 @@ export async function PATCH(
     if (payload.locationLat !== undefined) updateData.locationLat = payload.locationLat;
     if (payload.locationLng !== undefined) updateData.locationLng = payload.locationLng;
     if (payload.note !== undefined) updateData.note = payload.note;
+    if (payload.visibility !== undefined) updateData.visibility = payload.visibility;
     if (payload.startTime) updateData.startTime = new Date(payload.startTime);
     if (payload.endTime !== undefined) {
       updateData.endTime = payload.endTime ? new Date(payload.endTime) : null;
@@ -157,6 +167,7 @@ export async function PATCH(
               comboId: c.comboId,
               lureText: c.lureText,
               note: c.note,
+              photoUrls: c.photoUrls,
             })),
           });
         }
@@ -190,10 +201,24 @@ export async function DELETE(
 
     const existing = await prisma.trip.findFirst({
       where: { id: tripId, userId: session.user.id },
+      include: {
+        catches: { select: { photoUrls: true } },
+      },
     });
 
     if (!existing) {
       return NextResponse.json({ success: false, error: "记录不存在" }, { status: 404 });
+    }
+
+    // 收集所有渔获的图片 URL 并删除
+    const allPhotoUrls: string[] = [];
+    for (const c of existing.catches) {
+      if (c.photoUrls && Array.isArray(c.photoUrls)) {
+        allPhotoUrls.push(...(c.photoUrls as string[]));
+      }
+    }
+    if (allPhotoUrls.length > 0) {
+      await deleteOssFiles(allPhotoUrls);
     }
 
     await prisma.trip.delete({ where: { id: existing.id } });

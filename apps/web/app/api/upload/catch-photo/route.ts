@@ -8,8 +8,10 @@ export const config = {
   },
 };
 
-// 允许的图片类型
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
+// 允许的图片类型（包括 iOS HEIC 格式，前端会转换）
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+// 也检查文件扩展名（有时 blob 类型可能为空）
+const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "heic", "heif"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 const OSS_BUCKET_NAME = process.env.OSS_BUCKET_NAME || "the-weapplyj";
@@ -42,9 +44,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "没有上传文件" }, { status: 400 });
     }
 
-    // 验证文件类型
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ success: false, error: "不支持的文件类型" }, { status: 400 });
+    // 验证文件类型（检查 MIME type 或扩展名）
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    const isValidType = ALLOWED_TYPES.includes(file.type) || ALLOWED_EXTENSIONS.includes(ext);
+    if (!isValidType) {
+      console.log("不支持的文件类型:", file.type, "扩展名:", ext);
+      return NextResponse.json({ success: false, error: `不支持的文件类型: ${file.type || ext}` }, { status: 400 });
     }
 
     // 验证文件大小
@@ -59,8 +64,8 @@ export async function POST(request: NextRequest) {
     // 生成唯一文件名
     const timestamp = Date.now();
     const randomId = Math.random().toString(36).substring(2, 8);
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const objectKey = `catches/${session.user.id}_${timestamp}_${randomId}.${ext}`;
+    const fileExt = ext || "jpg";
+    const objectKey = `catches/${session.user.id}_${timestamp}_${randomId}.${fileExt}`;
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);

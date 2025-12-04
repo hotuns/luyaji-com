@@ -1,19 +1,25 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { deleteOssFiles } from "@/lib/oss";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+// 预处理：将 null 转换为 undefined
+const nullToUndefined = <T>(val: T | null | undefined): T | undefined => 
+  val === null ? undefined : val;
+
 const updateComboSchema = z.object({
-  name: z.string().min(1).max(50).optional(),
-  rodId: z.string().optional(),
-  reelId: z.string().optional(),
-  mainLineText: z.string().optional(),
-  leaderLineText: z.string().optional(),
-  hookText: z.string().optional(),
-  lures: z.array(z.any()).optional(),
-  sceneTags: z.array(z.string()).optional(),
-  detailNote: z.string().optional(),
-  visibility: z.enum(["private", "public"]).optional(),
+  name: z.preprocess(nullToUndefined, z.string().min(1).max(50).optional()),
+  rodId: z.preprocess(nullToUndefined, z.string().optional()),
+  reelId: z.preprocess(nullToUndefined, z.string().optional()),
+  mainLineText: z.preprocess(nullToUndefined, z.string().optional()),
+  leaderLineText: z.preprocess(nullToUndefined, z.string().optional()),
+  hookText: z.preprocess(nullToUndefined, z.string().optional()),
+  lures: z.preprocess(nullToUndefined, z.array(z.any()).optional()),
+  sceneTags: z.preprocess(nullToUndefined, z.array(z.string()).optional()),
+  detailNote: z.preprocess(nullToUndefined, z.string().optional()),
+  visibility: z.preprocess(nullToUndefined, z.enum(["private", "public"]).optional()),
+  photoUrls: z.preprocess(nullToUndefined, z.array(z.string()).optional()),
 });
 
 // 公共：获取单个组合详情（含竿/轮/线/钩信息）
@@ -147,7 +153,7 @@ export async function DELETE(
 
     const existing = await prisma.combo.findFirst({
       where: { id: comboId, userId: session.user.id },
-      select: { id: true },
+      select: { id: true, photoUrls: true },
     });
 
     if (!existing) {
@@ -163,6 +169,11 @@ export async function DELETE(
         { success: false, error: "该组合已有出击记录，无法删除" },
         { status: 400 }
       );
+    }
+
+    // 删除 OSS 图片
+    if (existing.photoUrls && Array.isArray(existing.photoUrls)) {
+      await deleteOssFiles(existing.photoUrls as string[]);
     }
 
     await prisma.combo.delete({ where: { id: existing.id } });

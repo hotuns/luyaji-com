@@ -4,14 +4,18 @@ import { ensureSafeText } from "@/lib/sensitive-words";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+// 预处理：将 null 转换为 undefined
+const nullToUndefined = <T>(val: T | null | undefined): T | undefined => 
+  val === null ? undefined : val;
+
 const updateReelSchema = z.object({
-  name: z.string().min(1).max(60).optional(),
-  brand: z.string().max(40).optional(),
-  model: z.string().max(40).optional(),
-  gearRatioText: z.string().max(30).optional(),
-  lineCapacityText: z.string().max(80).optional(),
-  note: z.string().max(500).optional(),
-  visibility: z.enum(["private", "public"]).optional(),
+  name: z.preprocess(nullToUndefined, z.string().min(1).max(60).optional()),
+  brand: z.preprocess(nullToUndefined, z.string().max(40).optional()),
+  model: z.preprocess(nullToUndefined, z.string().max(40).optional()),
+  gearRatioText: z.preprocess(nullToUndefined, z.string().max(30).optional()),
+  lineCapacityText: z.preprocess(nullToUndefined, z.string().max(80).optional()),
+  note: z.preprocess(nullToUndefined, z.string().max(500).optional()),
+  visibility: z.preprocess(nullToUndefined, z.enum(["private", "public"]).optional()),
 });
 
 export async function PATCH(

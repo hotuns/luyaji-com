@@ -4,37 +4,44 @@ import { ensureSafeText } from "@/lib/sensitive-words";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+// 预处理：将 null 转换为 undefined
+const nullToUndefined = <T>(val: T | null | undefined): T | undefined => 
+  val === null ? undefined : val;
+
 // 创建出击的请求验证
 const createTripSchema = z.object({
-  title: z.string().max(50).optional(),
+  title: z.preprocess(nullToUndefined, z.string().max(50).optional()),
   startTime: z.string(),
-  endTime: z.string().optional(),
+  endTime: z.preprocess(nullToUndefined, z.string().optional()),
   locationName: z.string().min(1).max(100),
-  locationLat: z.number().optional(),
-  locationLng: z.number().optional(),
-  note: z.string().optional(),
+  locationLat: z.preprocess(nullToUndefined, z.number().optional()),
+  locationLng: z.preprocess(nullToUndefined, z.number().optional()),
+  note: z.preprocess(nullToUndefined, z.string().optional()),
+  visibility: z.preprocess(nullToUndefined, z.enum(["private", "public"]).optional()),
   usedComboIds: z.array(z.string()).min(1),
-  weather: z
-    .object({
-      type: z.string().optional(),
-      temperatureText: z.string().optional(),
-      windText: z.string().optional(),
-    })
-    .optional(),
-  catches: z
-    .array(
+  weather: z.preprocess(
+    nullToUndefined,
+    z.object({
+      type: z.preprocess(nullToUndefined, z.string().optional()),
+      temperatureText: z.preprocess(nullToUndefined, z.string().optional()),
+      windText: z.preprocess(nullToUndefined, z.string().optional()),
+    }).optional()
+  ),
+  catches: z.preprocess(
+    nullToUndefined,
+    z.array(
       z.object({
         speciesId: z.string(),
         count: z.number().min(1),
-        sizeText: z.string().optional(),
-        comboId: z.string().optional(),
-        lureText: z.string().optional(),
-        note: z.string().optional(),
-        caughtAt: z.string().optional(),
-        photoUrls: z.array(z.string()).optional(),
+        sizeText: z.preprocess(nullToUndefined, z.string().optional()),
+        comboId: z.preprocess(nullToUndefined, z.string().optional()),
+        lureText: z.preprocess(nullToUndefined, z.string().optional()),
+        note: z.preprocess(nullToUndefined, z.string().optional()),
+        caughtAt: z.preprocess(nullToUndefined, z.string().optional()),
+        photoUrls: z.preprocess(nullToUndefined, z.array(z.string()).optional()),
       })
-    )
-    .optional(),
+    ).optional()
+  ),
 });
 
 // GET: 获取出击列表
@@ -111,6 +118,7 @@ export async function POST(request: NextRequest) {
         locationLat: validatedData.locationLat,
         locationLng: validatedData.locationLng,
         note: validatedData.note,
+        visibility: validatedData.visibility || "private",
         weatherType: validatedData.weather?.type,
         weatherTemperatureText: validatedData.weather?.temperatureText,
         weatherWindText: validatedData.weather?.windText,

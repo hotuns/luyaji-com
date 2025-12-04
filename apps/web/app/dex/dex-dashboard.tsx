@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { FishDexEntry, FishDexPayload } from "@/lib/dex";
 import { cn } from "@workspace/ui/lib/utils";
 import { Card } from "@workspace/ui/components/card";
@@ -30,6 +31,7 @@ import {
   Percent,
   ArrowRight
 } from "lucide-react";
+import { ShareDialog } from "@/components/share-dialog";
 
 const FILTERS = [
   { key: "all", label: "全部" },
@@ -38,10 +40,14 @@ const FILTERS = [
 ];
 
 export function DexDashboard() {
+  const { data: session } = useSession();
   const [data, setData] = useState<FishDexPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]["key"]>("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [showShare, setShowShare] = useState(false);
+
+  const userId = session?.user?.id;
 
   useEffect(() => {
     async function fetchData() {
@@ -80,14 +86,31 @@ export function DexDashboard() {
   }
 
   return (
-    <DexContent 
-      summary={data.summary} 
-      species={data.species} 
-      filter={filter} 
-      setFilter={setFilter}
-      searchTerm={searchTerm}
-      setSearchTerm={setSearchTerm}
-    />
+    <>
+      <DexContent 
+        summary={data.summary} 
+        species={data.species} 
+        filter={filter} 
+        setFilter={setFilter}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        onShare={() => setShowShare(true)}
+      />
+
+      {/* 分享弹窗 */}
+      {userId && (
+        <ShareDialog
+          config={{
+            type: "dex",
+            id: userId,
+            title: "我的路亚图鉴",
+            description: `📚 已解锁 ${data.summary.unlockedSpecies}/${data.summary.totalSpecies} 种鱼`,
+          }}
+          open={showShare}
+          onOpenChange={setShowShare}
+        />
+      )}
+    </>
   );
 }
 
@@ -144,9 +167,10 @@ type DexContentProps = {
   setFilter: (filter: string) => void;
   searchTerm: string;
   setSearchTerm: (term: string) => void;
+  onShare?: () => void;
 };
 
-function DexContent({ summary, species, filter, setFilter, searchTerm, setSearchTerm }: DexContentProps) {
+function DexContent({ summary, species, filter, setFilter, searchTerm, setSearchTerm, onShare }: DexContentProps) {
   const filteredSpecies = useMemo(() => {
     let result = species;
 
@@ -189,21 +213,33 @@ function DexContent({ summary, species, filter, setFilter, searchTerm, setSearch
                 探索未知的鱼种，记录每一次精彩的相遇。
               </p>
             </div>
-            <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
-              <div className="text-center px-2">
-                <div className="text-2xl font-bold text-emerald-400">{summary.unlockedSpecies}</div>
-                <div className="text-xs text-slate-400">已解锁</div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
+                <div className="text-center px-2">
+                  <div className="text-2xl font-bold text-emerald-400">{summary.unlockedSpecies}</div>
+                  <div className="text-xs text-slate-400">已解锁</div>
+                </div>
+                <div className="w-px h-8 bg-white/10"></div>
+                <div className="text-center px-2">
+                  <div className="text-2xl font-bold text-white">{summary.totalSpecies}</div>
+                  <div className="text-xs text-slate-400">总鱼种</div>
+                </div>
+                <div className="w-px h-8 bg-white/10"></div>
+                <div className="text-center px-2">
+                  <div className="text-2xl font-bold text-blue-400">{unlockRate}%</div>
+                  <div className="text-xs text-slate-400">完成度</div>
+                </div>
               </div>
-              <div className="w-px h-8 bg-white/10"></div>
-              <div className="text-center px-2">
-                <div className="text-2xl font-bold text-white">{summary.totalSpecies}</div>
-                <div className="text-xs text-slate-400">总鱼种</div>
-              </div>
-              <div className="w-px h-8 bg-white/10"></div>
-              <div className="text-center px-2">
-                <div className="text-2xl font-bold text-blue-400">{unlockRate}%</div>
-                <div className="text-xs text-slate-400">完成度</div>
-              </div>
+              {onShare && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={onShare}
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-xl"
+                >
+                  <Share2 className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
 

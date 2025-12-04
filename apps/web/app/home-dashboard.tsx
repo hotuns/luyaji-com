@@ -93,7 +93,7 @@ export default function HomeDashboard() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-2xl md:text-3xl font-bold text-slate-800">
-            早安，{userName} 👋
+            你好，{userName} 👋
           </h2>
           <p className="text-slate-500 text-sm mt-1">今天适合去抛两杆吗？</p>
         </div>

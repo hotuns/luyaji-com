@@ -8,6 +8,7 @@ export type TripDetail = {
   note: string | null;
   startTime: string;
   endTime: string | null;
+  visibility: "private" | "public";
   weatherType: string | null;
   weatherTemperatureText: string | null;
   weatherWindText: string | null;
@@ -93,6 +94,7 @@ export async function getTripDetail(userId: string, tripId: string): Promise<Tri
     note: trip.note,
     startTime: trip.startTime.toISOString(),
     endTime: trip.endTime ? trip.endTime.toISOString() : null,
+    visibility: (trip.visibility as "private" | "public") || "private",
     weatherType: trip.weatherType,
     weatherTemperatureText: trip.weatherTemperatureText,
     weatherWindText: trip.weatherWindText,

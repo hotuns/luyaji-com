@@ -103,16 +103,27 @@ export function GearLibraryDashboard() {
 	}
 
 	async function handleCopy(type: "rod" | "reel", id: string) {
-		const res = await fetch(
-			`/api/gear-library/copy/${type === "rod" ? "rod" : "reel"}/${id}`,
-			{ method: "POST" },
-		);
-		const json = await res.json();
-		if (!json.success) {
-			alert(json.error || "复制失败，请稍后重试");
-			return;
+		const label = type === "rod" ? "鱼竿" : "渔轮";
+
+		const ok = confirm(`确定要将这个${label}复制到「我的装备」吗？`);
+		if (!ok) return;
+
+		try {
+			const res = await fetch(
+				`/api/gear-library/copy/${type}/${id}`,
+				{ method: "POST" },
+			);
+			const json = await res.json();
+
+			if (!res.ok || !json.success) {
+				alert(json.error || `复制${label}失败，请稍后重试`);
+				return;
+			}
+
+			alert(`已复制到你的「我的装备」中，可以在装备页面查看并编辑。`);
+		} catch {
+			alert(`网络异常，复制${label}失败，请稍后重试`);
 		}
-		alert("已复制到你的装备中，可在“我的装备”里查看");
 	}
 
 	const items =

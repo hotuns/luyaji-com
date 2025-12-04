@@ -156,6 +156,39 @@ export default function Step1BasicInfo({
         />
       </div>
 
+      {/* 公开设置 */}
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          可见性
+        </label>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => updateForm({ visibility: "private" })}
+            className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all ${
+              formState.visibility === "private"
+                ? "border-blue-500 bg-blue-50 text-blue-700"
+                : "border-slate-200 text-slate-600 hover:border-slate-300"
+            }`}
+          >
+            <div className="font-medium">🔒 私有</div>
+            <div className="text-xs text-slate-500 mt-0.5">仅自己可见</div>
+          </button>
+          <button
+            type="button"
+            onClick={() => updateForm({ visibility: "public" })}
+            className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all ${
+              formState.visibility === "public"
+                ? "border-blue-500 bg-blue-50 text-blue-700"
+                : "border-slate-200 text-slate-600 hover:border-slate-300"
+            }`}
+          >
+            <div className="font-medium">🌐 公开</div>
+            <div className="text-xs text-slate-500 mt-0.5">可分享给好友</div>
+          </button>
+        </div>
+      </div>
+
       {/* 错误提示 */}
       {error && (
         <p className="text-sm text-red-500 text-center">{error}</p>

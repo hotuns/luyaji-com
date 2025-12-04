@@ -1,8 +1,9 @@
 "use client";
 
 import { TripFormState, TripCatchDraft, FishSpecies } from "@/lib/types";
+import { processImageForUpload } from "@/lib/image-utils";
 import { useState, useEffect, useRef } from "react";
-import { Camera, X, Loader2 } from "lucide-react";
+import { Camera, X, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 
 interface Step3Props {
   formState: TripFormState;
@@ -15,6 +16,7 @@ interface Step3Props {
 }
 
 export default function Step3Catches({
+  formState,
   catches,
   addCatch,
   removeCatch,
@@ -27,35 +29,73 @@ export default function Step3Catches({
   const [count, setCount] = useState(1);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "compressing" | "uploading">("idle");
+  const isUploading = uploadStatus !== "idle";
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [caughtAt] = useState<string>(() => new Date().toISOString());
+  
+  // 新增的可选字段
+  const [sizeText, setSizeText] = useState("");
+  const [selectedComboId, setSelectedComboId] = useState("");
+  const [lureText, setLureText] = useState("");
+  const [note, setNote] = useState("");
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  
+  // 获取组合信息用于显示名称
+  const [combosMap, setCombosMap] = useState<Record<string, string>>({});
+  
+  useEffect(() => {
+    if (formState.usedComboIds.length > 0) {
+      fetch("/api/combos", { cache: "no-store" })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.data) {
+            const map: Record<string, string> = {};
+            data.data.forEach((combo: { id: string; name: string }) => {
+              if (formState.usedComboIds.includes(combo.id)) {
+                map[combo.id] = combo.name;
+              }
+            });
+            setCombosMap(map);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [formState.usedComboIds]);
 
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
     try {
+      // 阶段1: 压缩图片
+      setUploadStatus("compressing");
+      const { blob, filename } = await processImageForUpload(file);
+
+      // 阶段2: 上传到服务器
+      setUploadStatus("uploading");
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", blob, filename);
 
       const res = await fetch("/api/upload/catch-photo", {
         method: "POST",
         body: formData,
       });
       const data = await res.json();
+      console.log("照片上传响应:", data);
 
-      if (data.success) {
+      if (data.success && data.data?.url) {
+        console.log("设置照片URL:", data.data.url);
         setPhotoUrl(data.data.url);
       } else {
+        console.error("照片上传失败:", data);
         alert(data.error || "上传失败");
       }
     } catch (error) {
       console.error("上传失败:", error);
       alert("上传失败，请重试");
     } finally {
-      setIsUploading(false);
+      setUploadStatus("idle");
       // 清空 input 以便重复选择相同文件
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -66,6 +106,8 @@ export default function Step3Catches({
   const handleAddCatch = () => {
     if (!selectedSpecies) return;
 
+    console.log("添加渔获时的 photoUrl:", photoUrl);
+    
     const newCatch: TripCatchDraft = {
       id: `temp_${Date.now()}`,
       speciesId: selectedSpecies.id,
@@ -73,12 +115,24 @@ export default function Step3Catches({
       count,
       caughtAt,
       photoUrls: photoUrl ? [photoUrl] : undefined,
+      sizeText: sizeText.trim() || undefined,
+      comboId: selectedComboId || undefined,
+      lureText: lureText.trim() || undefined,
+      note: note.trim() || undefined,
     };
+    
+    console.log("创建的渔获对象:", newCatch);
 
     addCatch(newCatch);
+    // 重置所有表单字段
     setSelectedSpecies(null);
     setCount(1);
     setPhotoUrl(null);
+    setSizeText("");
+    setSelectedComboId("");
+    setLureText("");
+    setNote("");
+    setShowMoreOptions(false);
   };
 
   const handleSubmit = () => {
@@ -184,8 +238,16 @@ export default function Step3Catches({
               disabled={isUploading}
               className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-colors disabled:opacity-50"
             >
-              {isUploading ? (
-                <Loader2 size={24} className="animate-spin" />
+              {uploadStatus === "compressing" ? (
+                <>
+                  <Loader2 size={24} className="animate-spin" />
+                  <span className="text-xs mt-1">压缩中...</span>
+                </>
+              ) : uploadStatus === "uploading" ? (
+                <>
+                  <Loader2 size={24} className="animate-spin" />
+                  <span className="text-xs mt-1">上传中...</span>
+                </>
               ) : (
                 <>
                   <Camera size={24} />
@@ -196,13 +258,102 @@ export default function Step3Catches({
           )}
         </div>
 
+        {/* 更多选项折叠区 */}
+        <button
+          type="button"
+          onClick={() => setShowMoreOptions(!showMoreOptions)}
+          className="flex items-center justify-center gap-1 w-full py-2 text-sm text-slate-500 hover:text-slate-700"
+        >
+          {showMoreOptions ? (
+            <>
+              <ChevronUp size={16} />
+              收起详细信息
+            </>
+          ) : (
+            <>
+              <ChevronDown size={16} />
+              填写更多信息（尺寸、装备、假饵等）
+            </>
+          )}
+        </button>
+
+        {showMoreOptions && (
+          <div className="space-y-4 pt-2 border-t border-slate-200">
+            {/* 尺寸 */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                尺寸 <span className="text-slate-400 font-normal">（可选）</span>
+              </label>
+              <input
+                type="text"
+                value={sizeText}
+                onChange={(e) => setSizeText(e.target.value)}
+                placeholder="例如：35cm、2斤半"
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              />
+            </div>
+
+            {/* 使用的组合 */}
+            {formState.usedComboIds.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  使用的装备 <span className="text-slate-400 font-normal">（可选）</span>
+                </label>
+                <select
+                  value={selectedComboId}
+                  onChange={(e) => setSelectedComboId(e.target.value)}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                >
+                  <option value="">不指定</option>
+                  {formState.usedComboIds.map((comboId) => (
+                    <option key={comboId} value={comboId}>
+                      {combosMap[comboId] || comboId}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-slate-400 mt-1">
+                  选择这条鱼是用哪套装备钓上来的
+                </p>
+              </div>
+            )}
+
+            {/* 假饵 */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                使用假饵 <span className="text-slate-400 font-normal">（可选）</span>
+              </label>
+              <input
+                type="text"
+                value={lureText}
+                onChange={(e) => setLureText(e.target.value)}
+                placeholder="例如：7cm 米诺、3.5g 亮片"
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              />
+            </div>
+
+            {/* 备注 */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                备注 <span className="text-slate-400 font-normal">（可选）</span>
+              </label>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="记录这条鱼的特别之处..."
+                rows={2}
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+              />
+            </div>
+          </div>
+        )}
+
         {/* 添加按钮 */}
         <button
           onClick={handleAddCatch}
-          disabled={!selectedSpecies}
+          disabled={!selectedSpecies || isUploading}
           className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          添加渔获
+          {isUploading ? "上传中..." : "添加渔获"}
         </button>
       </div>
 
@@ -235,11 +386,27 @@ export default function Step3Catches({
                     />
                   </div>
                 )}
-                <div className="flex-1">
-                  <span className="font-medium text-slate-900">
-                    {item.speciesName}
-                  </span>
-                  <span className="text-slate-500 ml-2">× {item.count}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-slate-900">
+                      {item.speciesName}
+                    </span>
+                    <span className="text-slate-500">× {item.count}</span>
+                    {item.sizeText && (
+                      <span className="text-xs text-slate-400">({item.sizeText})</span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-1 text-xs text-slate-400">
+                    {item.comboId && combosMap[item.comboId] && (
+                      <span>🎣 {combosMap[item.comboId]}</span>
+                    )}
+                    {item.lureText && (
+                      <span>🪝 {item.lureText}</span>
+                    )}
+                  </div>
+                  {item.note && (
+                    <p className="text-xs text-slate-400 mt-1 truncate">{item.note}</p>
+                  )}
                 </div>
                 <button
                   onClick={() => {
@@ -281,10 +448,10 @@ export default function Step3Catches({
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isUploading}
           className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-medium disabled:opacity-50"
         >
-          {isSubmitting ? "提交中..." : "完成出击"}
+          {isUploading ? "上传中..." : isSubmitting ? "提交中..." : "完成出击"}
         </button>
       </div>
 

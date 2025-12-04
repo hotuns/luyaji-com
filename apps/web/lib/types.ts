@@ -142,6 +142,7 @@ export interface TripFormState {
   locationLat?: number;
   locationLng?: number;
   note?: string;
+  visibility: "private" | "public"; // 可见性
 
   // Step2: 装备组合 & 天气
   usedComboIds: string[];
