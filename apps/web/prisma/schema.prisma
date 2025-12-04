@@ -310,3 +310,18 @@ model Announcement {
   @@index([showAsBanner, isActive])
   @@map("announcements")
 }
+
+// ==================== 短链接 ====================
+
+// 短链接表
+model ShortLink {
+  id         String   @id @default(uuid())
+  code       String   @unique // 短码，6-8位字母数字
+  targetType String   // trip | combo | dex
+  targetId   String   // 目标资源ID
+  createdAt  DateTime @default(now())
+  clickCount Int      @default(0) // 点击统计
+
+  @@index([targetType, targetId])
+  @@map("short_links")
+}

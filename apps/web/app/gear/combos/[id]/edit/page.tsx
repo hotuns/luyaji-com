@@ -3,14 +3,15 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ComboEditClient } from "./combo-edit-client";
 
-export default async function ComboEditPage({ params }: { params: { id: string } }) {
+export default async function ComboEditPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/auth/signin");
   }
 
   const combo = await prisma.combo.findUnique({
-    where: { id: params.id, userId: session.user.id },
+    where: { id: id, userId: session.user.id },
     include: {
       rod: true,
       reel: true,

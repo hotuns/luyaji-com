@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { Share2, Copy, Check, Link2, MessageCircle } from "lucide-react";
+import { Share2, Copy, Check, Link2, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@workspace/ui/components/dialog";
@@ -37,16 +36,34 @@ interface ShareDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-// 生成分享链接
-function getShareUrl(config: ShareConfig): string {
+// 生成短链接
+async function getShortUrl(config: ShareConfig): Promise<string> {
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+  
+  try {
+    const res = await fetch("/api/short-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        targetType: config.type,
+        targetId: config.id,
+      }),
+    });
+    
+    const data = await res.json();
+    if (data.success && data.data?.code) {
+      return `${baseUrl}/s/${data.data.code}`;
+    }
+  } catch (error) {
+    console.error("获取短链接失败:", error);
+  }
+  
+  // 降级到完整链接
   return `${baseUrl}/share/${config.type}/${config.id}`;
 }
 
-// 生成默认分享文案
-function getDefaultShareText(config: ShareConfig): string {
-  const url = getShareUrl(config);
-  
+// 生成默认分享文案（使用占位符，后续替换）
+function getDefaultShareText(config: ShareConfig, url: string): string {
   switch (config.type) {
     case "combo":
       return `🎣 我的路亚装备组合「${config.title}」\n${config.description || ""}\n\n👉 点击查看详情：${url}`;
@@ -59,11 +76,13 @@ function getDefaultShareText(config: ShareConfig): string {
   }
 }
 
-export function useShareConfig(type: ShareConfig['type'], data: any): ShareConfig {
+export function useShareConfig(type: ShareConfig['type'], data: Record<string, unknown>): ShareConfig {
   return useMemo(() => {
     if (type === "combo") {
-      const rodName = data.rod?.name || "未知鱼竿";
-      const reelName = data.reel?.name || "未知渔轮";
+      const rod = data.rod as { name?: string } | undefined;
+      const reel = data.reel as { name?: string } | undefined;
+      const rodName = rod?.name || "未知鱼竿";
+      const reelName = reel?.name || "未知渔轮";
       const lineInfo = [
         data.mainLineText ? `主线 ${data.mainLineText}` : "",
         data.leaderLineText ? `子线 ${data.leaderLineText}` : ""
@@ -71,23 +90,23 @@ export function useShareConfig(type: ShareConfig['type'], data: any): ShareConfi
       
       return {
         type,
-        id: data.id,
-        title: data.name,
+        id: data.id as string,
+        title: data.name as string,
         description: `${rodName} + ${reelName}${lineInfo ? `\n${lineInfo}` : ""}`,
-        imageUrl: data.photoUrls?.[0],
+        imageUrl: (data.photoUrls as string[] | undefined)?.[0],
       };
     }
     
     // Default fallback for other types or direct passing
     return {
       type,
-      id: data.id,
-      title: data.title || "分享",
-      description: data.description,
-      imageUrl: data.imageUrl,
-      defaultText: data.defaultText,
+      id: data.id as string,
+      title: (data.title as string) || "分享",
+      description: data.description as string | undefined,
+      imageUrl: data.imageUrl as string | undefined,
+      defaultText: data.defaultText as string | undefined,
     };
-  }, [type, JSON.stringify(data)]);
+  }, [type, data.id, data.name, data.title, data.description, data.imageUrl, data.photoUrls, data.mainLineText, data.leaderLineText, data.rod, data.reel]);
 }
 
 export function ShareDialog({ config, trigger, className, open: controlledOpen, onOpenChange }: ShareDialogProps) {
@@ -98,16 +117,27 @@ export function ShareDialog({ config, trigger, className, open: controlledOpen, 
   
   const [copied, setCopied] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [shareText, setShareText] = useState(() => 
-    config.defaultText || getDefaultShareText(config)
-  );
+  const [shareUrl, setShareUrl] = useState<string>("");
+  const [shareText, setShareText] = useState<string>("");
+  const [loading, setLoading] = useState(false);
 
-  // 当 config 变化时重置文案
+  // 当弹窗打开时获取短链接
   useEffect(() => {
-    setShareText(config.defaultText || getDefaultShareText(config));
-  }, [config.id, config.title, config.description, config.defaultText]);
+    if (open && !shareUrl) {
+      setLoading(true);
+      getShortUrl(config).then((url) => {
+        setShareUrl(url);
+        setShareText(config.defaultText || getDefaultShareText(config, url));
+        setLoading(false);
+      });
+    }
+  }, [open, config, shareUrl]);
 
-  const shareUrl = getShareUrl(config);
+  // 当 config 变化时重置
+  useEffect(() => {
+    setShareUrl("");
+    setShareText("");
+  }, [config.id]);
 
   // 复制文案+链接
   const handleCopyText = useCallback(async () => {
@@ -185,12 +215,20 @@ export function ShareDialog({ config, trigger, className, open: controlledOpen, 
             <label className="text-xs font-medium text-slate-500 ml-1">分享链接</label>
             <div className="flex gap-2">
               <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-600 truncate font-mono">
-                {shareUrl}
+                {loading ? (
+                  <span className="text-slate-400 flex items-center gap-2">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    生成中...
+                  </span>
+                ) : (
+                  shareUrl
+                )}
               </div>
               <Button 
                 variant="outline" 
                 size="icon" 
                 onClick={handleCopyLink}
+                disabled={loading}
                 className={cn("flex-shrink-0 transition-all", linkCopied && "text-green-600 border-green-200 bg-green-50")}
               >
                 {linkCopied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
@@ -205,6 +243,7 @@ export function ShareDialog({ config, trigger, className, open: controlledOpen, 
               value={shareText}
               onChange={(e) => setShareText(e.target.value)}
               className="min-h-[100px] text-sm resize-none bg-slate-50 border-slate-200 focus:border-blue-500 focus:ring-blue-500/20"
+              disabled={loading}
             />
           </div>
 
@@ -212,8 +251,13 @@ export function ShareDialog({ config, trigger, className, open: controlledOpen, 
           <Button 
             className={cn("w-full rounded-xl h-11 font-medium shadow-lg shadow-blue-500/20 transition-all", copied ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700")}
             onClick={handleCopyText}
+            disabled={loading}
           >
-            {copied ? (
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> 准备中...
+              </>
+            ) : copied ? (
               <>
                 <Check className="w-4 h-4 mr-2" /> 已复制全部内容
               </>
