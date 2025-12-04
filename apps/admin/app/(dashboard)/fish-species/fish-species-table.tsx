@@ -10,7 +10,6 @@ import {
   Space,
   Table,
   Tag,
-  Typography,
   Switch,
   Popconfirm,
   message,
@@ -199,6 +198,7 @@ export function FishSpeciesTable({
             {
               title: "鱼种",
               dataIndex: "name",
+              sorter: (a: FishSpecies, b: FishSpecies) => a.name.localeCompare(b.name),
               render: (_: unknown, record: FishSpecies) => (
                 <Space>
                   {record.imageUrl ? (
@@ -218,6 +218,7 @@ export function FishSpeciesTable({
             {
               title: "学名",
               dataIndex: "latinName",
+              sorter: (a: FishSpecies, b: FishSpecies) => (a.latinName || "").localeCompare(b.latinName || ""),
               render: (value: string | null) => value || "-",
             },
             {
@@ -240,18 +241,30 @@ export function FishSpeciesTable({
             {
               title: "栖息地",
               dataIndex: "habitatType",
+              filters: [
+                { text: "淡水", value: "fresh" },
+                { text: "咸水", value: "salt" },
+                { text: "两栖", value: "both" },
+              ],
+              onFilter: (value: unknown, record: FishSpecies) => record.habitatType === value,
               render: (value: string | null) => getHabitatLabel(value),
             },
             {
               title: "捕获次数",
               dataIndex: ["_count", "catches"],
               align: "center",
+              sorter: (a: FishSpecies, b: FishSpecies) => a._count.catches - b._count.catches,
               render: (value: number) => <Tag color="default">{value}</Tag>,
             },
             {
               title: "状态",
               dataIndex: "isActive",
               align: "center",
+              filters: [
+                { text: "启用", value: true },
+                { text: "禁用", value: false },
+              ],
+              onFilter: (value: unknown, record: FishSpecies) => record.isActive === value,
               render: (_: boolean, record: FishSpecies) => (
                 <Switch
                   checkedChildren={<EyeOutlined />}

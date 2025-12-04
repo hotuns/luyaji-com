@@ -1,31 +1,184 @@
-# shadcn/ui monorepo template
+# 路亚记 (Luyaji)
 
-This template is for creating a monorepo with shadcn/ui.
+钓鱼记录与装备管理应用 - 基于 Next.js 15 + Prisma + Monorepo 架构
 
-## Usage
+## 项目结构
 
-```bash
-pnpm dlx shadcn@latest init
+```
+apps/
+  web/     # 用户端 (移动端优先)
+  admin/   # 管理后台 (Ant Design)
+packages/
+  ui/      # 共享 UI 组件库 (shadcn/ui)
+  eslint-config/
+  typescript-config/
 ```
 
-## Adding components
+---
 
-To add components to your app, run the following command at the root of your `web` app:
+## 📱 Web 端功能 (apps/web)
+
+### 首页
+- 欢迎问候语 & 数据概览卡片
+- 出击次数、渔获数量、图鉴解锁进度
+- 最近出击记录快捷入口
+- 公告横幅 & 公告列表
+- 快捷操作：新增出击、装备管理
+
+### 出击记录 (`/trips`)
+- **出击列表**：卡片展示，显示地点、天气、渔获、时间
+- **新建出击** (`/trips/new`)：
+  - 地图选点 (高德地图)
+  - 自动获取天气信息
+  - 填写标题、时间范围
+- **出击详情** (`/trips/[tripId]`)：
+  - 地点信息 & 天气数据
+  - 渔获列表 (支持增删改)
+  - 编辑出击信息
+  - 分享功能
+- **地图视图** (`/trips/map`)：在地图上查看所有出击点
+
+### 装备管理 (`/gear`)
+- **鱼竿管理**：添加/编辑鱼竿，记录品牌、长度、硬度、饵重等
+- **渔轮管理**：添加/编辑渔轮，记录品牌、型号、速比、线容量等
+- **组合管理** (`/gear/combos`)：
+  - 创建装备组合 (竿 + 轮 + 线组)
+  - 组合详情 & 编辑
+  - 公开/私有可见性设置
+- **装备库** (`/square`)：
+  - 浏览公开的装备组合
+  - 一键复制组合到自己的装备库
+  - 搜索 & 筛选
+
+### 图鉴 (`/dex`)
+- 已解锁鱼种列表 (按时间/名称排序)
+- 图鉴解锁进度统计
+- 鱼种详情 (图片、学名、别名、栖息地)
+
+### 钓鱼报告 (`/stats/report`)
+- **数据概览**：出击次数、总渔获、解锁鱼种、成功率、场均渔获
+- **时间筛选**：本月/近3月/今年/全部时间
+- **亮点时刻**：最佳单次出击、精彩渔获
+- **出击趋势**：按月统计的渔获和出击次数可视化
+- **排行榜**：
+  - 鱼种排行 (Top 10)
+  - 常去钓点 (Top 10)
+  - 常用装备 (Top 10)
+- **天气分布**：不同天气的出击次数统计
+
+### 个人中心 (`/profile`)
+- 用户信息展示 (头像、昵称、手机号)
+- 编辑资料 (修改头像、昵称)
+- 钓鱼报告入口
+- 退出登录
+
+### 分享功能
+- **分享页面**：
+  - 出击分享 (`/share/trip/[id]`)
+  - 组合分享 (`/share/combo/[id]`)
+  - 图鉴分享 (`/share/dex/[id]`)
+- **短链接** (`/s/[code]`)：生成易分享的短链接
+
+### 认证
+- 手机号 + 验证码登录 (`/auth/signin`)
+- 新用户自动注册 (`/auth/register`)
+- 验证码发送 & 校验 (`/auth/verify`)
+
+---
+
+## 🖥️ Admin 后台功能 (apps/admin)
+
+### 仪表盘 (`/dashboard`)
+- 总用户数、今日新增
+- 出击总数、渔获总数
+- 装备统计 (竿/轮/组合)
+
+### 数据分析 (`/analytics`)
+- **今日概览**：PV、UV、活跃用户、留存率
+- **累计数据**：选定时间范围内的访问统计
+- **业务数据**：新增出击、渔获、组合
+- **访问趋势**：每日 PV/UV 图表
+- **热门页面**：Top 10 页面访问量
+- **设备分布**：桌面/移动/平板
+- **浏览器分布**：各浏览器占比
+
+### 用户管理 (`/users`)
+- 用户列表 (分页、搜索)
+- 排序：昵称、出击数、渔获数、注册时间
+- 过滤：角色 (管理员/普通)、状态 (正常/封禁)
+- 操作：设为管理员、封禁/解封、删除
+
+### 出击记录 (`/trips`)
+- 出击列表 (分页、搜索)
+- 排序：标题、用户、渔获数、时间
+- 过滤：天气类型、可见性
+
+### 鱼种管理 (`/fish-species`)
+- 鱼种列表 (搜索)
+- 新增/编辑鱼种 (名称、学名、别名、栖息地、图片)
+- 排序：名称、学名、捕获次数
+- 过滤：栖息地、启用状态
+- 启用/禁用鱼种
+
+### 装备管理 (`/gear`)
+- **鱼竿 Tab**：排序 (名称/品牌/组合数)、过滤 (可见性)
+- **渔轮 Tab**：排序 (名称/品牌/型号/组合数)、过滤 (可见性)
+- **组合 Tab**：排序 (名称/鱼竿/渔轮/用户)、过滤 (可见性)
+- **快速录入模板**：创建官方装备模板供用户复制
+
+### 公告管理 (`/announcements`)
+- 公告列表
+- 新增/编辑公告 (标题、内容)
+- 发布/撤回公告
+- 设置为首页横幅
+
+### 系统设置 (`/settings`)
+- 基础配置项
+
+---
+
+## 🛠️ 技术栈
+
+- **框架**: Next.js 15 (App Router)
+- **数据库**: MySQL + Prisma ORM
+- **UI**: 
+  - Web: shadcn/ui + Tailwind CSS
+  - Admin: Ant Design
+- **认证**: NextAuth.js (Credentials)
+- **地图**: 高德地图 Web API
+- **部署**: Docker + Docker Compose
+
+---
+
+## 开发命令
 
 ```bash
+# 安装依赖
+pnpm install
+
+# 启动开发服务器
+pnpm dev
+
+# 构建
+pnpm build
+
+# 添加 UI 组件
 pnpm dlx shadcn@latest add button -c apps/web
+
+# 数据库迁移
+cd apps/web && pnpm prisma migrate dev
+
+# 生成 Prisma Client
+pnpm prisma generate
 ```
 
-This will place the ui components in the `packages/ui/src/components` directory.
+## Docker 部署
 
-## Tailwind
+```bash
+# 构建镜像
+./scripts/docker-build.sh web
+./scripts/docker-build.sh admin
 
-Your `tailwind.config.ts` and `globals.css` are already set up to use the components from the `ui` package.
-
-## Using components
-
-To use the components in your app, import them from the `ui` package.
-
-```tsx
-import { Button } from "@workspace/ui/components/button"
+# 启动服务
+docker-compose up -d
 ```

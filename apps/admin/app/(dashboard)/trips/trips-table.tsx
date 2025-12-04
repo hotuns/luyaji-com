@@ -89,6 +89,8 @@ export function TripsTable({
             {
               title: "标题/地点",
               dataIndex: "title",
+              sorter: (a: TripWithMeta, b: TripWithMeta) => 
+                (a.title || a.locationName).localeCompare(b.title || b.locationName),
               render: (_: unknown, record: TripWithMeta) => (
                 <div>
                   <div style={{ fontWeight: 500 }}>{record.title || record.locationName}</div>
@@ -104,12 +106,15 @@ export function TripsTable({
             {
               title: "用户",
               dataIndex: ["user", "nickname"],
+              sorter: (a: TripWithMeta, b: TripWithMeta) => 
+                (a.user.nickname || "").localeCompare(b.user.nickname || ""),
               render: (_: unknown, record: TripWithMeta) => record.user.nickname || maskPhone(record.user.phone),
             },
             {
               title: "渔获",
               dataIndex: ["_count", "catches"],
               align: "center",
+              sorter: (a: TripWithMeta, b: TripWithMeta) => a._count.catches - b._count.catches,
               render: (value: number) => (
                 <Tag color={value > 0 ? "green" : undefined}>{value}</Tag>
               ),
@@ -117,12 +122,24 @@ export function TripsTable({
             {
               title: "天气",
               dataIndex: "weatherType",
+              filters: [
+                { text: "晴", value: "晴" },
+                { text: "多云", value: "多云" },
+                { text: "阴", value: "阴" },
+                { text: "小雨", value: "小雨" },
+                { text: "中雨", value: "中雨" },
+                { text: "大雨", value: "大雨" },
+              ],
+              onFilter: (value: unknown, record: TripWithMeta) => record.weatherType === value,
               render: (_: unknown, record: TripWithMeta) =>
                 [record.weatherType, record.weatherTemperatureText].filter(Boolean).join(" / ") || "-",
             },
             {
               title: "出击时间",
               dataIndex: "startTime",
+              sorter: (a: TripWithMeta, b: TripWithMeta) => 
+                new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
+              defaultSortOrder: "descend",
               render: (value: Date) => (
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <CalendarOutlined />
@@ -133,6 +150,11 @@ export function TripsTable({
             {
               title: "可见性",
               dataIndex: "visibility",
+              filters: [
+                { text: "公开", value: "public" },
+                { text: "私有", value: "private" },
+              ],
+              onFilter: (value: unknown, record: TripWithMeta) => record.visibility === value,
               render: (value: string) => (
                 <Tag icon={value === "public" ? <EyeOutlined /> : <EyeInvisibleOutlined />}>
                   {value === "public" ? "公开" : "私有"}

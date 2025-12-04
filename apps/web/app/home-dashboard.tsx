@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Card, CardContent } from "@workspace/ui/components/card";
-import { Plus, Settings, ChevronRight, Fish, MapPin, BookOpen, Megaphone } from "lucide-react";
+import { Plus, Settings, ChevronRight, Fish, MapPin, BookOpen, Megaphone, BarChart3 } from "lucide-react";
 import dayjs from "dayjs";
 
 interface HomeStats {
@@ -182,29 +182,38 @@ export default function HomeDashboard() {
       )}
 
       {/* Quick Action (Mobile Only) */}
-      <div className="grid grid-cols-2 gap-4 md:hidden">
+      <div className="grid grid-cols-3 gap-3 md:hidden">
         <Link 
           href="/trips/new"
-          className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl border border-blue-100 text-blue-700 hover:bg-blue-100 transition-colors"
+          className="flex flex-col items-center gap-2 p-4 bg-blue-50 rounded-xl border border-blue-100 text-blue-700 hover:bg-blue-100 transition-colors"
         >
           <div className="w-10 h-10 bg-blue-200 rounded-full flex items-center justify-center text-blue-700">
             <Plus size={20} />
           </div>
-          <div className="text-left">
-            <div className="font-bold text-sm">记录出击</div>
-            <div className="text-xs opacity-70">添加新行程</div>
+          <div className="text-center">
+            <div className="font-bold text-xs">记录出击</div>
           </div>
         </Link>
         <Link 
           href="/gear"
-          className="flex items-center gap-3 p-4 bg-emerald-50 rounded-xl border border-emerald-100 text-emerald-700 hover:bg-emerald-100 transition-colors"
+          className="flex flex-col items-center gap-2 p-4 bg-emerald-50 rounded-xl border border-emerald-100 text-emerald-700 hover:bg-emerald-100 transition-colors"
         >
           <div className="w-10 h-10 bg-emerald-200 rounded-full flex items-center justify-center text-emerald-700">
             <Settings size={20} />
           </div>
-          <div className="text-left">
-            <div className="font-bold text-sm">整理装备</div>
-            <div className="text-xs opacity-70">管理竿轮</div>
+          <div className="text-center">
+            <div className="font-bold text-xs">整理装备</div>
+          </div>
+        </Link>
+        <Link 
+          href="/stats/report"
+          className="flex flex-col items-center gap-2 p-4 bg-purple-50 rounded-xl border border-purple-100 text-purple-700 hover:bg-purple-100 transition-colors"
+        >
+          <div className="w-10 h-10 bg-purple-200 rounded-full flex items-center justify-center text-purple-700">
+            <BarChart3 size={20} />
+          </div>
+          <div className="text-center">
+            <div className="font-bold text-xs">钓鱼报告</div>
           </div>
         </Link>
       </div>

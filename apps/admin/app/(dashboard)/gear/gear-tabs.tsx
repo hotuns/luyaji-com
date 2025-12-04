@@ -362,10 +362,12 @@ const rodColumns = [
   {
     title: "名称",
     dataIndex: "name",
+    sorter: (a: RodData, b: RodData) => a.name.localeCompare(b.name),
   },
   {
     title: "品牌",
     dataIndex: "brand",
+    sorter: (a: RodData, b: RodData) => (a.brand || "").localeCompare(b.brand || ""),
     render: (value: string | null) => value || "-",
   },
   {
@@ -378,17 +380,24 @@ const rodColumns = [
   {
     title: "用户",
     dataIndex: "userName",
+    sorter: (a: RodData, b: RodData) => a.userName.localeCompare(b.userName),
   },
   {
     title: "组合",
     dataIndex: ["_count", "combos"],
     align: "center" as const,
+    sorter: (a: RodData, b: RodData) => a._count.combos - b._count.combos,
     render: (value: number) => <Tag>{value}</Tag>,
   },
   {
     title: "可见性",
     dataIndex: "visibility",
     align: "center" as const,
+    filters: [
+      { text: "公开", value: "public" },
+      { text: "私有", value: "private" },
+    ],
+    onFilter: (value: unknown, record: RodData) => record.visibility === value,
     render: (value: string) => <Tag color={value === "public" ? "green" : "default"}>{value === "public" ? "公开" : "私有"}</Tag>,
   },
 ];
@@ -397,15 +406,18 @@ const reelColumns = [
   {
     title: "名称",
     dataIndex: "name",
+    sorter: (a: ReelData, b: ReelData) => a.name.localeCompare(b.name),
   },
   {
     title: "品牌",
     dataIndex: "brand",
+    sorter: (a: ReelData, b: ReelData) => (a.brand || "").localeCompare(b.brand || ""),
     render: (value: string | null) => value || "-",
   },
   {
     title: "型号",
     dataIndex: "model",
+    sorter: (a: ReelData, b: ReelData) => (a.model || "").localeCompare(b.model || ""),
     render: (value: string | null) => value || "-",
   },
   {
@@ -416,17 +428,24 @@ const reelColumns = [
   {
     title: "用户",
     dataIndex: "userName",
+    sorter: (a: ReelData, b: ReelData) => a.userName.localeCompare(b.userName),
   },
   {
     title: "组合",
     dataIndex: ["_count", "combos"],
     align: "center" as const,
+    sorter: (a: ReelData, b: ReelData) => a._count.combos - b._count.combos,
     render: (value: number) => <Tag>{value}</Tag>,
   },
   {
     title: "可见性",
     dataIndex: "visibility",
     align: "center" as const,
+    filters: [
+      { text: "公开", value: "public" },
+      { text: "私有", value: "private" },
+    ],
+    onFilter: (value: unknown, record: ReelData) => record.visibility === value,
     render: (value: string) => <Tag color={value === "public" ? "green" : "default"}>{value === "public" ? "公开" : "私有"}</Tag>,
   },
 ];
@@ -435,15 +454,18 @@ const comboColumns = [
   {
     title: "组合名",
     dataIndex: "name",
+    sorter: (a: ComboData, b: ComboData) => a.name.localeCompare(b.name),
   },
   {
     title: "鱼竿",
     dataIndex: "rodName",
+    sorter: (a: ComboData, b: ComboData) => (a.rodName || "").localeCompare(b.rodName || ""),
     render: (value: string) => value || "-",
   },
   {
     title: "渔轮",
     dataIndex: "reelName",
+    sorter: (a: ComboData, b: ComboData) => (a.reelName || "").localeCompare(b.reelName || ""),
     render: (value: string) => value || "-",
   },
   {
@@ -454,11 +476,17 @@ const comboColumns = [
   {
     title: "用户",
     dataIndex: "userName",
+    sorter: (a: ComboData, b: ComboData) => a.userName.localeCompare(b.userName),
   },
   {
     title: "可见性",
     dataIndex: "visibility",
     align: "center" as const,
+    filters: [
+      { text: "公开", value: "public" },
+      { text: "私有", value: "private" },
+    ],
+    onFilter: (value: unknown, record: ComboData) => record.visibility === value,
     render: (value: string) => <Tag color={value === "public" ? "green" : "default"}>{value === "public" ? "公开" : "私有"}</Tag>,
   },
 ];

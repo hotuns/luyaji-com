@@ -4,6 +4,7 @@ import { TripFormState, TripCatchDraft, FishSpecies } from "@/lib/types";
 import { processImageForUpload } from "@/lib/image-utils";
 import { useState, useEffect, useRef } from "react";
 import { Camera, X, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { SpeciesPicker } from "@/components/species-picker";
 
 interface Step3Props {
   formState: TripFormState;
@@ -24,7 +25,6 @@ export default function Step3Catches({
   onPrev,
   isSubmitting,
 }: Step3Props) {
-  const [showSpeciesSearch, setShowSpeciesSearch] = useState(false);
   const [selectedSpecies, setSelectedSpecies] = useState<FishSpecies | null>(null);
   const [count, setCount] = useState(1);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -159,16 +159,11 @@ export default function Step3Catches({
           <label className="block text-sm font-medium text-slate-700 mb-2">
             鱼种
           </label>
-          <button
-            onClick={() => setShowSpeciesSearch(true)}
-            className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-white text-left"
-          >
-            {selectedSpecies ? (
-              <span className="text-slate-900">{selectedSpecies.name}</span>
-            ) : (
-              <span className="text-slate-400">点击选择鱼种</span>
-            )}
-          </button>
+          <SpeciesPicker
+            value={selectedSpecies}
+            onSelect={setSelectedSpecies}
+            placeholder="点击选择鱼种"
+          />
         </div>
 
         {/* 条数计数器 */}
@@ -455,17 +450,6 @@ export default function Step3Catches({
         </button>
       </div>
 
-      {/* 鱼种搜索弹窗 */}
-      {showSpeciesSearch && (
-        <FishSpeciesSearch
-          onClose={() => setShowSpeciesSearch(false)}
-          onSelect={(species) => {
-            setSelectedSpecies(species);
-            setShowSpeciesSearch(false);
-          }}
-        />
-      )}
-
       {/* 无渔获确认弹窗 */}
       {showConfirmDialog && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -496,95 +480,6 @@ export default function Step3Catches({
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-// 鱼种搜索组件
-function FishSpeciesSearch({
-  onClose,
-  onSelect,
-}: {
-  onClose: () => void;
-  onSelect: (species: FishSpecies) => void;
-}) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [species, setSpecies] = useState<FishSpecies[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/fish-species")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setSpecies(data.data || []);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  const filteredSpecies = species.filter((s) =>
-    s.name.includes(searchQuery)
-  );
-
-  return (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      {/* 搜索头部 */}
-      <div className="border-b border-slate-100 p-4">
-        <div className="flex items-center gap-3">
-          <button onClick={onClose} className="text-slate-600">
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="搜索鱼种..."
-            className="flex-1 px-4 py-2 bg-slate-100 rounded-full outline-none"
-            autoFocus
-          />
-        </div>
-      </div>
-
-      {/* 鱼种列表 */}
-      <div className="flex-1 overflow-auto">
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-100">
-            {filteredSpecies.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => onSelect(s)}
-                className="w-full px-4 py-3 text-left hover:bg-slate-50 flex items-center gap-3"
-              >
-                <span className="text-2xl">🐟</span>
-                <span className="font-medium text-slate-900">{s.name}</span>
-              </button>
-            ))}
-            {filteredSpecies.length === 0 && (
-              <div className="text-center py-8 text-slate-400">
-                没有找到匹配的鱼种
-              </div>
-            )}
-          </div>
-        )}
-      </div>
     </div>
   );
 }

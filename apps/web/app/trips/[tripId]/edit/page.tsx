@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@workspace/ui/components/dialog";
 import { ArrowLeft, Save, Plus, Trash2, Camera, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { DateTimeField } from "@/components/date-time-field";
+import { SpeciesPicker } from "@/components/species-picker";
 import { processImageForUpload } from "@/lib/image-utils";
 import { cn } from "@workspace/ui/lib/utils";
 import { Skeleton } from "@workspace/ui/components/skeleton";
@@ -645,22 +646,12 @@ function CatchDialog({
           {/* Species Selection */}
           <div className="space-y-2">
             <Label>鱼种 <span className="text-red-500">*</span></Label>
-            <Select 
-              value={selectedSpecies?.id} 
-              onValueChange={(val) => {
-                const s = speciesList.find(item => item.id === val);
-                if (s) setSelectedSpecies(s);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="选择鱼种" />
-              </SelectTrigger>
-              <SelectContent>
-                {speciesList.map(s => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SpeciesPicker
+              value={selectedSpecies}
+              onSelect={setSelectedSpecies}
+              speciesList={speciesList}
+              loading={speciesList.length === 0}
+            />
           </div>
 
           {/* Count */}
@@ -739,3 +730,5 @@ function CatchDialog({
     </Dialog>
   );
 }
+
+

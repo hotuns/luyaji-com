@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@workspace/ui/components/card";
 import { Button } from "@workspace/ui/components/button";
-import { User, Smartphone, Settings, ChevronRight } from "lucide-react";
+import { User, Smartphone, Settings, ChevronRight, BarChart3 } from "lucide-react";
+import Link from "next/link";
 import {
   Dialog,
   DialogContent,
@@ -303,6 +304,16 @@ export default function ProfileDashboard() {
                   }
                 />
               </div>
+              <Link 
+                href="/stats/report"
+                className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
+              >
+                <span className="text-sm text-slate-600 flex items-center gap-2">
+                  <BarChart3 size={16} className="text-purple-500" />
+                  查看钓鱼报告
+                </span>
+                <ChevronRight size={16} className="text-slate-300" />
+              </Link>
             </CardContent>
           </Card>
 

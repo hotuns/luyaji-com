@@ -92,24 +92,29 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 如果是登录用户，更新活跃记录
+    // 如果是登录用户，更新活跃记录（静默失败，不影响主流程）
     if (userId) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-      await prisma.userActivity.upsert({
-        where: {
-          userId_date: { userId, date: today },
-        },
-        update: {
-          actions: { increment: 1 },
-        },
-        create: {
-          userId,
-          date: today,
-          actions: 1,
-        },
-      });
+        // 先尝试更新，如果不存在再创建
+        const updated = await prisma.userActivity.updateMany({
+          where: { userId, date: today },
+          data: { actions: { increment: 1 } },
+        });
+
+        // 如果没有更新到记录，说明需要创建
+        if (updated.count === 0) {
+          await prisma.userActivity.create({
+            data: { userId, date: today, actions: 1 },
+          }).catch(() => {
+            // 忽略创建失败（可能是并发创建）
+          });
+        }
+      } catch {
+        // 静默忽略活跃记录的错误，不影响访问统计
+      }
     }
 
     return NextResponse.json({ success: true });

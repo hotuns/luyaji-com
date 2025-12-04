@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { Share2, Copy, Check, Link2, Loader2 } from "lucide-react";
+import { Share2, Copy, Check, Link2, Loader2, Image, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import {
 import { Button } from "@workspace/ui/components/button";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { cn } from "@workspace/ui/lib/utils";
+import { useShareImage } from "./share-image";
 
 export interface ShareConfig {
   /** 分享类型 */
@@ -25,6 +26,12 @@ export interface ShareConfig {
   imageUrl?: string;
   /** 自定义分享文案（用户可编辑） */
   defaultText?: string;
+  /** 作者昵称 */
+  authorName?: string;
+  /** 作者头像 */
+  authorAvatar?: string;
+  /** 统计数据 */
+  stats?: { label: string; value: string | number }[];
 }
 
 interface ShareDialogProps {
@@ -105,9 +112,14 @@ export function useShareConfig(type: ShareConfig['type'], data: Record<string, u
       description: data.description as string | undefined,
       imageUrl: data.imageUrl as string | undefined,
       defaultText: data.defaultText as string | undefined,
+      authorName: data.authorName as string | undefined,
+      authorAvatar: data.authorAvatar as string | undefined,
+      stats: data.stats as { label: string; value: string | number }[] | undefined,
     };
-  }, [type, data.id, data.name, data.title, data.description, data.imageUrl, data.photoUrls, data.mainLineText, data.leaderLineText, data.rod, data.reel]);
+  }, [type, data.id, data.name, data.title, data.description, data.imageUrl, data.photoUrls, data.mainLineText, data.leaderLineText, data.rod, data.reel, data.authorName, data.authorAvatar, data.stats]);
 }
+
+type ShareTab = "link" | "image";
 
 export function ShareDialog({ config, trigger, className, open: controlledOpen, onOpenChange }: ShareDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
@@ -115,11 +127,15 @@ export function ShareDialog({ config, trigger, className, open: controlledOpen, 
   const open = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? (onOpenChange || (() => {})) : setInternalOpen;
   
+  const [activeTab, setActiveTab] = useState<ShareTab>("link");
   const [copied, setCopied] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [shareUrl, setShareUrl] = useState<string>("");
   const [shareText, setShareText] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  
+  // 分享图片相关
+  const shareImage = useShareImage();
 
   // 当弹窗打开时获取短链接
   useEffect(() => {
@@ -137,7 +153,24 @@ export function ShareDialog({ config, trigger, className, open: controlledOpen, 
   useEffect(() => {
     setShareUrl("");
     setShareText("");
-  }, [config.id]);
+    setActiveTab("link");
+    shareImage.reset();
+  }, [config.id, shareImage.reset]);
+
+  // 当切换到图片 tab 时自动生成图片
+  useEffect(() => {
+    if (activeTab === "image" && shareUrl && !shareImage.imageUrl && !shareImage.generating) {
+      shareImage.generate({
+        type: config.type,
+        title: config.title,
+        description: config.description,
+        imageUrl: config.imageUrl,
+        authorName: config.authorName,
+        authorAvatar: config.authorAvatar,
+        stats: config.stats,
+      }, shareUrl);
+    }
+  }, [activeTab, shareUrl, config, shareImage]);
 
   // 复制文案+链接
   const handleCopyText = useCallback(async () => {
@@ -190,83 +223,190 @@ export function ShareDialog({ config, trigger, className, open: controlledOpen, 
           </div>
         </div>
 
-        <div className="p-6 space-y-6 bg-white overflow-y-auto">
-          {/* 预览卡片 */}
-          <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex gap-4 items-start">
-            <div className="w-16 h-16 bg-slate-200 rounded-lg flex-shrink-0 overflow-hidden">
-              {config.imageUrl ? (
-                <img src={config.imageUrl} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-slate-400">
-                  <Share2 className="w-8 h-8 opacity-50" />
-                </div>
+        <div className="p-6 space-y-5 bg-white overflow-y-auto">
+          {/* 标签页切换 */}
+          <div className="flex bg-slate-100 rounded-lg p-1">
+            <button
+              onClick={() => setActiveTab("link")}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all",
+                activeTab === "link"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
               )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-slate-900 text-sm line-clamp-1 mb-1">{config.title}</h4>
-              <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                {config.description || "点击查看详情"}
-              </p>
-            </div>
+            >
+              <Link2 className="w-4 h-4" />
+              复制链接
+            </button>
+            <button
+              onClick={() => setActiveTab("image")}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all",
+                activeTab === "image"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              <Image className="w-4 h-4" />
+              生成图片
+            </button>
           </div>
 
-          {/* 链接区域 */}
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-slate-500 ml-1">分享链接</label>
-            <div className="flex gap-2">
-              <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-600 truncate font-mono">
+          {/* 链接分享内容 */}
+          {activeTab === "link" && (
+            <>
+              {/* 预览卡片 */}
+              <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex gap-4 items-start">
+                <div className="w-16 h-16 bg-slate-200 rounded-lg flex-shrink-0 overflow-hidden">
+                  {config.imageUrl ? (
+                    <img src={config.imageUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-400">
+                      <Share2 className="w-8 h-8 opacity-50" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-slate-900 text-sm line-clamp-1 mb-1">{config.title}</h4>
+                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                    {config.description || "点击查看详情"}
+                  </p>
+                </div>
+              </div>
+
+              {/* 链接区域 */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-500 ml-1">分享链接</label>
+                <div className="flex gap-2">
+                  <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-600 truncate font-mono">
+                    {loading ? (
+                      <span className="text-slate-400 flex items-center gap-2">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        生成中...
+                      </span>
+                    ) : (
+                      shareUrl
+                    )}
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={handleCopyLink}
+                    disabled={loading}
+                    className={cn("flex-shrink-0 transition-all", linkCopied && "text-green-600 border-green-200 bg-green-50")}
+                  >
+                    {linkCopied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              {/* 文案编辑区 */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-500 ml-1">分享文案</label>
+                <Textarea
+                  value={shareText}
+                  onChange={(e) => setShareText(e.target.value)}
+                  className="min-h-[100px] text-sm resize-none bg-slate-50 border-slate-200 focus:border-blue-500 focus:ring-blue-500/20"
+                  disabled={loading}
+                />
+              </div>
+
+              {/* 复制按钮 */}
+              <Button 
+                className={cn("w-full rounded-xl h-11 font-medium shadow-lg shadow-blue-500/20 transition-all", copied ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700")}
+                onClick={handleCopyText}
+                disabled={loading}
+              >
                 {loading ? (
-                  <span className="text-slate-400 flex items-center gap-2">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    生成中...
-                  </span>
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> 准备中...
+                  </>
+                ) : copied ? (
+                  <>
+                    <Check className="w-4 h-4 mr-2" /> 已复制全部内容
+                  </>
                 ) : (
-                  shareUrl
+                  <>
+                    <Copy className="w-4 h-4 mr-2" /> 复制文案和链接
+                  </>
+                )}
+              </Button>
+            </>
+          )}
+
+          {/* 图片分享内容 */}
+          {activeTab === "image" && (
+            <>
+              {/* 图片预览区 */}
+              <div className="bg-slate-100 rounded-xl p-4 flex items-center justify-center min-h-[300px]">
+                {shareImage.generating ? (
+                  <div className="text-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-3" />
+                    <p className="text-sm text-slate-500">正在生成分享图...</p>
+                  </div>
+                ) : shareImage.error ? (
+                  <div className="text-center">
+                    <p className="text-sm text-red-500 mb-3">{shareImage.error}</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => shareImage.generate({
+                        type: config.type,
+                        title: config.title,
+                        description: config.description,
+                        imageUrl: config.imageUrl,
+                        authorName: config.authorName,
+                        authorAvatar: config.authorAvatar,
+                        stats: config.stats,
+                      }, shareUrl)}
+                    >
+                      重新生成
+                    </Button>
+                  </div>
+                ) : shareImage.imageUrl ? (
+                  <img 
+                    src={shareImage.imageUrl} 
+                    alt="分享图片" 
+                    className="max-w-full max-h-[400px] rounded-lg shadow-lg"
+                  />
+                ) : (
+                  <div className="text-center">
+                    <Image className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                    <p className="text-sm text-slate-500">图片生成中...</p>
+                  </div>
                 )}
               </div>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={handleCopyLink}
-                disabled={loading}
-                className={cn("flex-shrink-0 transition-all", linkCopied && "text-green-600 border-green-200 bg-green-50")}
-              >
-                {linkCopied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
-              </Button>
-            </div>
-          </div>
 
-          {/* 文案编辑区 */}
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-slate-500 ml-1">分享文案</label>
-            <Textarea
-              value={shareText}
-              onChange={(e) => setShareText(e.target.value)}
-              className="min-h-[100px] text-sm resize-none bg-slate-50 border-slate-200 focus:border-blue-500 focus:ring-blue-500/20"
-              disabled={loading}
-            />
-          </div>
-
-          {/* 底部按钮 */}
-          <Button 
-            className={cn("w-full rounded-xl h-11 font-medium shadow-lg shadow-blue-500/20 transition-all", copied ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700")}
-            onClick={handleCopyText}
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> 准备中...
-              </>
-            ) : copied ? (
-              <>
-                <Check className="w-4 h-4 mr-2" /> 已复制全部内容
-              </>
-            ) : (
-              <>
-                <Copy className="w-4 h-4 mr-2" /> 复制文案和链接
-              </>
-            )}
-          </Button>
+              {/* 操作按钮 */}
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline"
+                  className="flex-1 rounded-xl h-11"
+                  onClick={() => {
+                    if (shareImage.imageUrl) {
+                      navigator.clipboard.writeText(shareImage.imageUrl);
+                    }
+                  }}
+                  disabled={!shareImage.imageUrl || shareImage.generating}
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  复制图片
+                </Button>
+                <Button 
+                  className="flex-1 rounded-xl h-11 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20"
+                  onClick={shareImage.download}
+                  disabled={!shareImage.imageUrl || shareImage.generating}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  保存图片
+                </Button>
+              </div>
+              
+              <p className="text-xs text-slate-400 text-center">
+                长按图片可保存到相册，或点击保存按钮下载
+              </p>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>

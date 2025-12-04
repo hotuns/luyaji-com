@@ -136,6 +136,8 @@ export function UsersTable({
             {
               title: "用户",
               dataIndex: "nickname",
+              sorter: (a: UserWithCounts, b: UserWithCounts) => 
+                (a.nickname || "").localeCompare(b.nickname || ""),
               render: (_: unknown, record: UserWithCounts) => (
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <Avatar style={{ backgroundColor: "#e6f4ff", color: "#1677ff" }}>
@@ -154,29 +156,40 @@ export function UsersTable({
               title: "出击",
               dataIndex: ["_count", "trips"],
               align: "center",
+              sorter: (a: UserWithCounts, b: UserWithCounts) => a._count.trips - b._count.trips,
               render: (value: number) => <Tag>{value}</Tag>,
             },
             {
               title: "渔获",
               dataIndex: ["_count", "catches"],
               align: "center",
+              sorter: (a: UserWithCounts, b: UserWithCounts) => a._count.catches - b._count.catches,
               render: (value: number) => <Tag>{value}</Tag>,
             },
             {
               title: "组合",
               dataIndex: ["_count", "combos"],
               align: "center",
+              sorter: (a: UserWithCounts, b: UserWithCounts) => a._count.combos - b._count.combos,
               render: (value: number) => <Tag>{value}</Tag>,
             },
             {
               title: "注册时间",
               dataIndex: "createdAt",
+              sorter: (a: UserWithCounts, b: UserWithCounts) => 
+                new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+              defaultSortOrder: "descend",
               render: (value: Date) => formatDate(value),
             },
             {
               title: "角色",
               dataIndex: "isAdmin",
               align: "center",
+              filters: [
+                { text: "管理员", value: true },
+                { text: "普通用户", value: false },
+              ],
+              onFilter: (value: unknown, record: UserWithCounts) => record.isAdmin === value,
               render: (isAdmin: boolean) =>
                 isAdmin ? <Tag color="blue">管理员</Tag> : <Tag>普通用户</Tag>,
             },
@@ -184,6 +197,11 @@ export function UsersTable({
               title: "状态",
               dataIndex: "isBanned",
               align: "center",
+              filters: [
+                { text: "正常", value: false },
+                { text: "已封禁", value: true },
+              ],
+              onFilter: (value: unknown, record: UserWithCounts) => record.isBanned === value,
               render: (isBanned: boolean) =>
                 isBanned ? <Tag color="red">已封禁</Tag> : <Tag color="green">正常</Tag>,
             },
