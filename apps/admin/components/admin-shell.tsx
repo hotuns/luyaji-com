@@ -2,6 +2,7 @@
 
 import {
   AppstoreOutlined,
+  BarChartOutlined,
   InboxOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
@@ -32,6 +33,7 @@ const { Header, Sider, Content } = Layout;
 
 const NAV_ITEMS = [
   { key: "/dashboard", label: "仪表盘", icon: <AppstoreOutlined /> },
+  { key: "/analytics", label: "数据分析", icon: <BarChartOutlined /> },
   { key: "/users", label: "用户管理", icon: <TeamOutlined /> },
   { key: "/trips", label: "出击记录", icon: <UnorderedListOutlined /> },
   { key: "/fish-species", label: "鱼种管理", icon: <RadarChartOutlined /> },
@@ -42,6 +44,7 @@ const NAV_ITEMS = [
 
 const BREADCRUMB_NAME_MAP: Record<string, string> = {
   "/dashboard": "仪表盘",
+  "/analytics": "数据分析",
   "/users": "用户管理",
   "/trips": "出击记录",
   "/fish-species": "鱼种管理",

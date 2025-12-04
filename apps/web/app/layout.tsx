@@ -5,6 +5,7 @@ import { headers } from "next/headers"
 import "@workspace/ui/globals.css"
 import { Providers } from "@/components/providers"
 import { ResponsiveNav, AppHeader } from "@/components/responsive-nav"
+import { AnalyticsTracker } from "@/components/analytics-tracker"
 
 const fontSans = Geist({
   subsets: ["latin"],
@@ -53,6 +54,7 @@ export default async function RootLayout({
         className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}
       >
         <Providers>
+          <AnalyticsTracker />
           {isFullScreenPage ? (
             // Auth 和 新建出击 页面使用独立全屏布局
             children

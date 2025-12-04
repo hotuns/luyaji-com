@@ -325,3 +325,61 @@ model ShortLink {
   @@index([targetType, targetId])
   @@map("short_links")
 }
+
+// ==================== 访问统计 ====================
+
+// 页面访问记录（用于 PV/UV 统计）
+model PageView {
+  id         String   @id @default(uuid())
+  path       String   // 访问路径
+  userId     String?  // 用户ID（可选，未登录为空）
+  visitorId  String   // 访客唯一标识（浏览器指纹或cookie）
+  userAgent  String?  @db.Text // 浏览器UA
+  referer    String?  @db.Text // 来源页面
+  ip         String?  // IP地址（脱敏存储）
+  country    String?  // 国家
+  city       String?  // 城市
+  device     String?  // mobile | desktop | tablet
+  browser    String?  // Chrome | Safari | ...
+  os         String?  // iOS | Android | Windows | macOS
+  createdAt  DateTime @default(now())
+
+  @@index([path, createdAt])
+  @@index([userId, createdAt])
+  @@index([visitorId, createdAt])
+  @@index([createdAt])
+  @@map("page_views")
+}
+
+// 用户活跃记录（用于留存分析）
+model UserActivity {
+  id        String   @id @default(uuid())
+  userId    String   // 用户ID
+  date      DateTime @db.Date // 活跃日期（按天）
+  actions   Int      @default(1) // 当天操作次数
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([date])
+  @@map("user_activities")
+}
+
+// 每日统计汇总（定时任务生成）
+model DailyStat {
+  id              String   @id @default(uuid())
+  date            DateTime @unique @db.Date // 统计日期
+  pv              Int      @default(0) // 页面浏览量
+  uv              Int      @default(0) // 独立访客数
+  newUsers        Int      @default(0) // 新增用户数
+  activeUsers     Int      @default(0) // 活跃用户数
+  newTrips        Int      @default(0) // 新增出击记录
+  newCatches      Int      @default(0) // 新增渔获
+  newCombos       Int      @default(0) // 新增装备组合
+  avgSessionTime  Int?     // 平均会话时长（秒）
+  bounceRate      Float?   // 跳出率
+  createdAt       DateTime @default(now())
+
+  @@index([date])
+  @@map("daily_stats")
+}
