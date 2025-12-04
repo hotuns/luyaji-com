@@ -28,27 +28,6 @@ async function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-// 绘制圆角矩形
-function roundRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number
-) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
 
 // 绘制圆形图片
 function drawCircleImage(
@@ -119,13 +98,46 @@ function wrapText(
 function getTypeStyle(type: ShareConfig["type"]) {
   switch (type) {
     case "trip":
-      return { icon: "🎣", color: "#3b82f6", label: "出击记录" };
+      return { icon: "🎣", color: "#0ea5e9", label: "出击记录", gradient: ["#0ea5e9", "#0284c7"] };
     case "combo":
-      return { icon: "⚙️", color: "#10b981", label: "装备组合" };
+      return { icon: "⚔️", color: "#8b5cf6", label: "装备组合", gradient: ["#8b5cf6", "#7c3aed"] };
     case "dex":
-      return { icon: "📚", color: "#8b5cf6", label: "钓鱼图鉴" };
+      return { icon: "🐡", color: "#f59e0b", label: "渔获图鉴", gradient: ["#f59e0b", "#d97706"] };
     default:
-      return { icon: "🐟", color: "#6366f1", label: "分享" };
+      return { icon: "🌊", color: "#64748b", label: "路亚记", gradient: ["#64748b", "#475569"] };
+  }
+}
+
+// 绘制圆角矩形（带填充和描边选项）
+function drawRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+  fill?: string | CanvasGradient,
+  stroke?: string
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  
+  if (fill) {
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+  if (stroke) {
+    ctx.strokeStyle = stroke;
+    ctx.stroke();
   }
 }
 
@@ -140,200 +152,310 @@ export async function generateShareCard(
 
   const width = 750;
   const height = 1000;
-  const padding = 48;
+  const padding = 40;
   
   canvas.width = width;
   canvas.height = height;
 
   const typeStyle = getTypeStyle(data.type);
 
-  // 背景渐变
-  const gradient = ctx.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0, "#f8fafc");
-  gradient.addColorStop(1, "#e2e8f0");
-  ctx.fillStyle = gradient;
+  // 1. 背景
+  // 使用柔和的渐变背景
+  const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+  bgGradient.addColorStop(0, "#f8fafc");
+  bgGradient.addColorStop(1, "#e2e8f0");
+  ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, width, height);
 
-  // 顶部装饰条
+  // 绘制一些装饰性的背景圆
+  ctx.save();
+  ctx.globalAlpha = 0.05;
   ctx.fillStyle = typeStyle.color;
-  ctx.fillRect(0, 0, width, 8);
-
-  // 主卡片背景
-  const cardX = padding;
-  const cardY = 40;
-  const cardW = width - padding * 2;
-  const cardH = height - 80;
-  
-  ctx.fillStyle = "#ffffff";
-  ctx.shadowColor = "rgba(0, 0, 0, 0.1)";
-  ctx.shadowBlur = 30;
-  ctx.shadowOffsetY = 10;
-  roundRect(ctx, cardX, cardY, cardW, cardH, 24);
+  ctx.beginPath();
+  ctx.arc(width, 0, 300, 0, Math.PI * 2);
   ctx.fill();
+  ctx.beginPath();
+  ctx.arc(0, height, 200, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // 2. 主卡片
+  const cardX = padding;
+  const cardY = padding + 20;
+  const cardW = width - padding * 2;
+  const cardH = height - padding * 2 - 40;
+  const cardRadius = 24;
+
+  // 卡片阴影
+  ctx.shadowColor = "rgba(0, 0, 0, 0.08)";
+  ctx.shadowBlur = 40;
+  ctx.shadowOffsetY = 20;
+  
+  // 卡片背景
+  drawRoundedRect(ctx, cardX, cardY, cardW, cardH, cardRadius, "#ffffff");
   ctx.shadowColor = "transparent";
 
-  let currentY = cardY + padding;
+  let currentY = cardY;
 
-  // 类型标签
-  ctx.fillStyle = typeStyle.color + "20";
-  roundRect(ctx, cardX + padding, currentY, 120, 36, 18);
-  ctx.fill();
+  // 3. 顶部图片区域 (Hero Image)
+  const heroHeight = 360;
   
-  ctx.font = "bold 16px -apple-system, BlinkMacSystemFont, sans-serif";
-  ctx.fillStyle = typeStyle.color;
-  ctx.textBaseline = "middle";
-  ctx.fillText(`${typeStyle.icon} ${typeStyle.label}`, cardX + padding + 16, currentY + 18);
-  
-  currentY += 60;
+  ctx.save();
+  // 创建顶部圆角的裁剪区域
+  ctx.beginPath();
+  ctx.moveTo(cardX + cardRadius, cardY);
+  ctx.lineTo(cardX + cardW - cardRadius, cardY);
+  ctx.quadraticCurveTo(cardX + cardW, cardY, cardX + cardW, cardY + cardRadius);
+  ctx.lineTo(cardX + cardW, cardY + heroHeight);
+  ctx.lineTo(cardX, cardY + heroHeight);
+  ctx.lineTo(cardX, cardY + cardRadius);
+  ctx.quadraticCurveTo(cardX, cardY, cardX + cardRadius, cardY);
+  ctx.closePath();
+  ctx.clip();
 
-  // 封面图片
   if (data.imageUrl) {
     try {
       const coverImg = await loadImage(data.imageUrl);
-      const imgX = cardX + padding;
-      const imgY = currentY;
-      const imgW = cardW - padding * 2;
-      const imgH = 280;
-      
-      ctx.save();
-      roundRect(ctx, imgX, imgY, imgW, imgH, 16);
-      ctx.clip();
-      
-      // 保持比例填充
-      const scale = Math.max(imgW / coverImg.width, imgH / coverImg.height);
-      const sw = imgW / scale;
-      const sh = imgH / scale;
+      // 保持比例填充 (Object-fit: cover)
+      const scale = Math.max(cardW / coverImg.width, heroHeight / coverImg.height);
+      const sw = cardW / scale;
+      const sh = heroHeight / scale;
       const sx = (coverImg.width - sw) / 2;
       const sy = (coverImg.height - sh) / 2;
-      ctx.drawImage(coverImg, sx, sy, sw, sh, imgX, imgY, imgW, imgH);
-      ctx.restore();
+      ctx.drawImage(coverImg, sx, sy, sw, sh, cardX, cardY, cardW, heroHeight);
       
-      currentY += imgH + 32;
+      // 图片底部加一个渐变遮罩，让过渡更自然
+      const overlayGradient = ctx.createLinearGradient(0, cardY + heroHeight - 100, 0, cardY + heroHeight);
+      overlayGradient.addColorStop(0, "rgba(255,255,255,0)");
+      overlayGradient.addColorStop(1, "rgba(255,255,255,1)");
+      ctx.fillStyle = overlayGradient;
+      ctx.fillRect(cardX, cardY + heroHeight - 100, cardW, 100);
+      
     } catch {
-      // 如果图片加载失败，显示占位
-      ctx.fillStyle = "#f1f5f9";
-      roundRect(ctx, cardX + padding, currentY, cardW - padding * 2, 200, 16);
-      ctx.fill();
-      
-      ctx.font = "48px sans-serif";
-      ctx.fillStyle = "#cbd5e1";
-      ctx.textAlign = "center";
-      ctx.fillText(typeStyle.icon, width / 2, currentY + 110);
-      ctx.textAlign = "left";
-      
-      currentY += 232;
+      // 图片加载失败回退
+      drawFallbackHero(ctx, cardX, cardY, cardW, heroHeight, typeStyle);
     }
   } else {
-    // 无图片时的占位
-    ctx.fillStyle = "#f1f5f9";
-    roundRect(ctx, cardX + padding, currentY, cardW - padding * 2, 160, 16);
-    ctx.fill();
-    
-    ctx.font = "64px sans-serif";
-    ctx.fillStyle = "#cbd5e1";
-    ctx.textAlign = "center";
-    ctx.fillText(typeStyle.icon, width / 2, currentY + 100);
-    ctx.textAlign = "left";
-    
-    currentY += 192;
+    // 无图片时的样式
+    drawFallbackHero(ctx, cardX, cardY, cardW, heroHeight, typeStyle);
   }
+  ctx.restore();
+
+  // 4. 类型标签 (悬浮在图片左上角)
+  const tagX = cardX + 24;
+  const tagY = cardY + 24;
+  const tagH = 36;
+  const tagW = 110;
+  
+  ctx.shadowColor = "rgba(0,0,0,0.1)";
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 4;
+  drawRoundedRect(ctx, tagX, tagY, tagW, tagH, 18, "#ffffff");
+  ctx.shadowColor = "transparent";
+  
+  ctx.font = "bold 15px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = typeStyle.color;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "center";
+  ctx.fillText(`${typeStyle.icon} ${typeStyle.label}`, tagX + tagW / 2, tagY + tagH / 2 + 1);
+  ctx.textAlign = "left"; // Reset
+
+  currentY += heroHeight + 20;
+
+  // 5. 内容区域
+  const contentPadding = 40;
+  const contentWidth = cardW - contentPadding * 2;
+  const contentX = cardX + contentPadding;
 
   // 标题
-  ctx.font = "bold 36px -apple-system, BlinkMacSystemFont, sans-serif";
-  ctx.fillStyle = "#0f172a";
+  ctx.font = "bold 40px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = "#1e293b";
   ctx.textBaseline = "top";
-  currentY = wrapText(ctx, data.title, cardX + padding, currentY, cardW - padding * 2, 48, 2);
+  // 标题最多2行
+  currentY = wrapText(ctx, data.title, contentX, currentY, contentWidth, 52, 2);
   
-  currentY += 8;
+  currentY += 16;
 
   // 描述
   if (data.description) {
-    ctx.font = "20px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.font = "22px -apple-system, BlinkMacSystemFont, sans-serif";
     ctx.fillStyle = "#64748b";
-    currentY = wrapText(ctx, data.description, cardX + padding, currentY, cardW - padding * 2, 32, 3);
+    // 描述最多3行
+    currentY = wrapText(ctx, data.description, contentX, currentY, contentWidth, 34, 3);
+    currentY += 32;
+  } else {
     currentY += 16;
   }
 
-  // 统计数据
+  // 6. 统计数据 (如果有)
   if (data.stats && data.stats.length > 0) {
-    currentY += 8;
-    const statWidth = (cardW - padding * 2) / data.stats.length;
+    const statBoxHeight = 90;
+    const statBoxY = currentY;
     
-    data.stats.forEach((stat, index) => {
-      const statX = cardX + padding + statWidth * index;
+    // 绘制统计数据背景容器
+    drawRoundedRect(ctx, contentX, statBoxY, contentWidth, statBoxHeight, 16, "#f8fafc", "#e2e8f0");
+    
+    const statCount = Math.min(data.stats.length, 3); // 最多显示3个数据
+    const statWidth = contentWidth / statCount;
+    
+    data.stats.slice(0, 3).forEach((stat, index) => {
+      const statX = contentX + statWidth * index;
+      const centerX = statX + statWidth / 2;
+      const centerY = statBoxY + statBoxHeight / 2;
       
-      ctx.font = "bold 32px -apple-system, BlinkMacSystemFont, sans-serif";
+      // 分隔线
+      if (index > 0) {
+        ctx.beginPath();
+        ctx.moveTo(statX, statBoxY + 20);
+        ctx.lineTo(statX, statBoxY + statBoxHeight - 20);
+        ctx.strokeStyle = "#e2e8f0";
+        ctx.stroke();
+      }
+
+      // 数值
+      ctx.font = "bold 28px -apple-system, BlinkMacSystemFont, sans-serif";
       ctx.fillStyle = typeStyle.color;
       ctx.textAlign = "center";
-      ctx.fillText(String(stat.value), statX + statWidth / 2, currentY);
+      ctx.textBaseline = "middle";
+      ctx.fillText(String(stat.value), centerX, centerY - 12);
       
+      // 标签
       ctx.font = "14px -apple-system, BlinkMacSystemFont, sans-serif";
-      ctx.fillStyle = "#94a3b8";
-      ctx.fillText(stat.label, statX + statWidth / 2, currentY + 40);
+      ctx.fillStyle = "#64748b";
+      ctx.fillText(stat.label, centerX, centerY + 16);
     });
     
-    ctx.textAlign = "left";
-    currentY += 80;
+    ctx.textAlign = "left"; // Reset
+    currentY += statBoxHeight + 40;
+  } else {
+    currentY += 20;
   }
 
-  // 底部分隔线
-  ctx.strokeStyle = "#e2e8f0";
-  ctx.lineWidth = 1;
+  // 7. 底部区域 (作者 + 品牌)
+  // 将底部固定在卡片底部
+  const footerH = 100;
+  const footerY = cardY + cardH - footerH;
+  
+  // 分隔线
   ctx.beginPath();
-  ctx.moveTo(cardX + padding, cardH + cardY - 140);
-  ctx.lineTo(cardX + cardW - padding, cardH + cardY - 140);
+  ctx.moveTo(contentX, footerY);
+  ctx.lineTo(contentX + contentWidth, footerY);
+  ctx.strokeStyle = "#f1f5f9";
+  ctx.lineWidth = 2;
   ctx.stroke();
 
-  // 作者信息
-  const authorY = cardH + cardY - 110;
-  
+  const footerContentY = footerY + 30;
+
+  // 作者信息 (左侧)
   if (data.authorAvatar) {
     try {
       const avatarImg = await loadImage(data.authorAvatar);
-      drawCircleImage(ctx, avatarImg, cardX + padding, authorY, 24);
+      drawCircleImage(ctx, avatarImg, contentX, footerContentY, 24);
     } catch {
       // 默认头像
       ctx.fillStyle = "#e2e8f0";
       ctx.beginPath();
-      ctx.arc(cardX + padding + 24, authorY + 24, 24, 0, Math.PI * 2);
+      ctx.arc(contentX + 24, footerContentY + 24, 24, 0, Math.PI * 2);
       ctx.fill();
     }
   } else {
     ctx.fillStyle = "#e2e8f0";
     ctx.beginPath();
-    ctx.arc(cardX + padding + 24, authorY + 24, 24, 0, Math.PI * 2);
+    ctx.arc(contentX + 24, footerContentY + 24, 24, 0, Math.PI * 2);
     ctx.fill();
   }
   
-  ctx.font = "18px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.font = "bold 18px -apple-system, BlinkMacSystemFont, sans-serif";
   ctx.fillStyle = "#334155";
   ctx.textBaseline = "middle";
-  ctx.fillText(data.authorName || "钓友", cardX + padding + 60, authorY + 24);
-
-  // 品牌和二维码区域
-  const brandY = cardH + cardY - 60;
+  ctx.fillText(data.authorName || "钓友", contentX + 60, footerContentY + 14);
   
-  // 路亚记 Logo 文字
-  ctx.font = "bold 20px -apple-system, BlinkMacSystemFont, sans-serif";
-  ctx.fillStyle = "#0f172a";
-  ctx.fillText("路亚记", cardX + padding, brandY + 12);
-  
-  ctx.font = "14px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.font = "13px -apple-system, BlinkMacSystemFont, sans-serif";
   ctx.fillStyle = "#94a3b8";
-  ctx.fillText("记录每一次精彩出击", cardX + padding, brandY + 36);
+  ctx.fillText("发布于 路亚记", contentX + 60, footerContentY + 36);
 
-  // 右侧显示链接提示
+  // 品牌/链接 (右侧)
+  // 简单的二维码模拟 (圆角正方形)
+  const qrSize = 64;
+  const qrX = contentX + contentWidth - qrSize;
+  const qrY = footerContentY - 8;
+  
+  // 绘制二维码背景
+  drawRoundedRect(ctx, qrX, qrY, qrSize, qrSize, 8, "#ffffff", "#e2e8f0");
+  
+  // 绘制二维码内部 (模拟)
+  ctx.fillStyle = "#0f172a";
+  // const cellSize = 4; // Removed unused variable
+  for(let i=0; i<4; i++) { // 角落定位点
+     ctx.fillRect(qrX + 4, qrY + 4, 16, 16);
+     ctx.clearRect(qrX + 8, qrY + 8, 8, 8);
+     ctx.fillRect(qrX + 10, qrY + 10, 4, 4);
+     
+     ctx.fillRect(qrX + qrSize - 20, qrY + 4, 16, 16);
+     ctx.clearRect(qrX + qrSize - 16, qrY + 8, 8, 8);
+     ctx.fillRect(qrX + qrSize - 14, qrY + 10, 4, 4);
+     
+     ctx.fillRect(qrX + 4, qrY + qrSize - 20, 16, 16);
+     ctx.clearRect(qrX + 8, qrY + qrSize - 16, 8, 8);
+     ctx.fillRect(qrX + 10, qrY + qrSize - 14, 4, 4);
+  }
+  // 随机噪点模拟数据
+  for(let i=0; i<30; i++) {
+      const rx = Math.floor(Math.random() * (qrSize - 8)) + 4;
+      const ry = Math.floor(Math.random() * (qrSize - 8)) + 4;
+      ctx.fillRect(qrX + rx, qrY + ry, 3, 3);
+  }
+
+  // 链接提示
+  ctx.textAlign = "right";
+  ctx.font = "bold 14px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = typeStyle.color;
+  ctx.fillText("长按识别", qrX - 12, footerContentY + 14);
+  
   ctx.font = "12px -apple-system, BlinkMacSystemFont, sans-serif";
   ctx.fillStyle = "#94a3b8";
-  ctx.textAlign = "right";
-  ctx.fillText("扫码或访问链接查看详情", cardX + cardW - padding, brandY + 12);
-  
-  ctx.font = "14px -apple-system, BlinkMacSystemFont, sans-serif";
-  ctx.fillStyle = typeStyle.color;
-  ctx.fillText(shareUrl.replace("https://", "").replace("http://", ""), cardX + cardW - padding, brandY + 36);
+  ctx.fillText("查看详情", qrX - 12, footerContentY + 34);
   ctx.textAlign = "left";
 
   return canvas.toDataURL("image/png", 0.9);
+}
+
+// 绘制无图片时的占位背景
+function drawFallbackHero(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  style: { color: string; icon: string; gradient: string[] }
+) {
+  // 渐变背景
+  const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
+  gradient.addColorStop(0, style.gradient[0] ?? "#f8fafc");
+  gradient.addColorStop(1, style.gradient[1] ?? "#e2e8f0");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(x, y, w, h);
+  
+  // 装饰图案
+  ctx.save();
+  ctx.globalAlpha = 0.1;
+  ctx.fillStyle = "#ffffff";
+  
+  // 绘制一些波浪或圆圈
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath();
+    ctx.arc(x + w * Math.random(), y + h * Math.random(), 50 + Math.random() * 100, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+  
+  // 中心大图标
+  ctx.font = "120px sans-serif";
+  ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(style.icon, x + w / 2, y + h / 2);
+  ctx.textAlign = "left"; // Reset
 }
 
 // React Hook 用于生成和管理分享图片
