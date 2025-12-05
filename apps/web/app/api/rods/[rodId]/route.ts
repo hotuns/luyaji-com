@@ -17,6 +17,7 @@ const updateRodSchema = z.object({
   lureWeightMin: z.preprocess(nullToUndefined, z.number().min(0).max(500).optional()),
   lureWeightMax: z.preprocess(nullToUndefined, z.number().min(0).max(500).optional()),
   lineWeightText: z.preprocess(nullToUndefined, z.string().max(60).optional()),
+  price: z.preprocess(nullToUndefined, z.number().min(0).max(999999).optional()),
   note: z.preprocess(nullToUndefined, z.string().max(500).optional()),
   visibility: z.preprocess(nullToUndefined, z.enum(["private", "public"]).optional()),
 });

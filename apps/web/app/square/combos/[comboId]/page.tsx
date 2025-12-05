@@ -19,6 +19,7 @@ import {
 	User,
 	Info,
 } from "lucide-react";
+import Image from "next/image";
 
 type ComboDetail = {
 	id: string;
@@ -185,10 +186,11 @@ export default function ComboDetailPage() {
 							{data.photoUrls && data.photoUrls.length > 0 ? (
 								<div className="space-y-2">
 									<div className="aspect-[4/3] md:aspect-[16/9] bg-slate-100 relative">
-										<img
-											src={data.photoUrls[activeImageIndex]}
+										<Image
+											src={data.photoUrls[activeImageIndex] ?? ""}
 											alt={data.name}
-											className="w-full h-full object-contain"
+											fill
+											className="object-contain"
 										/>
 									</div>
 									{data.photoUrls.length > 1 && (
@@ -204,10 +206,11 @@ export default function ComboDetailPage() {
 															: "border-transparent opacity-70 hover:opacity-100",
 													)}
 												>
-													<img
+													<Image
 														src={url}
 														alt=""
-														className="w-full h-full object-cover"
+														fill
+														className="object-cover"
 													/>
 												</button>
 											))}

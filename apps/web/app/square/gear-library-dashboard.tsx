@@ -8,6 +8,7 @@ import { Skeleton } from "@workspace/ui/components/skeleton";
 import { Input } from "@workspace/ui/components/input";
 import { cn } from "@workspace/ui/lib/utils";
 import { Search, Heart, User, Copy, Fish, Anchor, Layers } from "lucide-react";
+import Image from "next/image";
 
 type RodLibraryItem = {
 	id: string;
@@ -270,10 +271,11 @@ export function GearLibraryDashboard() {
 											{/* Image Cover */}
 											<div className="aspect-[4/3] bg-slate-100 relative overflow-hidden">
 												{item.photoUrls && item.photoUrls.length > 0 ? (
-													<img
-														src={item.photoUrls[0]}
+													<Image
+														src={item.photoUrls[0] ?? ""}
 														alt={item.name}
-														className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+														fill
+														className="object-cover transition-transform duration-500 group-hover:scale-105"
 													/>
 												) : (
 													<div className="w-full h-full flex items-center justify-center text-slate-300">

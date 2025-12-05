@@ -36,6 +36,7 @@ export function RodForm({ onSuccess, initialData, closeDialog }: { onSuccess: (r
     lureWeightMin: initialData?.lureWeightMin?.toString() ?? "",
     lureWeightMax: initialData?.lureWeightMax?.toString() ?? "",
     lineWeightText: initialData?.lineWeightText ?? "",
+    price: initialData?.price?.toString() ?? "",
     note: initialData?.note ?? "",
     visibility: initialData?.visibility ?? "private",
   });
@@ -72,6 +73,7 @@ export function RodForm({ onSuccess, initialData, closeDialog }: { onSuccess: (r
       lureWeightMin: nullableNumber(form.lureWeightMin),
       lureWeightMax: nullableNumber(form.lureWeightMax),
       lineWeightText: nullableString(form.lineWeightText),
+      price: nullableNumber(form.price),
       note: nullableString(form.note),
       visibility: form.visibility,
     };
@@ -100,6 +102,7 @@ export function RodForm({ onSuccess, initialData, closeDialog }: { onSuccess: (r
           lureWeightMin: "",
           lureWeightMax: "",
           lineWeightText: "",
+          price: "",
           note: "",
           visibility: "private",
         });
@@ -189,19 +192,28 @@ export function RodForm({ onSuccess, initialData, closeDialog }: { onSuccess: (r
         />
       </div>
 
-      <LabeledInput
-        label="线重范围"
-        value={form.lineWeightText}
-        onChange={(value) => setForm((prev) => ({ ...prev, lineWeightText: value }))}
-        placeholder="例如：6-12lb"
-      />
+      <div className="grid grid-cols-2 gap-4">
+        <LabeledInput
+          label="线重范围"
+          value={form.lineWeightText}
+          onChange={(value) => setForm((prev) => ({ ...prev, lineWeightText: value }))}
+          placeholder="例如：6-12lb"
+        />
+        <LabeledInput
+          label="价格 (元)"
+          type="number"
+          value={form.price}
+          onChange={(value) => setForm((prev) => ({ ...prev, price: value }))}
+          placeholder="例如：899"
+        />
+      </div>
 
       <div className="space-y-2">
         <Label>备注</Label>
         <Textarea
           value={form.note}
           onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
-          placeholder="记录使用感受、购买价格等..."
+          placeholder="记录使用感受等..."
           className="resize-none"
         />
       </div>
@@ -253,6 +265,7 @@ export function ReelForm({ onSuccess, initialData, closeDialog }: { onSuccess: (
     model: initialData?.model ?? "",
     gearRatioText: initialData?.gearRatioText ?? "",
     lineCapacityText: initialData?.lineCapacityText ?? "",
+    price: initialData?.price?.toString() ?? "",
     note: initialData?.note ?? "",
     visibility: initialData?.visibility ?? "private",
   });
@@ -283,6 +296,7 @@ export function ReelForm({ onSuccess, initialData, closeDialog }: { onSuccess: (
       model: nullableString(form.model),
       gearRatioText: nullableString(form.gearRatioText),
       lineCapacityText: nullableString(form.lineCapacityText),
+      price: nullableNumber(form.price),
       note: nullableString(form.note),
       visibility: form.visibility,
     };
@@ -302,7 +316,7 @@ export function ReelForm({ onSuccess, initialData, closeDialog }: { onSuccess: (
       }
       onSuccess({ ...result.data, combosCount: initialData?.combosCount ?? 0 });
       if (!initialData) {
-        setForm({ name: "", brand: "", model: "", gearRatioText: "", lineCapacityText: "", note: "", visibility: "private" });
+        setForm({ name: "", brand: "", model: "", gearRatioText: "", lineCapacityText: "", price: "", note: "", visibility: "private" });
       }
       setStatus({ type: "success", message: "保存成功" });
       if (closeDialog) setTimeout(closeDialog, 500);
@@ -335,11 +349,14 @@ export function ReelForm({ onSuccess, initialData, closeDialog }: { onSuccess: (
         <LabeledInput label="速比" value={form.gearRatioText} onChange={(v) => setForm((p) => ({ ...p, gearRatioText: v }))} placeholder="例如：6.4:1" />
       </div>
 
-      <LabeledInput label="线容量" value={form.lineCapacityText} onChange={(v) => setForm((p) => ({ ...p, lineCapacityText: v }))} placeholder="例如：PE 1.5号-200m" />
+      <div className="grid grid-cols-2 gap-4">
+        <LabeledInput label="线容量" value={form.lineCapacityText} onChange={(v) => setForm((p) => ({ ...p, lineCapacityText: v }))} placeholder="例如：PE 1.5号-200m" />
+        <LabeledInput label="价格 (元)" type="number" value={form.price} onChange={(v) => setForm((p) => ({ ...p, price: v }))} placeholder="例如：599" />
+      </div>
 
       <div className="space-y-2">
         <Label>备注</Label>
-        <Textarea value={form.note} onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))} placeholder="记录使用感受、购买价格等..." className="resize-none" />
+        <Textarea value={form.note} onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))} placeholder="记录使用感受等..." className="resize-none" />
       </div>
 
       <div className="space-y-2">

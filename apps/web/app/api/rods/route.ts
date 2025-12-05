@@ -20,6 +20,7 @@ const baseRodSchema = {
   lureWeightMin: z.preprocess(nullToUndefined, z.number().min(0).max(500).optional()),
   lureWeightMax: z.preprocess(nullToUndefined, z.number().min(0).max(500).optional()),
   lineWeightText: z.preprocess(nullToUndefined, z.string().max(60).optional()),
+  price: z.preprocess(nullToUndefined, z.number().min(0).max(999999).optional()),
   note: z.preprocess(nullToUndefined, z.string().max(500).optional()),
   visibility: z.preprocess(nullToUndefined, z.enum(["private", "public"]).optional()),
 };
@@ -74,6 +75,7 @@ export async function POST(request: NextRequest) {
         lureWeightMin: payload.lureWeightMin,
         lureWeightMax: payload.lureWeightMax,
         lineWeightText: payload.lineWeightText,
+        price: payload.price,
         note: payload.note,
         visibility: payload.visibility ?? "private",
       },

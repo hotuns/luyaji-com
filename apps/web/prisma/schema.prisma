@@ -110,6 +110,7 @@ model Rod {
   lureWeightMin Float?   // 适用饵重下限（g）
   lureWeightMax Float?   // 适用饵重上限（g）
   lineWeightText String? // 适用线号描述
+  price         Float?   // 价格（元）
   note          String?  @db.Text // 备注
   visibility    String   @default("private") // private | public
   sourceType    String   @default("user") // user | template | copied
@@ -133,6 +134,7 @@ model Reel {
   model            String?  // 型号 2500, 3000 等
   gearRatioText    String?  // 速比描述
   lineCapacityText String?  // 线容量描述
+  price            Float?   // 价格（元）
   note             String?  @db.Text // 备注
   visibility       String   @default("private") // private | public
   sourceType       String   @default("user") // user | template | copied

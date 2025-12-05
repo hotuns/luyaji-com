@@ -184,6 +184,7 @@ export function RodCard({ rod, onUpdated, onDeleted }: { rod: RodSummary; onUpda
             {rod.power && <Badge variant="outline" className="font-normal">{rod.power}调</Badge>}
             {rod.length && <Badge variant="outline" className="font-normal">{rod.length}{rod.lengthUnit || "m"}</Badge>}
             {rod.lureWeightMin !== null && rod.lureWeightMax !== null && (<Badge variant="outline" className="font-normal">{rod.lureWeightMin}-{rod.lureWeightMax}g</Badge>)}
+            {rod.price !== null && rod.price > 0 && (<Badge variant="secondary" className="font-normal bg-amber-50 text-amber-700 border-amber-200">¥{rod.price}</Badge>)}
           </div>
 
           <div className="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between text-xs text-slate-500">
@@ -257,6 +258,7 @@ export function ReelCard({ reel, onUpdated, onDeleted }: { reel: ReelSummary; on
           <div className="flex flex-wrap gap-2 mb-4">
             {reel.model && <Badge variant="outline" className="font-normal">{reel.model}</Badge>}
             {reel.gearRatioText && <Badge variant="outline" className="font-normal">速比 {reel.gearRatioText}</Badge>}
+            {reel.price !== null && reel.price > 0 && (<Badge variant="secondary" className="font-normal bg-amber-50 text-amber-700 border-amber-200">¥{reel.price}</Badge>)}
           </div>
 
           <div className="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between text-xs text-slate-500">

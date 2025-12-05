@@ -14,6 +14,7 @@ export type RodSummary = {
   lureWeightMin: number | null;
   lureWeightMax: number | null;
   lineWeightText: string | null;
+  price: number | null;
   note: string | null;
   visibility: "private" | "public";
   combosCount: number;
@@ -26,6 +27,7 @@ export type ReelSummary = {
   model: string | null;
   gearRatioText: string | null;
   lineCapacityText: string | null;
+  price: number | null;
   note: string | null;
   visibility: "private" | "public";
   combosCount: number;
@@ -58,6 +60,7 @@ export type RodLibraryItem = {
   lureWeightMin: number | null;
   lureWeightMax: number | null;
   lineWeightText: string | null;
+  price: number | null;
   note: string | null;
   updatedAt: string;
   ownerName: string;
@@ -70,6 +73,7 @@ export type ReelLibraryItem = {
   model: string | null;
   gearRatioText: string | null;
   lineCapacityText: string | null;
+  price: number | null;
   note: string | null;
   updatedAt: string;
   ownerName: string;

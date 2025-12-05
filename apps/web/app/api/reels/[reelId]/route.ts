@@ -14,6 +14,7 @@ const updateReelSchema = z.object({
   model: z.preprocess(nullToUndefined, z.string().max(40).optional()),
   gearRatioText: z.preprocess(nullToUndefined, z.string().max(30).optional()),
   lineCapacityText: z.preprocess(nullToUndefined, z.string().max(80).optional()),
+  price: z.preprocess(nullToUndefined, z.number().min(0).max(999999).optional()),
   note: z.preprocess(nullToUndefined, z.string().max(500).optional()),
   visibility: z.preprocess(nullToUndefined, z.enum(["private", "public"]).optional()),
 });

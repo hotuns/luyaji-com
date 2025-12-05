@@ -76,8 +76,40 @@ export function GearDashboard({ initialRods, initialReels, initialCombos }: Gear
   const [combos, setCombos] = useState(initialCombos);
   const [gearTab, setGearTab] = useState<"combos" | "rods" | "reels">("combos");
 
+  // 计算装备总价
+  const totalRodsPrice = rods.reduce((sum, rod) => sum + (rod.price ?? 0), 0);
+  const totalReelsPrice = reels.reduce((sum, reel) => sum + (reel.price ?? 0), 0);
+  const totalGearPrice = totalRodsPrice + totalReelsPrice;
+
   return (
     <div className="space-y-8 pb-24 md:pb-12">
+      {/* 装备总价统计 */}
+      {totalGearPrice > 0 && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <span className="text-lg">💰</span>
+              </div>
+              <div>
+                <p className="text-sm text-amber-800/70">我的装备总价值</p>
+                <p className="text-2xl font-bold text-amber-700">¥{totalGearPrice.toLocaleString()}</p>
+              </div>
+            </div>
+            <div className="hidden sm:flex items-center gap-6 text-sm">
+              <div className="text-center">
+                <p className="text-amber-600/70">鱼竿</p>
+                <p className="font-semibold text-amber-700">¥{totalRodsPrice.toLocaleString()}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-amber-600/70">渔轮</p>
+                <p className="font-semibold text-amber-700">¥{totalReelsPrice.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
         <div className="flex p-1 bg-slate-100 rounded-xl overflow-x-auto no-scrollbar">
           {[

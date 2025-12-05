@@ -26,6 +26,11 @@ export function ComboEditClient({ initialData, rods, reels }: ComboEditClientPro
   const [isDeleting, setIsDeleting] = useState(false);
   const [showShare, setShowShare] = useState(false);
 
+  // 获取当前组合使用的鱼竿和渔轮
+  const selectedRod = rods.find(r => r.id === initialData.rodId);
+  const selectedReel = reels.find(r => r.id === initialData.reelId);
+  const comboPrice = (selectedRod?.price ?? 0) + (selectedReel?.price ?? 0);
+
   const shareConfig = useShareConfig("combo", {
     id: initialData.id,
     name: initialData.name,
@@ -105,6 +110,35 @@ export function ComboEditClient({ initialData, rods, reels }: ComboEditClientPro
       </header>
 
       <main className="max-w-3xl mx-auto p-4 md:p-6 space-y-6">
+        {/* 组合价格汇总 */}
+        {comboPrice > 0 && (
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">💰</span>
+                <div>
+                  <p className="text-xs text-amber-700/70">组合总价</p>
+                  <p className="text-xl font-bold text-amber-700">¥{comboPrice.toLocaleString()}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 text-sm">
+                {selectedRod?.price && selectedRod.price > 0 && (
+                  <div className="text-center">
+                    <p className="text-[10px] text-amber-600/70">鱼竿</p>
+                    <p className="font-medium text-amber-700">¥{selectedRod.price.toLocaleString()}</p>
+                  </div>
+                )}
+                {selectedReel?.price && selectedReel.price > 0 && (
+                  <div className="text-center">
+                    <p className="text-[10px] text-amber-600/70">渔轮</p>
+                    <p className="font-medium text-amber-700">¥{selectedReel.price.toLocaleString()}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-lg">组合详情</CardTitle>
