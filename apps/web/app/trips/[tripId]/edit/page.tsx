@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import dynamic from "next/dynamic";
-import { TripFormState, TripCatchDraft, WEATHER_TYPES, Combo, FishSpecies } from "@/lib/types";
+import Link from "next/link";
+import { TripFormState, TripCatchDraft, Combo, FishSpecies } from "@/lib/types";
+import { useMetadataOptions } from "@/hooks/use-metadata-options";
 import { Button } from "@workspace/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import { Input } from "@workspace/ui/components/input";
@@ -16,16 +17,11 @@ import { DateTimeField } from "@/components/date-time-field";
 import { SpeciesPicker } from "@/components/species-picker";
 import { processImageForUpload } from "@/lib/image-utils";
 import { cn } from "@workspace/ui/lib/utils";
-import { Skeleton } from "@workspace/ui/components/skeleton";
+import { FishingSpotPicker } from "@/components/fishing-spot-picker";
+import { FishingSpotFormDialog } from "@/components/fishing-spot-form-dialog";
+import { useFishingSpots } from "@/hooks/use-fishing-spots";
+import type { FishingSpotOption } from "@/hooks/use-fishing-spots";
 
-// 动态导入 LocationPicker，禁用 SSR
-const LocationPicker = dynamic(
-  () => import("@/components/map").then((mod) => mod.LocationPicker),
-  { 
-    ssr: false,
-    loading: () => <Skeleton className="h-12 w-full rounded-xl" />
-  }
-);
 
 export default function EditTripPage() {
   const router = useRouter();
@@ -38,6 +34,19 @@ export default function EditTripPage() {
   const [formState, setFormState] = useState<TripFormState | null>(null);
   const [isCatchDialogOpen, setIsCatchDialogOpen] = useState(false);
   const [editingCatchId, setEditingCatchId] = useState<string | null>(null);
+  const { options: weatherOptions } = useMetadataOptions("weather_type");
+  const {
+    spots,
+    loading: spotsLoading,
+    error: spotsError,
+    reload: reloadSpots,
+    upsertSpot,
+  } = useFishingSpots();
+  const [spotDialogOpen, setSpotDialogOpen] = useState(false);
+  const selectedSpot =
+    formState && formState.spotId
+      ? spots.find((item) => item.id === formState.spotId) || null
+      : null;
 
   // Fetch data
   useEffect(() => {
@@ -56,11 +65,10 @@ export default function EditTripPage() {
           setFormState({
             title: trip.title || "",
             startTime: trip.startTime,
-            endTime: trip.endTime || "",
-            locationName: trip.locationName,
-            locationLat: trip.locationLat,
-            locationLng: trip.locationLng,
-            weatherType: trip.weatherType || "晴",
+            endTime: trip.endTime || undefined,
+            spotId: trip.spotId || undefined,
+            weatherType: trip.weatherType || "",
+            weatherMetadataId: trip.weatherMetadataId || undefined,
             weatherTemperatureText: trip.weatherTemperatureText || "",
             weatherWindText: trip.weatherWindText || "",
             usedComboIds: trip.combos.map((c: any) => c.id),
@@ -98,14 +106,26 @@ export default function EditTripPage() {
     setFormState((prev) => (prev ? { ...prev, ...updates } : null));
   };
 
+  const handleSpotSelect = (spot: FishingSpotOption) => {
+    updateForm({
+      spotId: spot.id,
+    });
+  };
+
+  const handleSpotCreated = (spot: FishingSpotOption) => {
+    upsertSpot(spot);
+    reloadSpots();
+    handleSpotSelect(spot);
+  };
+
   const handleSave = async () => {
     if (!formState) return;
     if (!formState.startTime) {
       alert("请选择出击时间");
       return;
     }
-    if (!formState.locationName.trim()) {
-      alert("请填写出击地点");
+    if (!formState.spotId) {
+      alert("请选择钓点");
       return;
     }
 
@@ -116,12 +136,11 @@ export default function EditTripPage() {
         title: formState.title,
         startTime: formState.startTime,
         endTime: formState.endTime || null,
-        locationName: formState.locationName,
-        locationLat: formState.locationLat,
-        locationLng: formState.locationLng,
+        spotId: formState.spotId ?? null,
         visibility: formState.visibility,
         weather: {
           type: formState.weatherType,
+          metadataId: formState.weatherMetadataId || undefined,
           temperatureText: formState.weatherTemperatureText || undefined,
           windText: formState.weatherWindText || undefined,
         },
@@ -198,6 +217,18 @@ export default function EditTripPage() {
     setIsCatchDialogOpen(true);
   };
 
+  const handleWeatherSelect = (option: { id: string; label?: string | null; value: string }) => {
+    if (!formState) return;
+    if (formState.weatherMetadataId === option.id) {
+      updateForm({ weatherMetadataId: undefined, weatherType: "" });
+    } else {
+      updateForm({
+        weatherMetadataId: option.id,
+        weatherType: option.label || option.value,
+      });
+    }
+  };
+
   if (loading || !formState) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -265,16 +296,83 @@ export default function EditTripPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>出击地点 <span className="text-red-500">*</span></Label>
-              <LocationPicker
-                value={formState.locationLat && formState.locationLng ? { lat: formState.locationLat, lng: formState.locationLng } : null}
-                onChange={(loc) => updateForm({
-                  locationLat: loc?.lat,
-                  locationLng: loc?.lng,
-                })}
-                locationName={formState.locationName}
-                onLocationNameChange={(name) => updateForm({ locationName: name })}
+              <Label>
+                结束时间 <span className="text-slate-400 text-xs">(可选)</span>
+              </Label>
+              {formState.endTime ? (
+                <div className="space-y-1.5">
+                  <DateTimeField
+                    value={formState.endTime}
+                    onChange={(val) => updateForm({ endTime: val })}
+                  />
+                  <div className="text-xs text-slate-500 flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => updateForm({ endTime: undefined })}
+                      className="text-blue-600 hover:text-blue-700"
+                    >
+                      清除结束时间
+                    </button>
+                    <span>{new Date(formState.endTime).toLocaleString("zh-CN", { hour12: false })}</span>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => updateForm({ endTime: new Date().toISOString() })}
+                  className="rounded-xl border-2 border-dashed border-slate-200 py-3 text-sm text-slate-500 hover:border-blue-300 hover:text-blue-600"
+                >
+                  设置结束时间（默认使用当前时间）
+                </button>
+              )}
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>
+                  钓点 <span className="text-red-500">*</span>
+                </Label>
+                <button
+                  type="button"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                  onClick={() => setSpotDialogOpen(true)}
+                >
+                  + 新建钓点
+                </button>
+              </div>
+              <FishingSpotPicker
+                spots={spots}
+                value={formState.spotId}
+                loading={spotsLoading}
+                error={spotsError}
+                onReload={reloadSpots}
+                onSelect={handleSpotSelect}
               />
+              {selectedSpot ? (
+                <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 text-xs text-slate-500">
+                  <div className="font-medium text-slate-800">
+                    {selectedSpot.name}
+                    <span className="ml-2 inline-flex items-center rounded-full bg-white px-2 py-0.5 text-[11px] text-slate-500">
+                      {selectedSpot.visibility === "public"
+                        ? "公开"
+                        : selectedSpot.visibility === "friends"
+                        ? "仅好友"
+                        : "私密"}
+                    </span>
+                  </div>
+                  {selectedSpot.locationName && (
+                    <div className="mt-1">地点：{selectedSpot.locationName}</div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400">
+                  请选择一个钓点，或创建新的钓点。
+                </p>
+              )}
+              <div className="mt-2 text-xs">
+                <Link href="/spots" className="text-blue-600 hover:text-blue-700">
+                  管理全部钓点
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -287,36 +385,56 @@ export default function EditTripPage() {
           <CardContent className="grid grid-cols-2 gap-4">
             <div className="space-y-2 col-span-2">
               <Label>天气状况</Label>
-              <div className="grid grid-cols-4 gap-2">
-                {WEATHER_TYPES.map((weather) => (
-                  <button
-                    key={weather}
-                    onClick={() => updateForm({ weatherType: weather })}
-                    className={cn(
-                      "px-3 py-2 rounded-lg text-sm font-medium border transition-all",
-                      formState.weatherType === weather
-                        ? "border-blue-600 bg-blue-50 text-blue-600"
-                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                    )}
-                  >
-                    {weather}
-                  </button>
-                ))}
-              </div>
+              <Input
+                value={formState.weatherType || ""}
+                onChange={(e) =>
+                  updateForm({
+                    weatherType: e.target.value,
+                    weatherMetadataId: undefined,
+                  })
+                }
+                placeholder="如：晴、阴、阵雨"
+              />
+              {weatherOptions.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {weatherOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => handleWeatherSelect(option)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-xs transition-colors",
+                        formState.weatherMetadataId === option.id
+                          ? "bg-blue-600 text-white"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      )}
+                    >
+                      {option.label || option.value}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-slate-400">
+                选择推荐选项会自动填入上方输入框，再次点击可清除。
+              </p>
             </div>
             <div className="space-y-2">
               <Label>气温</Label>
-              <Input 
-                value={formState.weatherTemperatureText || ""} 
-                onChange={(e) => updateForm({ weatherTemperatureText: e.target.value })}
+              <Input
+                value={formState.weatherTemperatureText || ""}
+                onChange={(e) =>
+                  updateForm({ weatherTemperatureText: e.target.value })
+                }
                 placeholder="如 25°C"
               />
             </div>
             <div className="space-y-2">
               <Label>风力</Label>
-              <Input 
-                value={formState.weatherWindText || ""} 
-                onChange={(e) => updateForm({ weatherWindText: e.target.value })}
+              <Input
+                value={formState.weatherWindText || ""}
+                onChange={(e) =>
+                  updateForm({ weatherWindText: e.target.value })
+                }
                 placeholder="如 东风3级"
               />
             </div>
@@ -475,6 +593,12 @@ export default function EditTripPage() {
         </Card>
       </main>
 
+      <FishingSpotFormDialog
+        open={spotDialogOpen}
+        onOpenChange={setSpotDialogOpen}
+        onCreated={handleSpotCreated}
+      />
+
       <CatchDialog 
         open={isCatchDialogOpen} 
         onOpenChange={setIsCatchDialogOpen}
@@ -552,6 +676,7 @@ function CatchDialog({
       setUploadStatus("uploading");
       const formData = new FormData();
       formData.append("file", blob, filename);
+      formData.append("folder", "catches");
 
       const res = await fetch("/api/upload/catch-photo", {
         method: "POST",
@@ -658,9 +783,37 @@ function CatchDialog({
           <div className="space-y-2">
             <Label>数量</Label>
             <div className="flex items-center gap-4">
-              <Button variant="outline" size="icon" onClick={() => setCount(Math.max(1, count - 1))}>-</Button>
-              <span className="text-lg font-medium w-8 text-center">{count}</span>
-              <Button variant="outline" size="icon" onClick={() => setCount(count + 1)}>+</Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCount(Math.max(1, count - 1))}
+                disabled={count <= 1}
+              >
+                -
+              </Button>
+              <Input
+                type="number"
+                inputMode="numeric"
+                value={count}
+                min={1}
+                max={999}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (Number.isNaN(val)) {
+                    setCount(1);
+                  } else {
+                    setCount(Math.max(1, Math.min(999, val)));
+                  }
+                }}
+                className="w-20 text-center text-lg font-semibold"
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCount((c) => Math.min(999, c + 1))}
+              >
+                +
+              </Button>
             </div>
           </div>
 
@@ -730,5 +883,3 @@ function CatchDialog({
     </Dialog>
   );
 }
-
-

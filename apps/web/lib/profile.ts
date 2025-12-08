@@ -21,7 +21,8 @@ export type ProfileOverview = {
   recentTrip: {
     id: string;
     title: string | null;
-    locationName: string;
+    spotName: string;
+    spotLocationName: string | null;
     startTime: Date;
     totalCatchCount: number;
   } | null;
@@ -62,9 +63,9 @@ export async function getProfileOverview(userId: string): Promise<ProfileOvervie
         select: {
           id: true,
           title: true,
-          locationName: true,
           startTime: true,
           totalCatchCount: true,
+          spot: { select: { name: true, locationName: true } },
           catches: { select: { count: true } },
         },
       }),
@@ -78,7 +79,8 @@ export async function getProfileOverview(userId: string): Promise<ProfileOvervie
     ? {
         id: recentTrip.id,
         title: recentTrip.title,
-        locationName: recentTrip.locationName,
+        spotName: recentTrip.spot?.name || "未设置钓点",
+        spotLocationName: recentTrip.spot?.locationName || null,
         startTime: recentTrip.startTime,
         totalCatchCount:
           recentTrip.totalCatchCount ??

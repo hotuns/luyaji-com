@@ -40,7 +40,7 @@ build_web() {
   
   cd "$ROOT_DIR"
   log_info "编译 web 应用..."
-  pnpm turbo build --filter=web
+  pnpm --filter web run build
 
   WEB_DIR="$ROOT_DIR/apps/web"
   if [ -d "$WEB_DIR/.next/standalone" ]; then
@@ -69,7 +69,7 @@ build_admin() {
   
   cd "$ROOT_DIR"
   log_info "编译 admin 应用..."
-  pnpm turbo build --filter=admin
+  pnpm --filter admin run build
 
   ADMIN_DIR="$ROOT_DIR/apps/admin"
   if [ -d "$ADMIN_DIR/.next/standalone" ]; then

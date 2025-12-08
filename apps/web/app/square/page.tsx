@@ -1,5 +1,5 @@
-import { GearLibraryDashboard } from "./gear-library-dashboard";
+import { SquareDashboard } from "./square-dashboard";
 
 export default function SquarePage() {
-  return <GearLibraryDashboard />;
+  return <SquareDashboard />;
 }

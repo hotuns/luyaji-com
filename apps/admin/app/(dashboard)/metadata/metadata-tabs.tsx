@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Button,
   Card,
@@ -23,13 +23,15 @@ import {
   PlusOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
+import type { DefaultOptionType } from "antd/es/select";
 
-type MetadataItem = {
+export type MetadataItem = {
   id: string;
   category: string;
   value: string;
   label: string;
-  extra: unknown;
+  aliases?: string[] | null;
+  extra?: unknown;
   sortOrder: number;
   isActive: boolean;
   createdAt: Date;
@@ -49,15 +51,37 @@ type Props = {
   categoryInfo: Record<string, { label: string; description: string }>;
 };
 
+type FormValues = {
+  category: string;
+  newCategory?: string;
+  value: string;
+  label: string;
+  sortOrder?: number;
+  isActive?: boolean;
+  aliasesText?: string;
+  extraJson?: string;
+};
+
+const aliasPlaceholder = "多个别名用逗号或空格分隔（例如：达瓦, Daiwa, steez）";
+
 export function MetadataTabs({ categories, data, categoryInfo }: Props) {
-  const [activeTab, setActiveTab] = useState(categories[0]?.key || "rod_brand");
+  const [categoryList, setCategoryList] = useState(categories);
+  const [activeTab, setActiveTab] = useState(categoryList[0]?.key || "rod_brand");
   const [items, setItems] = useState(data);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MetadataItem | null>(null);
   const [loading, setLoading] = useState(false);
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<FormValues>();
 
   const currentItems = items[activeTab] || [];
+
+  const categoryOptions: DefaultOptionType[] = useMemo(
+    () => [
+      ...categoryList.map((c) => ({ value: c.key, label: c.label })),
+      { value: "__new__", label: "➕ 新建分类..." },
+    ],
+    [categoryList],
+  );
 
   const handleAdd = () => {
     setEditingItem(null);
@@ -66,6 +90,8 @@ export function MetadataTabs({ categories, data, categoryInfo }: Props) {
       category: activeTab,
       sortOrder: currentItems.length + 1,
       isActive: true,
+      aliasesText: "",
+      extraJson: "",
     });
     setModalOpen(true);
   };
@@ -78,6 +104,8 @@ export function MetadataTabs({ categories, data, categoryInfo }: Props) {
       label: record.label,
       sortOrder: record.sortOrder,
       isActive: record.isActive,
+      aliasesText: record.aliases?.join(", ") ?? "",
+      extraJson: record.extra ? JSON.stringify(record.extra, null, 2) : "",
     });
     setModalOpen(true);
   };
@@ -98,10 +126,52 @@ export function MetadataTabs({ categories, data, categoryInfo }: Props) {
     }
   };
 
+  const normalizeAliases = (aliasesText?: string) =>
+    typeof aliasesText === "string"
+      ? aliasesText
+          .split(/[,，\s]+/)
+          .map((alias) => alias.trim())
+          .filter(Boolean)
+      : [];
+
+  const parseExtraJson = (extraJson?: string) => {
+    if (!extraJson) return null;
+    const content = extraJson.trim();
+    if (!content) return null;
+    return JSON.parse(content);
+  };
+
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       setLoading(true);
+
+      const { newCategory, aliasesText, extraJson, ...rest } = values;
+      let resolvedCategory: string | undefined = values.category;
+      if (resolvedCategory === "__new__") {
+        resolvedCategory = newCategory;
+      }
+
+      if (!resolvedCategory) {
+        message.error("请选择或输入分类");
+        return;
+      }
+
+      const normalizedAliases = normalizeAliases(aliasesText);
+      let parsedExtra: unknown = null;
+      try {
+        parsedExtra = parseExtraJson(extraJson);
+      } catch {
+        message.error("扩展字段 JSON 解析失败，请检查格式");
+        return;
+      }
+
+      const payload = {
+        ...rest,
+        category: resolvedCategory,
+        aliases: normalizedAliases,
+        extra: parsedExtra,
+      };
 
       const url = editingItem
         ? `/api/metadata/${editingItem.id}`
@@ -111,31 +181,43 @@ export function MetadataTabs({ categories, data, categoryInfo }: Props) {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       });
       const json = await res.json();
 
       if (!json.success) throw new Error(json.error);
 
       if (editingItem) {
-        // 更新
         setItems((prev) => ({
           ...prev,
           [activeTab]:
             prev[activeTab]?.map((item) =>
-              item.id === editingItem.id ? json.data : item
+              item.id === editingItem.id ? json.data : item,
             ) || [],
         }));
         message.success("更新成功");
       } else {
-        // 新增
-        const category = values.category;
         setItems((prev) => ({
           ...prev,
-          [category]: [...(prev[category] || []), json.data],
+          [resolvedCategory]: [...(prev[resolvedCategory] || []), json.data],
         }));
-        if (category !== activeTab) {
-          setActiveTab(category);
+        setCategoryList((prev) => {
+          if (prev.some((item) => item.key === resolvedCategory)) {
+            return prev;
+          }
+          const info = categoryInfo[resolvedCategory];
+          return [
+            ...prev,
+            {
+              key: resolvedCategory,
+              label: info?.label || resolvedCategory,
+              description: info?.description || "",
+              count: 1,
+            },
+          ];
+        });
+        if (resolvedCategory !== activeTab) {
+          setActiveTab(resolvedCategory);
         }
         message.success("添加成功");
       }
@@ -165,7 +247,7 @@ export function MetadataTabs({ categories, data, categoryInfo }: Props) {
         ...prev,
         [activeTab]:
           prev[activeTab]?.map((item) =>
-            item.id === record.id ? { ...item, isActive: !record.isActive } : item
+            item.id === record.id ? { ...item, isActive: !record.isActive } : item,
           ) || [],
       }));
     } catch (error) {
@@ -184,7 +266,7 @@ export function MetadataTabs({ categories, data, categoryInfo }: Props) {
       title: "存储值",
       dataIndex: "value",
       width: 150,
-      render: (v) => <code style={{ fontSize: 12 }}>{v}</code>,
+      render: (value: string) => <code style={{ fontSize: 12 }}>{value}</code>,
     },
     {
       title: "显示文本",
@@ -192,27 +274,52 @@ export function MetadataTabs({ categories, data, categoryInfo }: Props) {
       width: 200,
     },
     {
+      title: "别名/匹配",
+      dataIndex: "aliases",
+      width: 240,
+      render: (aliases?: string[] | null) =>
+        aliases && aliases.length > 0 ? (
+          <Space size={[4, 4]} wrap>
+            {aliases.map((alias) => (
+              <Tag key={alias}>{alias}</Tag>
+            ))}
+          </Space>
+        ) : (
+          <span style={{ color: "#bbb" }}>—</span>
+        ),
+    },
+    {
+      title: "扩展信息",
+      dataIndex: "extra",
+      width: 220,
+      ellipsis: true,
+      render: (extra?: unknown) =>
+        extra ? (
+          <code style={{ fontSize: 12 }}>
+            {JSON.stringify(extra)}
+          </code>
+        ) : (
+          <span style={{ color: "#bbb" }}>—</span>
+        ),
+    },
+    {
       title: "状态",
       dataIndex: "isActive",
       width: 80,
       align: "center",
-      render: (v, record) => (
-        <Switch
-          checked={v}
-          size="small"
-          onChange={() => handleToggleActive(record)}
-        />
+      render: (isActive: boolean, record) => (
+        <Switch checked={isActive} size="small" onChange={() => handleToggleActive(record)} />
       ),
     },
     {
       title: "更新时间",
       dataIndex: "updatedAt",
       width: 160,
-      render: (v) => new Date(v).toLocaleString("zh-CN"),
+      render: (value: Date) => new Date(value).toLocaleString("zh-CN"),
     },
     {
       title: "操作",
-      width: 120,
+      width: 140,
       render: (_, record) => (
         <Space size="small">
           <Button
@@ -240,7 +347,7 @@ export function MetadataTabs({ categories, data, categoryInfo }: Props) {
     },
   ];
 
-  const tabItems = categories.map((cat) => ({
+  const tabItems = categoryList.map((cat) => ({
     key: cat.key,
     label: (
       <span>
@@ -249,12 +356,6 @@ export function MetadataTabs({ categories, data, categoryInfo }: Props) {
       </span>
     ),
   }));
-
-  // 添加「新增分类」选项
-  const categoryOptions = [
-    ...categories.map((c) => ({ value: c.key, label: c.label })),
-    { value: "__new__", label: "➕ 新建分类..." },
-  ];
 
   return (
     <Card>
@@ -280,6 +381,7 @@ export function MetadataTabs({ categories, data, categoryInfo }: Props) {
         pagination={false}
         size="small"
         locale={{ emptyText: "暂无数据，点击上方按钮添加" }}
+        scroll={{ x: 960 }}
       />
 
       <Modal
@@ -288,7 +390,7 @@ export function MetadataTabs({ categories, data, categoryInfo }: Props) {
         onCancel={() => setModalOpen(false)}
         onOk={handleSubmit}
         confirmLoading={loading}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item
@@ -328,7 +430,10 @@ export function MetadataTabs({ categories, data, categoryInfo }: Props) {
             label="存储值"
             rules={[
               { required: true, message: "请输入存储值" },
-              { pattern: /^[a-z0-9_-]+$/, message: "只允许小写字母、数字、下划线和连字符" },
+              {
+                pattern: /^[a-z0-9_-]+$/,
+                message: "只允许小写字母、数字、下划线和连字符",
+              },
             ]}
             tooltip="程序内部使用的标识符，如 shimano"
           >
@@ -350,6 +455,28 @@ export function MetadataTabs({ categories, data, categoryInfo }: Props) {
 
           <Form.Item name="isActive" label="是否启用" valuePropName="checked">
             <Switch />
+          </Form.Item>
+
+          <Form.Item
+            name="aliasesText"
+            label="别名"
+            tooltip={aliasPlaceholder}
+          >
+            <Input.TextArea
+              placeholder={aliasPlaceholder}
+              autoSize={{ minRows: 2, maxRows: 4 }}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="extraJson"
+            label="扩展字段（JSON）"
+            tooltip={'例如：{ "logoUrl": "https://example.com/logo.png" }'}
+          >
+            <Input.TextArea
+              placeholder='如需额外信息（logo/颜色/备注等），可填写 JSON'
+              autoSize={{ minRows: 2, maxRows: 6 }}
+            />
           </Form.Item>
         </Form>
       </Modal>

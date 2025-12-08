@@ -1,7 +1,8 @@
 "use client";
 
-import { TripFormState, WEATHER_TYPES, Combo, Rod, Reel } from "@/lib/types";
 import { useState, useEffect } from "react";
+import { TripFormState, Combo, Rod, Reel } from "@/lib/types";
+import { useMetadataOptions } from "@/hooks/use-metadata-options";
 
 interface Step2Props {
   formState: TripFormState;
@@ -20,6 +21,7 @@ export default function Step2GearWeather({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showNewComboForm, setShowNewComboForm] = useState(false);
+  const { options: weatherOptions } = useMetadataOptions("weather_type");
 
   // 获取用户的组合列表（禁用缓存确保获取最新数据）
   useEffect(() => {
@@ -48,6 +50,17 @@ export default function Step2GearWeather({
       ? formState.usedComboIds.filter((id) => id !== comboId)
       : [...formState.usedComboIds, comboId];
     updateForm({ usedComboIds: newIds });
+  };
+
+  const handleWeatherSelect = (option: { id: string; label?: string | null; value: string }) => {
+    if (formState.weatherMetadataId === option.id) {
+      updateForm({ weatherType: "", weatherMetadataId: undefined });
+    } else {
+      updateForm({
+        weatherType: option.label || option.value,
+        weatherMetadataId: option.id,
+      });
+    }
   };
 
   return (
@@ -137,31 +150,43 @@ export default function Step2GearWeather({
         <p className="text-sm text-slate-500 mb-4">可选，后续也可以补充</p>
 
         {/* 天气类型 */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-slate-700 mb-2">
+        <div className="mb-4 space-y-2">
+          <label className="block text-sm font-medium text-slate-700">
             天气
           </label>
-          <div className="flex flex-wrap gap-2">
-            {WEATHER_TYPES.map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() =>
-                  updateForm({
-                    weatherType:
-                      formState.weatherType === type ? "" : type,
-                  })
-                }
-                className={`px-4 py-2 rounded-full text-sm transition-colors ${
-                  formState.weatherType === type
-                    ? "bg-blue-600 text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                {type}
-              </button>
-            ))}
-          </div>
+          <input
+            type="text"
+            value={formState.weatherType || ""}
+            onChange={(e) =>
+              updateForm({
+                weatherType: e.target.value,
+                weatherMetadataId: undefined,
+              })
+            }
+            placeholder="如：晴、阴、阵雨"
+            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+          />
+          {weatherOptions.length > 0 && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {weatherOptions.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => handleWeatherSelect(option)}
+                  className={`px-3 py-1.5 rounded-full text-xs transition-colors ${
+                    formState.weatherMetadataId === option.id
+                      ? "bg-blue-600 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  {option.label || option.value}
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-slate-400">
+            选择推荐天气会自动填入上方输入框，也可自定义输入。
+          </p>
         </div>
 
         {/* 温度 */}

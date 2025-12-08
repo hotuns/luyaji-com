@@ -15,7 +15,10 @@ interface HomeStats {
   recentTrips: {
     id: string;
     title: string | null;
-    locationName: string;
+    spot?: {
+      name: string | null;
+      locationName: string | null;
+    } | null;
     startTime: string;
     catches: { count: number; speciesName: string }[];
   }[];
@@ -277,8 +280,12 @@ function formatDate(value: string | null) {
   return dayjs(value).format("YYYY-MM-DD HH:mm");
 }
 
-function TripCard({ trip }: { trip: { id: string; title: string | null; locationName: string; startTime: string; catches: { count: number; speciesName: string }[] } }) {
+function TripCard({ trip }: { trip: { id: string; title: string | null; startTime: string; catches: { count: number; speciesName: string }[]; spot?: { name: string | null; locationName: string | null } | null } }) {
   const totalCatch = trip.catches.reduce((sum, c) => sum + c.count, 0);
+  const locationLabel =
+    trip.spot?.name ||
+    trip.spot?.locationName ||
+    "未设置钓点";
   
   return (
     <Link href={`/trips/${trip.id}`}>
@@ -287,10 +294,10 @@ function TripCard({ trip }: { trip: { id: string; title: string | null; location
           <div className="flex justify-between items-start mb-2">
             <div className="flex items-center gap-2">
               <span className="font-bold text-slate-800 truncate group-hover:text-blue-600 transition-colors">
-                {trip.title || trip.locationName}
+                {trip.title || locationLabel}
               </span>
               <span className="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-md border border-blue-100">
-                {trip.locationName}
+                {locationLabel}
               </span>
             </div>
             <span className="text-xs text-slate-400 font-mono">

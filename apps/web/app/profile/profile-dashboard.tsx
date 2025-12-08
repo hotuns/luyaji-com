@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@workspace/ui/components/card";
 import { Button } from "@workspace/ui/components/button";
-import { User, Smartphone, Settings, ChevronRight, BarChart3 } from "lucide-react";
+import { User, Smartphone, Settings, ChevronRight, BarChart3, MapPin, Map, Anchor, Share2 } from "lucide-react";
 import Link from "next/link";
 import {
   Dialog,
@@ -38,7 +38,8 @@ interface ProfileData {
   recentTrip: {
     id: string;
     title: string | null;
-    locationName: string;
+    spotName: string;
+    spotLocationName: string | null;
   } | null;
 }
 
@@ -148,6 +149,44 @@ export default function ProfileDashboard() {
     }
   }
 
+  const quickLinks = [
+    {
+      href: "/trips",
+      label: "出击记录",
+      desc: "查看 / 新建",
+      icon: MapPin,
+      iconClass: "bg-sky-100 text-sky-600",
+    },
+    {
+      href: "/trips/map",
+      label: "地图视角",
+      desc: "查找钓点",
+      icon: Map,
+      iconClass: "bg-emerald-100 text-emerald-600",
+    },
+    {
+      href: "/spots",
+      label: "钓点管理",
+      desc: "维护钓点",
+      icon: MapPin,
+      iconClass: "bg-amber-100 text-amber-600",
+    },
+    {
+      href: "/gear",
+      label: "装备库",
+      desc: "整理组合",
+      icon: Anchor,
+      iconClass: "bg-indigo-100 text-indigo-600",
+    },
+    {
+      href: "/square",
+      label: "钓友广场",
+      desc: "热门出击",
+      icon: Share2,
+      iconClass: "bg-rose-100 text-rose-600",
+    },
+  ];
+
   return (
     <div className="pb-24 md:pb-8 max-w-3xl mx-auto">
       {/* Profile Card */}
@@ -173,6 +212,32 @@ export default function ProfileDashboard() {
             <p className="text-slate-400 text-sm mt-4">入坑时间: {formatDate(data.user.createdAt)}</p>
             <p className="text-slate-400 text-sm">个人简介：{bio}</p>
           </div>
+        </div>
+      </div>
+
+      {/* Mobile quick shortcuts */}
+      <div className="md:hidden mb-8">
+        <div className="grid grid-cols-2 gap-3">
+          {quickLinks.map((link) => {
+            const Icon = link.icon;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="group active:scale-[0.98] transition"
+              >
+                <div className="bg-white border border-slate-100 rounded-2xl shadow-sm px-4 py-3 flex items-center gap-3">
+                  <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${link.iconClass}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{link.label}</p>
+                    <p className="text-xs text-slate-500">{link.desc}</p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </div>
 
@@ -299,7 +364,7 @@ export default function ProfileDashboard() {
                   label="最近出击"
                   value={
                     data.recentTrip
-                      ? `${data.recentTrip.title || data.recentTrip.locationName}`
+                      ? `${data.recentTrip.title || data.recentTrip.spotName}`
                       : "暂无记录"
                   }
                 />

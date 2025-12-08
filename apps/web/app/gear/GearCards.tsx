@@ -11,11 +11,13 @@ import { MoreHorizontal, Layers, Share2, Lock, Fish, Anchor, Pencil, Trash2 } fr
 import { RodSummary, ReelSummary, ComboSummary } from "./gear-shared";
 import { ComboForm, RodForm, ReelForm } from "./GearForms";
 import { ShareDialog, useShareConfig } from "@/components/share-dialog";
+import { ImagePreviewDialog } from "@/components/image-preview-dialog";
 
 export function ComboCard({ combo, rods, reels, onUpdated, onDeleted }: { combo: ComboSummary; rods: RodSummary[]; reels: ReelSummary[]; onUpdated: (combo: ComboSummary) => void; onDeleted: () => void; }) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const shareConfig = useShareConfig("combo", {
     id: combo.id,
@@ -53,9 +55,27 @@ export function ComboCard({ combo, rods, reels, onUpdated, onDeleted }: { combo:
         <CardContent className="p-0 flex flex-col h-full">
           <div className="aspect-[4/3] bg-slate-100 relative overflow-hidden">
             {combo.photoUrls && combo.photoUrls.length > 0 ? (
-              <img src={combo.photoUrls[0]} alt={combo.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+              <>
+                <img
+                  src={combo.photoUrls[0]}
+                  alt={combo.name}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <button
+                  type="button"
+                  className="absolute inset-0 z-10 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setPreviewOpen(true);
+                  }}
+                  aria-label="预览组合图片"
+                />
+              </>
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50"><Layers className="h-12 w-12 opacity-50" /></div>
+              <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50">
+                <Layers className="h-12 w-12 opacity-50" />
+              </div>
             )}
             <div className="absolute top-3 right-3 flex gap-2">
               {combo.visibility === "public" ? (
@@ -130,6 +150,12 @@ export function ComboCard({ combo, rods, reels, onUpdated, onDeleted }: { combo:
         config={shareConfig}
         open={showShare}
         onOpenChange={setShowShare}
+      />
+      <ImagePreviewDialog
+        open={previewOpen}
+        images={combo.photoUrls || []}
+        title={combo.name}
+        onOpenChange={setPreviewOpen}
       />
     </>
   );

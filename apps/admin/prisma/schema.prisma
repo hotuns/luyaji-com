@@ -36,12 +36,13 @@ model User {
   sessions Session[]
 
   // 业务关联
-  rods    Rod[]
-  reels   Reel[]
-  combos  Combo[]
-  trips   Trip[]
-  catches Catch[]
-  comboLikes ComboLike[]
+  rods         Rod[]
+  reels        Reel[]
+  combos       Combo[]
+  trips        Trip[]
+  catches      Catch[]
+  comboLikes   ComboLike[]
+  fishingSpots FishingSpot[]
 
   @@index([phone])
   @@unique([nickname])
@@ -110,6 +111,7 @@ model Rod {
   lureWeightMin Float?   // 适用饵重下限（g）
   lureWeightMax Float?   // 适用饵重上限（g）
   lineWeightText String? // 适用线号描述
+  price         Float?   // 价格
   note          String?  @db.Text // 备注
   visibility    String   @default("private") // private | public
   sourceType    String   @default("user") // user | template | copied
@@ -133,6 +135,7 @@ model Reel {
   model            String?  // 型号 2500, 3000 等
   gearRatioText    String?  // 速比描述
   lineCapacityText String?  // 线容量描述
+  price            Float?   // 价格
   note             String?  @db.Text // 备注
   visibility       String   @default("private") // private | public
   sourceType       String   @default("user") // user | template | copied
@@ -203,9 +206,6 @@ model Trip {
   title                  String?   // 出击标题
   startTime              DateTime  // 出击时间
   endTime                DateTime? // 结束时间
-  locationName           String    // 地点文本
-  locationLat            Float?    // 经度
-  locationLng            Float?    // 纬度
   note                   String?   @db.Text // 总体备注
   weatherType            String?   // 天气类型
   weatherTemperatureText String?   // 温度文本
@@ -213,15 +213,18 @@ model Trip {
   totalCatchCount        Int?      @default(0) // 渔获总条数
   fishSpeciesCount       Int?      @default(0) // 渔获鱼种数
   visibility             String    @default("private") // private | public
+  spotId                 String?
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   tripCombos TripCombo[]
   catches    Catch[]
+  spot       FishingSpot? @relation(fields: [spotId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([startTime])
+  @@index([spotId])
   @@map("trips")
 }
 
@@ -237,6 +240,26 @@ model TripCombo {
 
   @@unique([tripId, comboId])
   @@map("trip_combos")
+}
+
+model FishingSpot {
+  id           String   @id @default(uuid())
+  userId       String
+  name         String
+  locationName String?
+  locationLat  Float?
+  locationLng  Float?
+  description  String?  @db.Text
+  visibility   String   @default("private")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trips Trip[]
+
+  @@index([userId])
+  @@index([visibility])
+  @@map("fishing_spots")
 }
 
 // ==================== 渔获与鱼种 ====================
@@ -382,4 +405,78 @@ model DailyStat {
 
   @@index([date])
   @@map("daily_stats")
+}
+
+// ==================== 分享素材与模板 ====================
+
+model ShareTemplate {
+  id                  String   @id @default(uuid())
+  type                String   // 模板类型，如 trip | combo
+  name                String   // 模板内部名称
+  title               String?  // 分享主标题
+  subtitle            String?  // 副标题
+  description         String?  @db.Text // 描述/文案
+  badgeLabel          String?  // 角标文案
+  backgroundImageUrl  String?  @db.Text // 背景图
+  config              Json?    // 额外配置 JSON
+  sortOrder           Int      @default(0)
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([type, isActive, sortOrder])
+  @@map("share_templates")
+}
+
+model ShareMediaAsset {
+  id         String   @id @default(uuid())
+  category   String   // 分类：例如 share_background、share_badge
+  label      String?
+  imageUrl   String   @db.Text
+  linkUrl    String?  @db.Text
+  weight     Int      @default(1)
+  isActive   Boolean  @default(true)
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([category, isActive])
+  @@map("share_media_assets")
+}
+
+model ShareCta {
+  id          String   @id @default(uuid())
+  key         String   // CTA key，例：share_footer
+  title       String   // CTA 标题
+  description String?  @db.Text
+  buttonText  String?
+  linkUrl     String?  @db.Text
+  audience    String?  @default("all") // all | guest | authenticated
+  isActive    Boolean  @default(true)
+  startAt     DateTime?
+  endAt       DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([key, audience])
+  @@map("share_ctas")
+}
+
+// ==================== 系统元数据（枚举/选项） ====================
+
+// 通用元数据表，用于存储品牌、场景标签等可选项
+model Metadata {
+  id        String   @id @default(uuid())
+  category  String   // 分类: rod_brand, reel_brand, combo_scene_tag, weather_type 等
+  value     String   // 存储值（用于程序逻辑）
+  label     String   // 显示文本（用于 UI 展示）
+  extra     Json?    // 扩展字段，如品牌 logo URL、颜色等
+  sortOrder Int      @default(0) // 排序权重，越小越靠前
+  isActive  Boolean  @default(true) // 是否启用
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([category, value]) // 同一分类下 value 唯一
+  @@index([category, isActive, sortOrder])
+  @@map("metadata")
 }

@@ -14,9 +14,12 @@ export interface Rod {
   userId: string;
   name: string;
   brand?: string | null;
+  brandMetadataId?: string | null;
   length?: number | null;
   lengthUnit?: string | null;
+  lengthUnitMetadataId?: string | null;
   power?: string | null;
+  powerMetadataId?: string | null;
   lureWeightMin?: number | null;
   lureWeightMax?: number | null;
   lineWeightText?: string | null;
@@ -32,6 +35,7 @@ export interface Reel {
   userId: string;
   name: string;
   brand?: string | null;
+  brandMetadataId?: string | null;
   model?: string | null;
   gearRatioText?: string | null;
   lineCapacityText?: string | null;
@@ -53,6 +57,17 @@ export interface Combo {
   hookText?: string | null;
   lures?: ComboLure[] | null;
   sceneTags?: string[] | null;
+  sceneMetadataIds?: string[];
+  sceneMetadata?: Array<{
+    id: string;
+    metadataId: string;
+    metadata?: {
+      id: string;
+      label: string;
+      value: string;
+    } | null;
+  }>;
+  customSceneTags?: string[];
   detailNote?: string | null;
   visibility: "private" | "public";
   sourceType: "user" | "template" | "copied";
@@ -65,27 +80,40 @@ export interface Combo {
 
 // ==================== 出击记录相关 ====================
 
+export interface FishingSpot {
+  id: string;
+  userId: string;
+  name: string;
+  locationName?: string | null;
+  locationLat?: number | null;
+  locationLng?: number | null;
+  description?: string | null;
+  visibility: "private" | "friends" | "public";
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Trip {
   id: string;
   userId: string;
   title?: string | null;
   startTime: Date;
   endTime?: Date | null;
-  locationName: string;
-  locationLat?: number | null;
-  locationLng?: number | null;
   note?: string | null;
   weatherType?: string | null;
+  weatherMetadataId?: string | null;
   weatherTemperatureText?: string | null;
   weatherWindText?: string | null;
   totalCatchCount?: number | null;
   fishSpeciesCount?: number | null;
   visibility: "private" | "public";
+  spotId?: string | null;
   createdAt: Date;
   updatedAt: Date;
   // 关联数据
   tripCombos?: TripCombo[];
   catches?: Catch[];
+  spot?: FishingSpot | null;
 }
 
 export interface TripCombo {
@@ -138,15 +166,14 @@ export interface TripFormState {
   title?: string;
   startTime: string; // ISO string
   endTime?: string; // ISO string, 可选，不填表示"进行中"
-  locationName: string;
-  locationLat?: number;
-  locationLng?: number;
+  spotId?: string;
   note?: string;
   visibility: "private" | "public"; // 可见性
 
   // Step2: 装备组合 & 天气
   usedComboIds: string[];
   weatherType?: string;
+  weatherMetadataId?: string;
   weatherTemperatureText?: string;
   weatherWindText?: string;
 
@@ -175,33 +202,19 @@ export interface TripCatchDraft {
 }
 
 // 天气类型选项
-export const WEATHER_TYPES = [
-  "晴",
-  "多云",
-  "阴",
-  "小雨",
-  "中雨",
-  "大雨",
-  "雾/霾",
-] as const;
-
-export type WeatherType = (typeof WEATHER_TYPES)[number];
-
-// 鱼竿硬度选项
-export const ROD_POWERS = ["UL", "L", "ML", "M", "MH", "H", "XH"] as const;
-
-export type RodPower = (typeof ROD_POWERS)[number];
-
 // ==================== API 请求/响应类型 ====================
 
 export interface CreateTripRequest {
   title?: string;
   startTime: string;
-  locationName: string;
+  endTime?: string | null;
+  spotId: string;
   note?: string;
+  visibility?: "private" | "public";
   usedComboIds: string[];
   weather?: {
     type?: string;
+    metadataId?: string;
     temperatureText?: string;
     windText?: string;
   };
@@ -219,9 +232,12 @@ export interface CreateTripRequest {
 export interface CreateRodRequest {
   name: string;
   brand?: string;
+  brandMetadataId?: string | null;
   length?: number;
   lengthUnit?: string;
+  lengthUnitMetadataId?: string | null;
   power?: string;
+  powerMetadataId?: string | null;
   lureWeightMin?: number;
   lureWeightMax?: number;
   lineWeightText?: string;
@@ -232,6 +248,7 @@ export interface CreateRodRequest {
 export interface CreateReelRequest {
   name: string;
   brand?: string;
+  brandMetadataId?: string | null;
   model?: string;
   gearRatioText?: string;
   lineCapacityText?: string;
@@ -248,6 +265,7 @@ export interface CreateComboRequest {
   hookText?: string;
   lures?: ComboLure[];
   sceneTags?: string[];
+  sceneMetadataIds?: string[];
   detailNote?: string;
   visibility?: "private" | "public";
 }

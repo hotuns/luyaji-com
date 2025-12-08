@@ -74,8 +74,9 @@ export default function Step3Catches({
 
       // 阶段2: 上传到服务器
       setUploadStatus("uploading");
-      const formData = new FormData();
-      formData.append("file", blob, filename);
+    const formData = new FormData();
+    formData.append("file", blob, filename);
+    formData.append("folder", "catches");
 
       const res = await fetch("/api/upload/catch-photo", {
         method: "POST",

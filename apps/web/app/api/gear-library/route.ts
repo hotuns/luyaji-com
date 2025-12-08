@@ -15,6 +15,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type");
   const keyword = searchParams.get("q")?.trim();
+  const source = searchParams.get("source"); // all | template | user
   const limitRaw = searchParams.get("limit");
   const pageRaw = searchParams.get("page");
 
@@ -33,9 +34,16 @@ export async function GET(request: Request) {
   }
 
   if (type === "rod") {
+    const sourceFilter: { sourceType?: string | { in: string[] } } =
+      source === "template"
+        ? { sourceType: "template" }
+        : source === "user"
+        ? { sourceType: { in: ["user", "copied"] } }
+        : {};
     const total = await prisma.rod.count({
       where: {
         visibility: "public",
+        ...sourceFilter,
         ...(keyword
           ? {
               OR: [
@@ -52,6 +60,7 @@ export async function GET(request: Request) {
     const rods = await prisma.rod.findMany({
       where: {
         visibility: "public",
+        ...sourceFilter,
         // 不再排除当前用户，方便运营账号检查公共库中所有内容
         ...(keyword
           ? {
@@ -89,6 +98,7 @@ export async function GET(request: Request) {
         lureWeightMax: rod.lureWeightMax,
         lineWeightText: rod.lineWeightText,
         note: rod.note,
+        sourceType: rod.sourceType,
         updatedAt: rod.updatedAt,
         ownerName: rod.user?.nickname || maskPhone(rod.user?.phone),
       })),
@@ -96,68 +106,82 @@ export async function GET(request: Request) {
   }
 
   if (type === "reel") {
-  const total = await prisma.reel.count({
-    where: {
-      visibility: "public",
-      ...(keyword
-        ? {
-            OR: [
-              { name: { contains: keyword } },
-              { brand: { contains: keyword } },
-              { model: { contains: keyword } },
-              { gearRatioText: { contains: keyword } },
-              { note: { contains: keyword } },
-            ],
-          }
-        : {}),
-    },
-  });
+    const sourceFilter: { sourceType?: string | { in: string[] } } =
+      source === "template"
+        ? { sourceType: "template" }
+        : source === "user"
+        ? { sourceType: { in: ["user", "copied"] } }
+        : {};
+    const total = await prisma.reel.count({
+      where: {
+        visibility: "public",
+        ...sourceFilter,
+        ...(keyword
+          ? {
+              OR: [
+                { name: { contains: keyword } },
+                { brand: { contains: keyword } },
+                { model: { contains: keyword } },
+                { gearRatioText: { contains: keyword } },
+                { note: { contains: keyword } },
+              ],
+            }
+          : {}),
+      },
+    });
 
-  const reels = await prisma.reel.findMany({
-    where: {
-      visibility: "public",
-      // 同上，不再排除当前用户
-      ...(keyword
-        ? {
-            OR: [
-              { name: { contains: keyword } },
-              { brand: { contains: keyword } },
-              { model: { contains: keyword } },
-              { gearRatioText: { contains: keyword } },
-              { note: { contains: keyword } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: { updatedAt: "desc" },
-    take,
-    skip,
-    include: {
-      user: { select: { nickname: true, phone: true } },
-    },
-  });
+    const reels = await prisma.reel.findMany({
+      where: {
+        visibility: "public",
+        ...sourceFilter,
+        // 同上，不再排除当前用户
+        ...(keyword
+          ? {
+              OR: [
+                { name: { contains: keyword } },
+                { brand: { contains: keyword } },
+                { model: { contains: keyword } },
+                { gearRatioText: { contains: keyword } },
+                { note: { contains: keyword } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { updatedAt: "desc" },
+      take,
+      skip,
+      include: {
+        user: { select: { nickname: true, phone: true } },
+      },
+    });
 
-  return NextResponse.json({
-    success: true,
-    total,
-    data: reels.map((reel) => ({
-      id: reel.id,
-      name: reel.name,
-      brand: reel.brand,
-      model: reel.model,
-      gearRatioText: reel.gearRatioText,
-      lineCapacityText: reel.lineCapacityText,
-      note: reel.note,
-      updatedAt: reel.updatedAt,
-      ownerName: reel.user?.nickname || maskPhone(reel.user?.phone),
-    })),
-  });
-}
+    return NextResponse.json({
+      success: true,
+      total,
+      data: reels.map((reel) => ({
+        id: reel.id,
+        name: reel.name,
+        brand: reel.brand,
+        model: reel.model,
+        gearRatioText: reel.gearRatioText,
+        lineCapacityText: reel.lineCapacityText,
+        note: reel.note,
+        sourceType: reel.sourceType,
+        updatedAt: reel.updatedAt,
+        ownerName: reel.user?.nickname || maskPhone(reel.user?.phone),
+      })),
+    });
+  }
 
   // combo 公共库
   const total = await prisma.combo.count({
     where: {
       visibility: "public",
+      ...(source === "template"
+        ? { sourceType: "template" }
+        : source === "user"
+        ? { sourceType: { in: ["user", "copied"] } }
+        : {}),
       ...(keyword
         ? {
             OR: [
@@ -175,6 +199,11 @@ export async function GET(request: Request) {
   const combos = await prisma.combo.findMany({
     where: {
       visibility: "public",
+      ...(source === "template"
+        ? { sourceType: "template" }
+        : source === "user"
+        ? { sourceType: { in: ["user", "copied"] } }
+        : {}),
       ...(keyword
         ? {
             OR: [
@@ -210,6 +239,7 @@ export async function GET(request: Request) {
       detailNote: combo.detailNote,
       photoUrls: (combo.photoUrls as string[] | null) ?? null,
       likeCount: combo.likeCount ?? 0,
+      sourceType: combo.sourceType,
       updatedAt: combo.updatedAt,
       ownerName: combo.user?.nickname || maskPhone(combo.user?.phone),
     })),

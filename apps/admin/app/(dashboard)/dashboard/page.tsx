@@ -47,8 +47,13 @@ async function getRecentTrips() {
     select: {
       id: true,
       title: true,
-      locationName: true,
       startTime: true,
+      spot: {
+        select: {
+          name: true,
+          locationName: true,
+        },
+      },
       user: {
         select: { nickname: true, phone: true },
       },
@@ -68,4 +73,3 @@ export default async function DashboardPage() {
 
   return <DashboardOverview stats={stats} recentUsers={recentUsers} recentTrips={recentTrips} />;
 }
-

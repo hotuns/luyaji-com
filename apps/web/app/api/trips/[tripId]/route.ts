@@ -6,6 +6,8 @@ import { getTripDetail } from "@/lib/trip-detail";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { getMetadataRecord } from "@/lib/server/metadata-utils";
+
 // 预处理：将 null 转换为 undefined
 const nullToUndefined = <T>(val: T | null | undefined): T | undefined => 
   val === null ? undefined : val;
@@ -14,15 +16,20 @@ const updateTripSchema = z.object({
   title: z.preprocess(nullToUndefined, z.string().max(50).optional()),
   startTime: z.preprocess(nullToUndefined, z.string().optional()),
   endTime: z.preprocess(nullToUndefined, z.string().nullable().optional()),
-  locationName: z.preprocess(nullToUndefined, z.string().min(1).max(100).optional()),
-  locationLat: z.preprocess(nullToUndefined, z.number().optional()),
-  locationLng: z.preprocess(nullToUndefined, z.number().optional()),
   note: z.preprocess(nullToUndefined, z.string().optional()),
+  spotId: z.preprocess(
+    nullToUndefined,
+    z.union([z.string().uuid(), z.null()]).optional()
+  ),
   visibility: z.preprocess(nullToUndefined, z.enum(["private", "public"]).optional()),
   weather: z.preprocess(
     nullToUndefined,
     z.object({
       type: z.preprocess(nullToUndefined, z.string().optional()),
+      metadataId: z.preprocess(
+        nullToUndefined,
+        z.union([z.string().uuid(), z.null()]).optional()
+      ),
       temperatureText: z.preprocess(nullToUndefined, z.string().optional()),
       windText: z.preprocess(nullToUndefined, z.string().optional()),
     }).optional()
@@ -109,19 +116,56 @@ export async function PATCH(
     const updateData: Prisma.TripUpdateInput = {};
 
     if (payload.title !== undefined) updateData.title = payload.title;
-    if (payload.locationName !== undefined) updateData.locationName = payload.locationName;
-    if (payload.locationLat !== undefined) updateData.locationLat = payload.locationLat;
-    if (payload.locationLng !== undefined) updateData.locationLng = payload.locationLng;
     if (payload.note !== undefined) updateData.note = payload.note;
     if (payload.visibility !== undefined) updateData.visibility = payload.visibility;
     if (payload.startTime) updateData.startTime = new Date(payload.startTime);
     if (payload.endTime !== undefined) {
       updateData.endTime = payload.endTime ? new Date(payload.endTime) : null;
     }
+    if (payload.spotId !== undefined) {
+      if (payload.spotId === null) {
+        updateData.spot = { disconnect: true };
+      } else {
+        const spot = await prisma.fishingSpot.findFirst({
+          where: { id: payload.spotId, userId },
+        });
+        if (!spot) {
+          return NextResponse.json(
+            { success: false, error: "钓点已失效，请刷新后重试" },
+            { status: 400 }
+          );
+        }
+        updateData.spot = { connect: { id: spot.id } };
+      }
+    }
     if (payload.weather) {
-      updateData.weatherType = payload.weather.type;
-      updateData.weatherTemperatureText = payload.weather.temperatureText;
-      updateData.weatherWindText = payload.weather.windText;
+      let weatherTypeValue = payload.weather.type;
+      if (payload.weather.metadataId) {
+        const record = await getMetadataRecord(
+          payload.weather.metadataId,
+          "weather_type"
+        );
+        if (!record) {
+          return NextResponse.json(
+            { success: false, error: "所选天气类型已失效，请刷新后重试" },
+            { status: 400 }
+          );
+        }
+        updateData.weatherMetadata = { connect: { id: record.id } };
+        weatherTypeValue = record.label || record.value || undefined;
+      } else if (payload.weather.metadataId === null) {
+        updateData.weatherMetadata = { disconnect: true };
+      }
+
+      if (weatherTypeValue !== undefined) {
+        updateData.weatherType = weatherTypeValue;
+      }
+      if (payload.weather.temperatureText !== undefined) {
+        updateData.weatherTemperatureText = payload.weather.temperatureText;
+      }
+      if (payload.weather.windText !== undefined) {
+        updateData.weatherWindText = payload.weather.windText;
+      }
     }
 
     // 如果更新了渔获，需要重新计算统计数据

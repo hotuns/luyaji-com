@@ -43,7 +43,12 @@ export async function GET(request: NextRequest) {
           trip: {
             select: {
               title: true,
-              locationName: true,
+              spot: {
+                select: {
+                  name: true,
+                  locationName: true,
+                },
+              },
             },
           },
         },
@@ -66,7 +71,7 @@ export async function GET(request: NextRequest) {
         id: item.id,
         tripId: item.tripId,
         tripTitle: item.trip?.title ?? null,
-        locationName: item.trip?.locationName ?? "未知地点",
+        locationName: item.trip?.spot?.name || item.trip?.spot?.locationName || "未关联钓点",
         caughtAt: item.caughtAt ? item.caughtAt.toISOString() : null,
         count: item.count,
         sizeText: item.sizeText,

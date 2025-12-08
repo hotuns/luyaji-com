@@ -4,16 +4,25 @@ import { prisma } from "@/lib/prisma";
 export type TripDetail = {
   id: string;
   title: string | null;
-  locationName: string;
   note: string | null;
   startTime: string;
   endTime: string | null;
   visibility: "private" | "public";
+  spotId: string | null;
   weatherType: string | null;
+  weatherMetadataId: string | null;
   weatherTemperatureText: string | null;
   weatherWindText: string | null;
   totalCatchCount: number;
   fishSpeciesCount: number;
+  spot: {
+    id: string;
+    name: string;
+    locationName: string | null;
+    locationLat: number | null;
+    locationLng: number | null;
+    visibility: string;
+  } | null;
   combos: Array<{
     id: string;
     name: string;
@@ -41,6 +50,7 @@ export type TripDetail = {
 
 type TripWithRelations = Prisma.TripGetPayload<{
   include: {
+    spot: true;
     tripCombos: {
       include: {
         combo: {
@@ -63,6 +73,7 @@ export async function getTripDetail(userId: string, tripId: string): Promise<Tri
   const trip = (await prisma.trip.findFirst({
     where: { id: tripId, userId },
     include: {
+      spot: true,
       tripCombos: {
         include: {
           combo: {
@@ -90,12 +101,23 @@ export async function getTripDetail(userId: string, tripId: string): Promise<Tri
   return {
     id: trip.id,
     title: trip.title,
-    locationName: trip.locationName,
     note: trip.note,
     startTime: trip.startTime.toISOString(),
     endTime: trip.endTime ? trip.endTime.toISOString() : null,
     visibility: (trip.visibility as "private" | "public") || "private",
+    spotId: trip.spotId || null,
+    spot: trip.spot
+      ? {
+          id: trip.spot.id,
+          name: trip.spot.name,
+          locationName: trip.spot.locationName,
+          locationLat: trip.spot.locationLat,
+          locationLng: trip.spot.locationLng,
+          visibility: trip.spot.visibility,
+        }
+      : null,
     weatherType: trip.weatherType,
+    weatherMetadataId: trip.weatherMetadataId,
     weatherTemperatureText: trip.weatherTemperatureText,
     weatherWindText: trip.weatherWindText,
     totalCatchCount: trip.totalCatchCount ?? 0,

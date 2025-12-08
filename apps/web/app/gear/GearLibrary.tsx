@@ -24,7 +24,7 @@ export function GearLibraryDialog<T extends GearLibraryItemBase>({ type, title, 
 
     const handler = setTimeout(async () => {
       try {
-        const params = new URLSearchParams({ type });
+        const params = new URLSearchParams({ type, limit: "10", page: "1" });
         if (query) params.set("q", query);
         const response = await fetch(`/api/gear-library?${params.toString()}`);
         const data = await response.json();
@@ -69,11 +69,24 @@ export function GearLibraryDialog<T extends GearLibraryItemBase>({ type, title, 
             items.map((item) => {
               const meta = formatMeta(item);
               const updatedLabel = parseDateLabel(item.updatedAt);
+              const sourceLabel = item.sourceType === "template" ? "官方模板" : "用户上传";
               return (
                 <button key={item.id} type="button" onClick={() => handleSelect(item)} className="w-full rounded-lg border bg-white p-3 text-left transition hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium">{item.name}</span>
-                    <Badge variant="secondary">来自 {item.ownerName}</Badge>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant="secondary">来自 {item.ownerName}</Badge>
+                      <Badge
+                        variant="outline"
+                        className={
+                          item.sourceType === "template"
+                            ? "text-[10px] px-1.5 h-5 font-normal border-dashed border-amber-400 text-amber-600 bg-amber-50"
+                            : "text-[10px] px-1.5 h-5 font-normal border-dashed border-slate-200 text-slate-500 bg-slate-50"
+                        }
+                      >
+                        {sourceLabel}
+                      </Badge>
+                    </div>
                   </div>
                   {meta && <p className="mt-1 text-xs text-muted-foreground">{meta}</p>}
                   <p className="mt-1 text-[11px] text-muted-foreground">最近更新 {updatedLabel}</p>

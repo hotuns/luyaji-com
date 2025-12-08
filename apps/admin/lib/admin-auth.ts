@@ -29,3 +29,15 @@ export async function requireAdminUser() {
 
   return user;
 }
+
+// API 路由专用的鉴权函数，返回 success/error 对象而非抛异常
+export async function requireAdmin(): Promise<
+  { success: true; user: { id: string; nickname: string | null; isAdmin: boolean } } | { success: false; error: string }
+> {
+  try {
+    const user = await requireAdminUser();
+    return { success: true, user };
+  } catch {
+    return { success: false, error: "未登录或无权限" };
+  }
+}

@@ -15,11 +15,12 @@ const DRAFT_STORAGE_KEY = "luyaji_trip_draft_current";
 const getInitialFormState = (): TripFormState => ({
   title: "",
   startTime: new Date().toISOString(),
-  locationName: "",
+  spotId: undefined,
   note: "",
   visibility: "private",
   usedComboIds: [],
   weatherType: "",
+  weatherMetadataId: undefined,
   weatherTemperatureText: "",
   weatherWindText: "",
   catches: [],
@@ -51,7 +52,7 @@ export default function NewTripClient() {
   // 自动保存草稿
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (formState.locationName || formState.title) {
+      if (formState.spotId || formState.title) {
         const draftData: TripFormState = {
           ...formState,
           isDraft: true,
@@ -115,8 +116,8 @@ export default function NewTripClient() {
   const submitTrip = async () => {
     setIsSubmitting(true);
     try {
-      // 点击"完成出击"时，自动设置结束时间为当前时间
-      const endTime = new Date().toISOString();
+      // 若未填写结束时间，默认使用当前时间
+      const endTime = formState.endTime ? formState.endTime : new Date().toISOString();
       
       const response = await fetch("/api/trips", {
         method: "POST",
@@ -125,14 +126,13 @@ export default function NewTripClient() {
           title: formState.title || undefined,
           startTime: formState.startTime,
           endTime: endTime,
-          locationName: formState.locationName,
-          locationLat: formState.locationLat,
-          locationLng: formState.locationLng,
+          spotId: formState.spotId,
           note: formState.note || undefined,
           visibility: formState.visibility,
           usedComboIds: formState.usedComboIds,
           weather: {
             type: formState.weatherType || undefined,
+            metadataId: formState.weatherMetadataId || undefined,
             temperatureText: formState.weatherTemperatureText || undefined,
             windText: formState.weatherWindText || undefined,
           },
@@ -222,7 +222,7 @@ export default function NewTripClient() {
         <div className="flex h-14 items-center justify-between px-4">
           <button
             onClick={() => {
-              if (formState.locationName || formState.title) {
+      if (formState.spotId || formState.title) {
                 if (confirm("是否保存为草稿？")) {
                   saveDraftAndExit();
                 } else {

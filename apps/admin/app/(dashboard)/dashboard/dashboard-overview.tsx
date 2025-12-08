@@ -28,10 +28,10 @@ type TripWithMeta = Prisma.TripGetPayload<{
   select: {
     id: true;
     title: true;
-    locationName: true;
     startTime: true;
     user: { select: { nickname: true; phone: true } };
     _count: { select: { catches: true } };
+    spot: { select: { name: true; locationName: true } };
   };
 }>;
 
@@ -176,7 +176,7 @@ export function DashboardOverview({
               renderItem={(trip) => (
                 <List.Item key={trip.id} style={{ paddingInline: 16 }}>
                   <List.Item.Meta
-                    title={trip.title || trip.locationName}
+                    title={trip.title || trip.spot?.name || trip.spot?.locationName || "未设置钓点"}
                     description={trip.user.nickname || maskPhone(trip.user.phone)}
                   />
                   <div style={{ textAlign: "right" }}>

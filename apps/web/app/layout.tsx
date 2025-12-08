@@ -46,7 +46,8 @@ export default async function RootLayout({
   const pathname = headersList.get("x-pathname") || headersList.get("x-invoke-path") || "";
   const isAuthPage = pathname.startsWith("/auth");
   const isNewTripPage = pathname === "/trips/new";
-  const isFullScreenPage = isAuthPage || isNewTripPage;
+  const isSharePage = pathname.startsWith("/share") || pathname.startsWith("/s/");
+  const isFullScreenPage = isAuthPage || isNewTripPage || isSharePage;
 
   return (
     <html lang="zh-CN" suppressHydrationWarning>
@@ -77,6 +78,16 @@ export default async function RootLayout({
               </div>
             </div>
           )}
+          <footer className="w-full text-center text-xs text-slate-400 py-6">
+            <a
+              href="https://beian.miit.gov.cn/"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-slate-600 transition-colors"
+            >
+              赣ICP备2024039423号
+            </a>
+          </footer>
         </Providers>
       </body>
     </html>

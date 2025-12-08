@@ -18,6 +18,7 @@ type TripWithMeta = Prisma.TripGetPayload<{
   include: {
     user: { select: { nickname: true; phone: true } };
     _count: { select: { catches: true } };
+    spot: { select: { name: true; locationName: true } };
   };
 }>;
 
@@ -90,14 +91,18 @@ export function TripsTable({
               title: "标题/地点",
               dataIndex: "title",
               sorter: (a: TripWithMeta, b: TripWithMeta) => 
-                (a.title || a.locationName).localeCompare(b.title || b.locationName),
+                (a.title || a.spot?.name || a.spot?.locationName || "").localeCompare(
+                  b.title || b.spot?.name || b.spot?.locationName || ""
+                ),
               render: (_: unknown, record: TripWithMeta) => (
                 <div>
-                  <div style={{ fontWeight: 500 }}>{record.title || record.locationName}</div>
+                  <div style={{ fontWeight: 500 }}>
+                    {record.title || record.spot?.name || record.spot?.locationName || "未设置钓点"}
+                  </div>
                   {record.title && (
                     <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#888" }}>
                       <EnvironmentOutlined />
-                      {record.locationName}
+                      {record.spot?.name || record.spot?.locationName || "未设置钓点"}
                     </div>
                   )}
                 </div>

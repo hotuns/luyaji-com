@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { useSession } from "next-auth/react";
 import { Share2, Copy, Check, Link2, Loader2, Image, Download } from "lucide-react";
 import {
   Dialog,
@@ -136,6 +137,9 @@ export function ShareDialog({ config, trigger, className, open: controlledOpen, 
   
   // 分享图片相关
   const shareImage = useShareImage();
+  const { data: session } = useSession();
+  const resolvedAuthorName = config.authorName || session?.user?.name || "钓友";
+  const resolvedAuthorAvatar = config.authorAvatar || (session?.user?.image ?? undefined);
 
   // 当弹窗打开时获取短链接
   useEffect(() => {
@@ -160,17 +164,17 @@ export function ShareDialog({ config, trigger, className, open: controlledOpen, 
   // 当切换到图片 tab 时自动生成图片
   useEffect(() => {
     if (activeTab === "image" && shareUrl && !shareImage.imageUrl && !shareImage.generating) {
-      shareImage.generate({
-        type: config.type,
-        title: config.title,
-        description: config.description,
-        imageUrl: config.imageUrl,
-        authorName: config.authorName,
-        authorAvatar: config.authorAvatar,
-        stats: config.stats,
-      }, shareUrl);
+        shareImage.generate({
+          type: config.type,
+          title: config.title,
+          description: config.description,
+          imageUrl: config.imageUrl,
+          authorName: resolvedAuthorName,
+          authorAvatar: resolvedAuthorAvatar,
+          stats: config.stats,
+        }, shareUrl);
     }
-  }, [activeTab, shareUrl, config, shareImage]);
+  }, [activeTab, shareUrl, config, shareImage, resolvedAuthorName, resolvedAuthorAvatar]);
 
   // 复制文案+链接
   const handleCopyText = useCallback(async () => {

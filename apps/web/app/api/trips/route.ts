@@ -4,6 +4,8 @@ import { ensureSafeText } from "@/lib/sensitive-words";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { getMetadataRecord } from "@/lib/server/metadata-utils";
+
 // 预处理：将 null 转换为 undefined
 const nullToUndefined = <T>(val: T | null | undefined): T | undefined => 
   val === null ? undefined : val;
@@ -13,9 +15,7 @@ const createTripSchema = z.object({
   title: z.preprocess(nullToUndefined, z.string().max(50).optional()),
   startTime: z.string(),
   endTime: z.preprocess(nullToUndefined, z.string().optional()),
-  locationName: z.string().min(1).max(100),
-  locationLat: z.preprocess(nullToUndefined, z.number().optional()),
-  locationLng: z.preprocess(nullToUndefined, z.number().optional()),
+  spotId: z.string().uuid(),
   note: z.preprocess(nullToUndefined, z.string().optional()),
   visibility: z.preprocess(nullToUndefined, z.enum(["private", "public"]).optional()),
   usedComboIds: z.array(z.string()).min(1),
@@ -23,6 +23,10 @@ const createTripSchema = z.object({
     nullToUndefined,
     z.object({
       type: z.preprocess(nullToUndefined, z.string().optional()),
+      metadataId: z.preprocess(
+        nullToUndefined,
+        z.union([z.string().uuid(), z.null()]).optional()
+      ),
       temperatureText: z.preprocess(nullToUndefined, z.string().optional()),
       windText: z.preprocess(nullToUndefined, z.string().optional()),
     }).optional()
@@ -59,6 +63,7 @@ export async function GET() {
       where: { userId: session.user.id },
       orderBy: { startTime: "desc" },
       include: {
+        spot: true,
         catches: true,
         tripCombos: {
           include: { combo: true },
@@ -108,18 +113,47 @@ export async function POST(request: NextRequest) {
     }
 
     // 创建出击记录
+    let weatherTypeValue =
+      validatedData.weather?.type?.trim() || undefined;
+    let weatherMetadataId: string | null | undefined = undefined;
+    if (validatedData.weather?.metadataId) {
+      const record = await getMetadataRecord(
+        validatedData.weather.metadataId,
+        "weather_type"
+      );
+      if (!record) {
+        return NextResponse.json(
+          { success: false, error: "所选天气类型已失效，请刷新后重试" },
+          { status: 400 }
+        );
+      }
+      weatherMetadataId = record.id;
+      weatherTypeValue = record.label || record.value || undefined;
+    } else if (validatedData.weather?.metadataId === null) {
+      weatherMetadataId = null;
+    }
+
+    const spot = await prisma.fishingSpot.findFirst({
+      where: { id: validatedData.spotId, userId: session.user.id },
+    });
+    if (!spot) {
+      return NextResponse.json(
+        { success: false, error: "钓点已失效，请刷新后重试" },
+        { status: 400 }
+      );
+    }
+
     const trip = await prisma.trip.create({
       data: {
         userId: session.user.id,
         title: validatedData.title,
         startTime: new Date(validatedData.startTime),
         endTime: validatedData.endTime ? new Date(validatedData.endTime) : null,
-        locationName: validatedData.locationName,
-        locationLat: validatedData.locationLat,
-        locationLng: validatedData.locationLng,
         note: validatedData.note,
         visibility: validatedData.visibility || "private",
-        weatherType: validatedData.weather?.type,
+        spotId: spot.id,
+        weatherType: weatherTypeValue,
+        weatherMetadataId,
         weatherTemperatureText: validatedData.weather?.temperatureText,
         weatherWindText: validatedData.weather?.windText,
         totalCatchCount: validatedData.catches?.reduce((sum, c) => sum + c.count, 0) || 0,

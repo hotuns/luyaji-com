@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
  * 常用分类：
  * - rod_brand: 鱼竿品牌
  * - reel_brand: 渔轮品牌
- * - scene_tag: 场景标签
+ * - combo_scene_tag: 组合场景标签
  * - fish_category: 鱼种分类
  */
 export async function GET(request: Request) {

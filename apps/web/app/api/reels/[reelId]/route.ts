@@ -1,16 +1,31 @@
+import type { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ensureSafeText } from "@/lib/sensitive-words";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { applyReelMetadata } from "../helpers";
+
 // 预处理：将 null 转换为 undefined
 const nullToUndefined = <T>(val: T | null | undefined): T | undefined => 
   val === null ? undefined : val;
 
+const emptyToNull = (val: unknown) => {
+  if (val === undefined || val === null) return null
+  if (typeof val === "string" && val.trim().length === 0) return null
+  return val
+}
+
+const metadataIdSchema = z.preprocess(
+  emptyToNull,
+  z.union([z.string().uuid(), z.null()]).optional()
+);
+
 const updateReelSchema = z.object({
   name: z.preprocess(nullToUndefined, z.string().min(1).max(60).optional()),
   brand: z.preprocess(nullToUndefined, z.string().max(40).optional()),
+  brandMetadataId: metadataIdSchema,
   model: z.preprocess(nullToUndefined, z.string().max(40).optional()),
   gearRatioText: z.preprocess(nullToUndefined, z.string().max(30).optional()),
   lineCapacityText: z.preprocess(nullToUndefined, z.string().max(80).optional()),
@@ -48,9 +63,23 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: "渔轮不存在" }, { status: 404 });
     }
 
+    const updateData: Prisma.ReelUncheckedUpdateInput = {};
+
+    if (payload.name !== undefined) updateData.name = payload.name;
+    if (payload.brand !== undefined) updateData.brand = payload.brand;
+    if (payload.model !== undefined) updateData.model = payload.model;
+    if (payload.gearRatioText !== undefined) updateData.gearRatioText = payload.gearRatioText;
+    if (payload.lineCapacityText !== undefined) updateData.lineCapacityText = payload.lineCapacityText;
+    if (payload.price !== undefined) updateData.price = payload.price;
+    if (payload.note !== undefined) updateData.note = payload.note;
+    if (payload.visibility !== undefined) updateData.visibility = payload.visibility;
+
+    const metadataError = await applyReelMetadata(payload, updateData);
+    if (metadataError) return metadataError;
+
     const reel = await prisma.reel.update({
       where: { id: existing.id },
-      data: payload,
+      data: updateData,
     });
 
     return NextResponse.json({ success: true, data: reel });

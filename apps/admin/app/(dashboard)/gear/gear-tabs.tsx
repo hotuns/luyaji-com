@@ -24,6 +24,7 @@ type RodData = {
   length: number | null;
   lengthUnit: string | null;
   power: string | null;
+  price: number | null;
   visibility: string;
   userName: string;
   createdAt: Date;
@@ -36,6 +37,7 @@ type ReelData = {
   brand: string | null;
   model: string | null;
   gearRatioText: string | null;
+  price: number | null;
   visibility: string;
   userName: string;
   createdAt: Date;
@@ -254,7 +256,7 @@ function TemplateCreateModal({
       onCancel={onCancel}
       footer={null}
       width={600}
-      destroyOnClose
+      destroyOnHidden
     >
       <p style={{ color: "#64748b", marginBottom: 16 }}>
         模板会在前台装备库中展示，用户可快速复制使用。
@@ -304,6 +306,9 @@ function TemplateCreateModal({
                   <Form.Item label="饵重上限 (g)" name="lureWeightMax">
                     <InputNumber min={0} step={1} style={{ width: "100%" }} />
                   </Form.Item>
+                  <Form.Item label="价格 (¥)" name="price">
+                    <InputNumber min={0} step={1} style={{ width: "100%" }} />
+                  </Form.Item>
                 </div>
                 <Form.Item label="适用线号" name="lineWeightText">
                   <Input placeholder="4-10lb" />
@@ -343,6 +348,9 @@ function TemplateCreateModal({
                 <Form.Item label="线容量" name="lineCapacityText">
                   <Input placeholder="PE #1.2-150m" />
                 </Form.Item>
+                <Form.Item label="价格 (¥)" name="price">
+                  <InputNumber min={0} step={1} style={{ width: "100%" }} />
+                </Form.Item>
                 <Form.Item label="备注" name="note">
                   <Input.TextArea rows={3} placeholder="适用场景、推荐搭配等" />
                 </Form.Item>
@@ -376,6 +384,13 @@ const rodColumns = [
       [record.length ? `${record.length}${record.lengthUnit || ""}` : "-", record.power]
         .filter(Boolean)
         .join(" / ") || "-",
+  },
+  {
+    title: "价格",
+    dataIndex: "price",
+    align: "right" as const,
+    sorter: (a: RodData, b: RodData) => (a.price || 0) - (b.price || 0),
+    render: (value: number | null) => value ? `¥${value.toLocaleString()}` : "-",
   },
   {
     title: "用户",
@@ -424,6 +439,13 @@ const reelColumns = [
     title: "速比",
     dataIndex: "gearRatioText",
     render: (value: string | null) => value || "-",
+  },
+  {
+    title: "价格",
+    dataIndex: "price",
+    align: "right" as const,
+    sorter: (a: ReelData, b: ReelData) => (a.price || 0) - (b.price || 0),
+    render: (value: number | null) => value ? `¥${value.toLocaleString()}` : "-",
   },
   {
     title: "用户",

@@ -6,6 +6,8 @@ import { Label } from "@workspace/ui/components/label";
 import {Textarea} from "@workspace/ui/components/textarea";
 import { Input } from "@workspace/ui/components/input";
 import { processImageForUpload } from "@/lib/image-utils";
+import { MetadataSuggestion, MetadataTagSelector, MetadataSelect } from "@/components/metadata-selector";
+import { useMetadataOptions } from "@/hooks/use-metadata-options";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { DialogFooter } from "@workspace/ui/components/dialog";
@@ -15,7 +17,6 @@ import {
   LabeledInput,
   nullableNumber,
   nullableString,
-  parseSceneTags,
   normalizeComboResponse,
   RodSummary,
   ReelSummary,
@@ -27,12 +28,16 @@ import {
 } from "./gear-shared";
 
 export function RodForm({ onSuccess, initialData, closeDialog }: { onSuccess: (rod: RodSummary) => void; initialData?: RodSummary; closeDialog?: () => void }) {
+  const { options: rodBrandOptions } = useMetadataOptions("rod_brand");
   const [form, setForm] = useState({
     name: initialData?.name ?? "",
     brand: initialData?.brand ?? "",
+    brandMetadataId: initialData?.brandMetadataId ?? null,
     length: initialData?.length?.toString() ?? "",
     lengthUnit: (initialData?.lengthUnit as "m" | "ft") ?? "m",
+    lengthUnitMetadataId: initialData?.lengthUnitMetadataId ?? null,
     power: initialData?.power ?? "",
+    powerMetadataId: initialData?.powerMetadataId ?? null,
     lureWeightMin: initialData?.lureWeightMin?.toString() ?? "",
     lureWeightMax: initialData?.lureWeightMax?.toString() ?? "",
     lineWeightText: initialData?.lineWeightText ?? "",
@@ -40,6 +45,10 @@ export function RodForm({ onSuccess, initialData, closeDialog }: { onSuccess: (r
     note: initialData?.note ?? "",
     visibility: initialData?.visibility ?? "private",
   });
+  const [useCustomRodBrand, setUseCustomRodBrand] = useState<boolean>(
+    Boolean(initialData?.brand && !initialData?.brandMetadataId)
+  );
+  const { options: lengthUnitOptions } = useMetadataOptions("length_unit");
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<StatusState>(null);
 
@@ -48,14 +57,18 @@ export function RodForm({ onSuccess, initialData, closeDialog }: { onSuccess: (r
       ...prev,
       name: template.name ?? "",
       brand: template.brand ?? "",
+      brandMetadataId: null,
       length: template.length?.toString() ?? "",
       lengthUnit: (template.lengthUnit as "m" | "ft") ?? prev.lengthUnit,
+      lengthUnitMetadataId: null,
       power: template.power ?? "",
+      powerMetadataId: null,
       lureWeightMin: template.lureWeightMin?.toString() ?? "",
       lureWeightMax: template.lureWeightMax?.toString() ?? "",
       lineWeightText: template.lineWeightText ?? "",
       note: template.note ?? "",
     }));
+    setUseCustomRodBrand(true);
     setStatus({ type: "success", message: "已根据装备库模板填充，可继续调整" });
   };
 
@@ -67,9 +80,12 @@ export function RodForm({ onSuccess, initialData, closeDialog }: { onSuccess: (r
     const payload = {
       name: form.name.trim(),
       brand: nullableString(form.brand),
+      brandMetadataId: form.brandMetadataId ?? undefined,
       length: nullableNumber(form.length),
       lengthUnit: form.lengthUnit,
+      lengthUnitMetadataId: form.lengthUnitMetadataId ?? undefined,
       power: nullableString(form.power),
+      powerMetadataId: form.powerMetadataId ?? undefined,
       lureWeightMin: nullableNumber(form.lureWeightMin),
       lureWeightMax: nullableNumber(form.lureWeightMax),
       lineWeightText: nullableString(form.lineWeightText),
@@ -96,9 +112,12 @@ export function RodForm({ onSuccess, initialData, closeDialog }: { onSuccess: (r
         setForm({
           name: "",
           brand: "",
+          brandMetadataId: null,
           length: "",
           lengthUnit: "m",
+          lengthUnitMetadataId: null,
           power: "",
+          powerMetadataId: null,
           lureWeightMin: "",
           lureWeightMax: "",
           lineWeightText: "",
@@ -106,6 +125,7 @@ export function RodForm({ onSuccess, initialData, closeDialog }: { onSuccess: (r
           note: "",
           visibility: "private",
         });
+        setUseCustomRodBrand(false);
       }
       setStatus({ type: "success", message: "保存成功" });
       if (closeDialog) {
@@ -138,13 +158,65 @@ export function RodForm({ onSuccess, initialData, closeDialog }: { onSuccess: (r
           onChange={(value) => setForm((prev) => ({ ...prev, name: value }))}
           placeholder="例如：禧玛诺佐迪亚斯"
         />
-        <LabeledInput
-          label="品牌"
-          value={form.brand}
-          onChange={(value) => setForm((prev) => ({ ...prev, brand: value }))}
-          placeholder="例如：Shimano"
-        />
+        <div className="space-y-2">
+          <Label>品牌</Label>
+          {useCustomRodBrand ? (
+            <Input
+              value={form.brand}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, brand: e.target.value, brandMetadataId: null }))
+              }
+              placeholder="请输入品牌名称"
+            />
+          ) : (
+            <MetadataSelect
+              options={rodBrandOptions}
+              value={form.brandMetadataId}
+              valueLabel={form.brand}
+              placeholder="选择品牌"
+              disabled={rodBrandOptions.length === 0}
+              onSelect={(option) =>
+                setForm((prev) => ({
+                  ...prev,
+                  brandMetadataId: option.id,
+                  brand: option.label || option.value,
+                }))
+              }
+            />
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="px-0 text-xs text-blue-600"
+            onClick={() => {
+              if (useCustomRodBrand) {
+                setUseCustomRodBrand(false);
+                setForm((prev) => ({ ...prev, brandMetadataId: null, brand: "" }));
+              } else {
+                setUseCustomRodBrand(true);
+                setForm((prev) => ({ ...prev, brandMetadataId: null }));
+              }
+            }}
+          >
+            {useCustomRodBrand ? "选择推荐品牌" : "自定义品牌"}
+          </Button>
+        </div>
       </div>
+      <MetadataSuggestion
+        category="rod_brand"
+        triggerLabel="选择常用品牌"
+        selectedMetadataId={form.brandMetadataId ?? undefined}
+        selectedLabel={form.brand || undefined}
+        onSelect={(option) =>
+          setForm((prev) => ({
+            ...prev,
+            brand: option.label || option.value,
+            brandMetadataId: option.id,
+          }))
+        }
+        onClear={() => setForm((prev) => ({ ...prev, brandMetadataId: null }))}
+      />
 
       <div className="grid grid-cols-3 gap-4">
         <LabeledInput
@@ -158,24 +230,57 @@ export function RodForm({ onSuccess, initialData, closeDialog }: { onSuccess: (r
           <Label>单位</Label>
           <Select
             value={form.lengthUnit}
-            onValueChange={(value) => setForm((prev) => ({ ...prev, lengthUnit: value as "m" | "ft" }))}
+            onValueChange={(value) => {
+              const option =
+                lengthUnitOptions.find((item) => item.value === value) ?? null;
+              setForm((prev) => ({
+                ...prev,
+                lengthUnit: value as "m" | "ft",
+                lengthUnitMetadataId: option ? option.id : null,
+              }));
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="单位" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="m">米 (m)</SelectItem>
-              <SelectItem value="ft">英尺 (ft)</SelectItem>
+              {(lengthUnitOptions.length > 0
+                ? lengthUnitOptions
+                : [
+                    { id: "unit-m", value: "m", label: "米 (m)" },
+                    { id: "unit-ft", value: "ft", label: "英尺 (ft)" },
+                  ]
+              ).map((option) => (
+                <SelectItem key={option.id} value={option.value}>
+                  {option.label || option.value}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
         <LabeledInput
           label="硬度"
           value={form.power}
-          onChange={(value) => setForm((prev) => ({ ...prev, power: value }))}
+          onChange={(value) =>
+            setForm((prev) => ({ ...prev, power: value, powerMetadataId: null }))
+          }
           placeholder="L / ML / M"
         />
       </div>
+      <MetadataSuggestion
+        category="rod_power"
+        triggerLabel="选择常用硬度"
+        selectedMetadataId={form.powerMetadataId ?? undefined}
+        selectedLabel={form.power || undefined}
+        onSelect={(option) =>
+          setForm((prev) => ({
+            ...prev,
+            power: option.label || option.value,
+            powerMetadataId: option.id,
+          }))
+        }
+        onClear={() => setForm((prev) => ({ ...prev, powerMetadataId: null }))}
+      />
 
       <div className="grid grid-cols-2 gap-4">
         <LabeledInput
@@ -259,9 +364,11 @@ export function RodForm({ onSuccess, initialData, closeDialog }: { onSuccess: (r
 }
 
 export function ReelForm({ onSuccess, initialData, closeDialog }: { onSuccess: (reel: ReelSummary) => void; initialData?: ReelSummary; closeDialog?: () => void }) {
+  const { options: reelBrandOptions } = useMetadataOptions("reel_brand");
   const [form, setForm] = useState({
     name: initialData?.name ?? "",
     brand: initialData?.brand ?? "",
+    brandMetadataId: initialData?.brandMetadataId ?? null,
     model: initialData?.model ?? "",
     gearRatioText: initialData?.gearRatioText ?? "",
     lineCapacityText: initialData?.lineCapacityText ?? "",
@@ -269,6 +376,9 @@ export function ReelForm({ onSuccess, initialData, closeDialog }: { onSuccess: (
     note: initialData?.note ?? "",
     visibility: initialData?.visibility ?? "private",
   });
+  const [useCustomReelBrand, setUseCustomReelBrand] = useState<boolean>(
+    Boolean(initialData?.brand && !initialData?.brandMetadataId)
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<StatusState>(null);
 
@@ -277,11 +387,13 @@ export function ReelForm({ onSuccess, initialData, closeDialog }: { onSuccess: (
       ...prev,
       name: template.name ?? "",
       brand: template.brand ?? "",
+      brandMetadataId: null,
       model: template.model ?? "",
       gearRatioText: template.gearRatioText ?? "",
       lineCapacityText: template.lineCapacityText ?? "",
       note: template.note ?? "",
     }));
+    setUseCustomReelBrand(true);
     setStatus({ type: "success", message: "已根据装备库模板填充，可继续调整" });
   };
 
@@ -293,6 +405,7 @@ export function ReelForm({ onSuccess, initialData, closeDialog }: { onSuccess: (
     const payload = {
       name: form.name.trim(),
       brand: nullableString(form.brand),
+      brandMetadataId: form.brandMetadataId ?? undefined,
       model: nullableString(form.model),
       gearRatioText: nullableString(form.gearRatioText),
       lineCapacityText: nullableString(form.lineCapacityText),
@@ -316,7 +429,8 @@ export function ReelForm({ onSuccess, initialData, closeDialog }: { onSuccess: (
       }
       onSuccess({ ...result.data, combosCount: initialData?.combosCount ?? 0 });
       if (!initialData) {
-        setForm({ name: "", brand: "", model: "", gearRatioText: "", lineCapacityText: "", price: "", note: "", visibility: "private" });
+        setForm({ name: "", brand: "", brandMetadataId: null, model: "", gearRatioText: "", lineCapacityText: "", price: "", note: "", visibility: "private" });
+        setUseCustomReelBrand(false);
       }
       setStatus({ type: "success", message: "保存成功" });
       if (closeDialog) setTimeout(closeDialog, 500);
@@ -341,8 +455,65 @@ export function ReelForm({ onSuccess, initialData, closeDialog }: { onSuccess: (
 
       <div className="grid grid-cols-2 gap-4">
         <LabeledInput label="名称" required value={form.name} onChange={(v) => setForm((p) => ({ ...p, name: v }))} placeholder="例如：禧玛诺斯泰拉" />
-        <LabeledInput label="品牌" value={form.brand} onChange={(v) => setForm((p) => ({ ...p, brand: v }))} placeholder="例如：Shimano" />
+        <div className="space-y-2">
+          <Label>品牌</Label>
+          {useCustomReelBrand ? (
+            <Input
+              value={form.brand}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, brand: e.target.value, brandMetadataId: null }))
+              }
+              placeholder="请输入品牌名称"
+            />
+          ) : (
+            <MetadataSelect
+              options={reelBrandOptions}
+              value={form.brandMetadataId}
+              valueLabel={form.brand}
+              placeholder="选择品牌"
+              disabled={reelBrandOptions.length === 0}
+              onSelect={(option) =>
+                setForm((prev) => ({
+                  ...prev,
+                  brandMetadataId: option.id,
+                  brand: option.label || option.value,
+                }))
+              }
+            />
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="px-0 text-xs text-blue-600"
+            onClick={() => {
+              if (useCustomReelBrand) {
+                setUseCustomReelBrand(false);
+                setForm((prev) => ({ ...prev, brandMetadataId: null, brand: "" }));
+              } else {
+                setUseCustomReelBrand(true);
+                setForm((prev) => ({ ...prev, brandMetadataId: null }));
+              }
+            }}
+          >
+            {useCustomReelBrand ? "选择推荐品牌" : "自定义品牌"}
+          </Button>
+        </div>
       </div>
+      <MetadataSuggestion
+        category="reel_brand"
+        triggerLabel="选择常用品牌"
+        selectedMetadataId={form.brandMetadataId ?? undefined}
+        selectedLabel={form.brand || undefined}
+        onSelect={(option) =>
+          setForm((prev) => ({
+            ...prev,
+            brand: option.label || option.value,
+            brandMetadataId: option.id,
+          }))
+        }
+        onClear={() => setForm((prev) => ({ ...prev, brandMetadataId: null }))}
+      />
 
       <div className="grid grid-cols-2 gap-4">
         <LabeledInput label="型号" value={form.model} onChange={(v) => setForm((p) => ({ ...p, model: v }))} placeholder="例如：C3000XG" />
@@ -410,7 +581,8 @@ export function ComboForm({
     leaderLineText: initialData?.leaderLineText ?? "",
     hookText: initialData?.hookText ?? "",
     detailNote: initialData?.detailNote ?? "",
-    sceneTags: initialData?.sceneTags?.join(",") ?? "",
+    sceneMetadataIds: initialData?.sceneMetadataIds ?? [],
+    customSceneTags: initialData?.customSceneTags ?? [],
     visibility: initialData?.visibility ?? "private",
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -435,6 +607,7 @@ export function ComboForm({
       setUploadStatus("uploading");
       const formData = new FormData();
       formData.append("file", blob, filename);
+      formData.append("folder", "combos");
 
       const res = await fetch("/api/upload/catch-photo", {
         method: "POST",
@@ -474,7 +647,8 @@ export function ComboForm({
       hookText: optionalString(form.hookText),
       detailNote: optionalString(form.detailNote),
       visibility: form.visibility,
-      sceneTags: parseSceneTags(form.sceneTags),
+      sceneMetadataIds: form.sceneMetadataIds,
+      sceneTags: form.customSceneTags,
       photoUrls: photoUrl ? [photoUrl] : undefined,
     };
 
@@ -494,7 +668,18 @@ export function ComboForm({
 
       onSuccess(normalizeComboResponse(result.data));
       if (!initialData) {
-        setForm({ name: "", rodId: rods[0]?.id ?? "", reelId: reels[0]?.id ?? "", mainLineText: "", leaderLineText: "", hookText: "", detailNote: "", sceneTags: "", visibility: "private" });
+        setForm({
+          name: "",
+          rodId: rods[0]?.id ?? "",
+          reelId: reels[0]?.id ?? "",
+          mainLineText: "",
+          leaderLineText: "",
+          hookText: "",
+          detailNote: "",
+          sceneMetadataIds: [],
+          customSceneTags: [],
+          visibility: "private",
+        });
         setPhotoUrl(null);
       }
       setStatus({ type: "success", message: "保存成功" });
@@ -554,8 +739,40 @@ export function ComboForm({
       </div>
 
       <div className="space-y-2">
-        <Label>适用场景（逗号分隔）</Label>
-        <Input value={form.sceneTags} onChange={(e) => setForm((p) => ({ ...p, sceneTags: e.target.value }))} placeholder="例如：溪流, 微物" />
+        <Label>适用场景</Label>
+        <MetadataTagSelector
+          category="combo_scene_tag"
+          selectedIds={form.sceneMetadataIds}
+          customTags={form.customSceneTags}
+          onMetadataToggle={(option) =>
+            setForm((prev) => {
+              const exists = prev.sceneMetadataIds.includes(option.id);
+              return {
+                ...prev,
+                sceneMetadataIds: exists
+                  ? prev.sceneMetadataIds.filter((id) => id !== option.id)
+                  : [...prev.sceneMetadataIds, option.id],
+              };
+            })
+          }
+          onAddCustom={(label) =>
+            setForm((prev) => ({
+              ...prev,
+              customSceneTags: prev.customSceneTags.includes(label)
+                ? prev.customSceneTags
+                : [...prev.customSceneTags, label],
+            }))
+          }
+          onRemoveCustom={(label) =>
+            setForm((prev) => ({
+              ...prev,
+              customSceneTags: prev.customSceneTags.filter((tag) => tag !== label),
+            }))
+          }
+        />
+        <p className="text-xs text-muted-foreground">
+          可选择系统推荐的标签，也可以输入自定义标签回车添加。
+        </p>
       </div>
 
       <div className="space-y-2">

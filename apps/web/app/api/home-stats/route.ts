@@ -31,6 +31,12 @@ export async function GET() {
         orderBy: { startTime: "desc" },
         take: 3,
         include: {
+          spot: {
+            select: {
+              name: true,
+              locationName: true,
+            },
+          },
           catches: {
             select: {
               count: true,
@@ -52,7 +58,12 @@ export async function GET() {
         recentTrips: recentTrips.map((trip) => ({
           id: trip.id,
           title: trip.title,
-          locationName: trip.locationName,
+          spot: trip.spot
+            ? {
+                name: trip.spot.name,
+                locationName: trip.spot.locationName,
+              }
+            : null,
           startTime: trip.startTime.toISOString(),
           catches: trip.catches,
         })),

@@ -12,18 +12,26 @@ export async function GET() {
     const trips = await prisma.trip.findMany({
       where: {
         userId: session.user.id,
-        locationLat: { not: null },
-        locationLng: { not: null },
+        spot: {
+          locationLat: { not: null },
+          locationLng: { not: null },
+        },
       },
       select: {
         id: true,
         title: true,
-        locationName: true,
-        locationLat: true,
-        locationLng: true,
         startTime: true,
         totalCatchCount: true,
         fishSpeciesCount: true,
+        spot: {
+          select: {
+            name: true,
+            locationName: true,
+            locationLat: true,
+            locationLng: true,
+            visibility: true,
+          },
+        },
       },
       orderBy: { startTime: "desc" },
     });
@@ -33,9 +41,9 @@ export async function GET() {
       data: trips.map((trip) => ({
         id: trip.id,
         title: trip.title,
-        locationName: trip.locationName,
-        lat: trip.locationLat,
-        lng: trip.locationLng,
+        locationName: trip.spot?.name || trip.spot?.locationName || "未关联钓点",
+        lat: trip.spot?.locationLat ?? null,
+        lng: trip.spot?.locationLng ?? null,
         startTime: trip.startTime.toISOString(),
         totalCatchCount: trip.totalCatchCount || 0,
         fishSpeciesCount: trip.fishSpeciesCount || 0,

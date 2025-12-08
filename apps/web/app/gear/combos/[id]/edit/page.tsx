@@ -15,6 +15,11 @@ export default async function ComboEditPage({ params }: { params: Promise<{ id: 
     include: {
       rod: true,
       reel: true,
+      sceneMetadata: {
+        include: {
+          metadata: { select: { id: true, label: true, value: true } },
+        },
+      },
     },
   });
 
@@ -33,13 +38,35 @@ export default async function ComboEditPage({ params }: { params: Promise<{ id: 
   });
 
   // 转换为 Summary 类型
+  const sceneMetadataIds =
+    combo.sceneMetadata?.map((item) => item.metadataId).filter(Boolean) ?? [];
+  const metadataLabels =
+    combo.sceneMetadata
+      ?.map((item) => item.metadata?.label ?? item.metadata?.value ?? null)
+      .filter((item): item is string => Boolean(item)) ?? [];
+  const fallbackSceneTags = Array.isArray(combo.sceneTags)
+    ? (combo.sceneTags as unknown[])
+        .map((tag) => (typeof tag === "string" ? tag : null))
+        .filter((tag): tag is string => Boolean(tag))
+    : [];
+  const metadataLabelSet = new Set(metadataLabels);
+  const customSceneTags = fallbackSceneTags.filter(
+    (tag) => !metadataLabelSet.has(tag)
+  );
+  const displaySceneTags =
+    metadataLabels.length > 0 || customSceneTags.length > 0
+      ? [...metadataLabels, ...customSceneTags]
+      : fallbackSceneTags;
+
   const comboSummary = {
     ...combo,
     rod: combo.rod,
     reel: combo.reel,
     visibility: combo.visibility as "private" | "public",
-    photoUrls: combo.photoUrls as string[],
-    sceneTags: combo.sceneTags as string[],
+    photoUrls: Array.isArray(combo.photoUrls) ? (combo.photoUrls as string[]) : undefined,
+    sceneTags: displaySceneTags,
+    sceneMetadataIds,
+    customSceneTags,
   };
 
   const rodSummaries = rods.map((r) => ({ 

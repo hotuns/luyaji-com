@@ -8,9 +8,12 @@ export type RodSummary = {
   id: string;
   name: string;
   brand: string | null;
+  brandMetadataId?: string | null;
   length: number | null;
   lengthUnit: string | null;
+  lengthUnitMetadataId?: string | null;
   power: string | null;
+  powerMetadataId?: string | null;
   lureWeightMin: number | null;
   lureWeightMax: number | null;
   lineWeightText: string | null;
@@ -24,6 +27,7 @@ export type ReelSummary = {
   id: string;
   name: string;
   brand: string | null;
+  brandMetadataId?: string | null;
   model: string | null;
   gearRatioText: string | null;
   lineCapacityText: string | null;
@@ -44,6 +48,8 @@ export type ComboSummary = {
   detailNote: string | null;
   visibility: "private" | "public";
   sceneTags: string[] | null;
+  sceneMetadataIds?: string[];
+  customSceneTags?: string[];
   rod: { id: string; name: string } | null;
   reel: { id: string; name: string } | null;
   likeCount?: number;
@@ -62,6 +68,7 @@ export type RodLibraryItem = {
   lineWeightText: string | null;
   price: number | null;
   note: string | null;
+  sourceType: "user" | "template" | "copied";
   updatedAt: string;
   ownerName: string;
 };
@@ -75,6 +82,7 @@ export type ReelLibraryItem = {
   lineCapacityText: string | null;
   price: number | null;
   note: string | null;
+  sourceType: "user" | "template" | "copied";
   updatedAt: string;
   ownerName: string;
 };
@@ -83,6 +91,7 @@ export type GearLibraryItemBase = {
   id: string;
   name: string;
   ownerName: string;
+  sourceType: "user" | "template" | "copied";
   updatedAt: string;
 };
 
@@ -135,15 +144,6 @@ export function nullableNumber(val: string) {
   return isNaN(n) ? null : n;
 }
 
-export function parseSceneTags(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return undefined;
-  return trimmed
-    .split(/[,，]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
 type ComboApiResponse = {
   id: string;
   name: string;
@@ -155,12 +155,38 @@ type ComboApiResponse = {
   detailNote?: string | null;
   visibility?: string | null;
   sceneTags?: unknown;
+  sceneMetadata?: Array<{
+    metadataId: string;
+    metadata?: {
+      label?: string | null;
+      value?: string | null;
+    } | null;
+  }>;
   rod?: { id: string; name: string } | null;
   reel?: { id: string; name: string } | null;
   photoUrls?: string[];
 };
 
 export function normalizeComboResponse(data: ComboApiResponse): ComboSummary {
+  const sceneMetadataIds =
+    data.sceneMetadata?.map((item) => item.metadataId).filter(Boolean) ?? [];
+  const metadataLabels =
+    data.sceneMetadata
+      ?.map((item) => item.metadata?.label ?? item.metadata?.value ?? null)
+      .filter((item): item is string => Boolean(item)) ?? [];
+  const fallbackSceneTags =
+    Array.isArray(data.sceneTags)
+      ? (data.sceneTags as unknown[])
+          .map((item) => (typeof item === "string" ? item : null))
+          .filter((item): item is string => Boolean(item))
+      : null;
+  const metadataLabelSet = new Set(metadataLabels);
+  const customSceneTags =
+    fallbackSceneTags?.filter((tag) => !metadataLabelSet.has(tag)) ?? [];
+  const displaySceneTags =
+    metadataLabels.length > 0 || customSceneTags.length > 0
+      ? [...metadataLabels, ...customSceneTags]
+      : fallbackSceneTags;
   return {
     id: data.id,
     name: data.name,
@@ -171,11 +197,9 @@ export function normalizeComboResponse(data: ComboApiResponse): ComboSummary {
     hookText: data.hookText ?? null,
     detailNote: data.detailNote ?? null,
     visibility: (data.visibility as "private" | "public") ?? "private",
-    sceneTags: Array.isArray(data.sceneTags)
-      ? (data.sceneTags as unknown[])
-          .map((item) => (typeof item === "string" ? item : null))
-          .filter((item): item is string => Boolean(item))
-      : null,
+    sceneTags: displaySceneTags ?? null,
+    sceneMetadataIds,
+    customSceneTags,
     rod: data.rod ?? null,
     reel: data.reel ?? null,
     photoUrls: data.photoUrls,

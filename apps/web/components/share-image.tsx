@@ -198,7 +198,7 @@ export async function generateShareCard(
   let currentY = cardY;
 
   // 3. 顶部图片区域 (Hero Image)
-  const heroHeight = 360;
+  const heroHeight = Math.min(cardH * 0.55, 520);
   
   ctx.save();
   // 创建顶部圆角的裁剪区域
@@ -260,7 +260,7 @@ export async function generateShareCard(
   ctx.fillText(`${typeStyle.icon} ${typeStyle.label}`, tagX + tagW / 2, tagY + tagH / 2 + 1);
   ctx.textAlign = "left"; // Reset
 
-  currentY += heroHeight + 20;
+  currentY += heroHeight + 32;
 
   // 5. 内容区域
   const contentPadding = 40;
@@ -375,35 +375,34 @@ export async function generateShareCard(
   ctx.fillText("发布于 路亚记", contentX + 60, footerContentY + 36);
 
   // 品牌/链接 (右侧)
-  // 简单的二维码模拟 (圆角正方形)
+  // 真正的二维码
   const qrSize = 64;
   const qrX = contentX + contentWidth - qrSize;
   const qrY = footerContentY - 8;
   
   // 绘制二维码背景
   drawRoundedRect(ctx, qrX, qrY, qrSize, qrSize, 8, "#ffffff", "#e2e8f0");
-  
-  // 绘制二维码内部 (模拟)
-  ctx.fillStyle = "#0f172a";
-  // const cellSize = 4; // Removed unused variable
-  for(let i=0; i<4; i++) { // 角落定位点
-     ctx.fillRect(qrX + 4, qrY + 4, 16, 16);
-     ctx.clearRect(qrX + 8, qrY + 8, 8, 8);
-     ctx.fillRect(qrX + 10, qrY + 10, 4, 4);
-     
-     ctx.fillRect(qrX + qrSize - 20, qrY + 4, 16, 16);
-     ctx.clearRect(qrX + qrSize - 16, qrY + 8, 8, 8);
-     ctx.fillRect(qrX + qrSize - 14, qrY + 10, 4, 4);
-     
-     ctx.fillRect(qrX + 4, qrY + qrSize - 20, 16, 16);
-     ctx.clearRect(qrX + 8, qrY + qrSize - 16, 8, 8);
-     ctx.fillRect(qrX + 10, qrY + qrSize - 14, 4, 4);
+
+  const qrImageUrl =
+    data.qrCodeUrl ??
+    `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=0&data=${encodeURIComponent(shareUrl)}`;
+  let qrImg: HTMLImageElement | null = null;
+  try {
+    qrImg = await loadImage(qrImageUrl);
+  } catch (err) {
+    console.error("二维码加载失败:", err);
   }
-  // 随机噪点模拟数据
-  for(let i=0; i<30; i++) {
-      const rx = Math.floor(Math.random() * (qrSize - 8)) + 4;
-      const ry = Math.floor(Math.random() * (qrSize - 8)) + 4;
+
+  if (qrImg) {
+    ctx.drawImage(qrImg, qrX + 4, qrY + 4, qrSize - 8, qrSize - 8);
+  } else {
+    // 回退到简单占位
+    ctx.fillStyle = "#0f172a";
+    for (let i = 0; i < 30; i++) {
+      const rx = Math.floor(Math.random() * (qrSize - 16)) + 8;
+      const ry = Math.floor(Math.random() * (qrSize - 16)) + 8;
       ctx.fillRect(qrX + rx, qrY + ry, 3, 3);
+    }
   }
 
   // 链接提示

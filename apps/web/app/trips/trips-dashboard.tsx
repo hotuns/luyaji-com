@@ -29,7 +29,6 @@ import { cn } from "@workspace/ui/lib/utils";
 interface Trip {
   id: string;
   title: string | null;
-  locationName: string;
   startTime: string;
   endTime: string | null;
   weatherType: string | null;
@@ -37,6 +36,10 @@ interface Trip {
   weatherWindText: string | null;
   visibility: "private" | "public";
   catches: { count: number; speciesName: string }[];
+  spot?: {
+    name: string | null;
+    locationName: string | null;
+  } | null;
 }
 
 export default function TripsDashboard() {
@@ -64,7 +67,11 @@ export default function TripsDashboard() {
     return trips.filter(
       (trip) =>
         (trip.title && trip.title.toLowerCase().includes(lowerTerm)) ||
-        trip.locationName.toLowerCase().includes(lowerTerm)
+        (() => {
+          const spotName = trip.spot?.name?.toLowerCase() || "";
+          const spotLocation = trip.spot?.locationName?.toLowerCase() || "";
+          return spotName.includes(lowerTerm) || spotLocation.includes(lowerTerm);
+        })()
     );
   }, [trips, searchTerm]);
 
@@ -103,7 +110,7 @@ export default function TripsDashboard() {
               <Button variant="outline" className="bg-white/10 border-white/10 text-white hover:bg-white/20 hover:text-white border-0 backdrop-blur-md" asChild>
                 <Link href="/trips/map">
                   <Map className="mr-2 h-4 w-4" />
-                  足迹地图
+                  钓点地图
                 </Link>
               </Button>
               <Button className="bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20 border-0" asChild>
@@ -188,6 +195,10 @@ function TripCard({ trip }: { trip: Trip }) {
   const startDate = new Date(trip.startTime);
   const totalCatchCount = trip.catches.reduce((acc, c) => acc + c.count, 0);
   const isAirForce = totalCatchCount === 0;
+  const locationLabel =
+    trip.spot?.name ||
+    trip.spot?.locationName ||
+    "未设置钓点";
 
   // 计算时长
   const startHour = startDate.getHours();
@@ -232,12 +243,12 @@ function TripCard({ trip }: { trip: Trip }) {
             </div>
             
             <h3 className="font-bold text-lg text-slate-800 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors leading-snug">
-              {trip.title || trip.locationName}
+              {trip.title || locationLabel}
             </h3>
             
             <div className="flex items-center gap-1.5 text-sm text-slate-500 mb-3">
               <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="truncate">{trip.locationName}</span>
+              <span className="truncate">{locationLabel}</span>
             </div>
 
             {/* 天气与时长 - 紧凑展示 */}

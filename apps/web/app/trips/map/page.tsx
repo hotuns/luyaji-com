@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import MapClient from "./map-client";
 
 export default async function TripsMapPage() {
@@ -11,7 +11,7 @@ export default async function TripsMapPage() {
     redirect("/auth/signin");
   }
 
-  const trips = await prisma.trip.findMany({
+  const spots = await prisma.fishingSpot.findMany({
     where: {
       userId: session.user.id,
       locationLat: { not: null },
@@ -19,26 +19,47 @@ export default async function TripsMapPage() {
     },
     select: {
       id: true,
-      title: true,
+      name: true,
       locationName: true,
       locationLat: true,
       locationLng: true,
-      startTime: true,
-      totalCatchCount: true,
-      fishSpeciesCount: true,
+      description: true,
+      visibility: true,
+      createdAt: true,
+      _count: {
+        select: { trips: true },
+      },
+      trips: {
+        orderBy: { startTime: "desc" },
+        take: 1,
+        select: {
+          startTime: true,
+          totalCatchCount: true,
+          fishSpeciesCount: true,
+          title: true,
+        },
+      },
     },
-    orderBy: { startTime: "desc" },
+    orderBy: { updatedAt: "desc" },
   });
 
-  const tripsData = trips.map((trip) => ({
-    id: trip.id,
-    title: trip.title,
-    locationName: trip.locationName,
-    lat: trip.locationLat!,
-    lng: trip.locationLng!,
-    startTime: trip.startTime.toISOString(),
-    totalCatchCount: trip.totalCatchCount || 0,
-    fishSpeciesCount: trip.fishSpeciesCount || 0,
+  const spotMarkers = spots.map((spot) => ({
+    id: spot.id,
+    name: spot.name,
+    locationName: spot.locationName || spot.name,
+    lat: spot.locationLat!,
+    lng: spot.locationLng!,
+    description: spot.description,
+    visibility: spot.visibility,
+    tripCount: spot._count.trips,
+    lastTrip: spot.trips[0]
+      ? {
+          title: spot.trips[0]!.title,
+          startTime: spot.trips[0]!.startTime.toISOString(),
+          totalCatchCount: spot.trips[0]!.totalCatchCount || 0,
+          fishSpeciesCount: spot.trips[0]!.fishSpeciesCount || 0,
+        }
+      : null,
   }));
 
   return (
@@ -54,23 +75,16 @@ export default async function TripsMapPage() {
           </Link>
           <div className="hidden md:block">
             <h1 className="text-lg font-semibold text-slate-900">我的钓点地图</h1>
-            <p className="text-sm text-slate-500">{tripsData.length} 个记录点</p>
+            <p className="text-sm text-slate-500">{spotMarkers.length} 个记录点</p>
           </div>
         </div>
         <h1 className="text-base font-semibold text-slate-900 md:hidden">我的钓点地图</h1>
-        <Link
-          href="/trips/new"
-          className="flex h-10 items-center justify-center gap-2 rounded-full text-blue-600 hover:bg-blue-50 md:bg-blue-600 md:px-4 md:text-white md:hover:bg-blue-700"
-        >
-          <Plus className="h-5 w-5" />
-          <span className="hidden md:inline">新建出击</span>
-        </Link>
       </header>
 
       {/* 地图区域 - PC端添加边距和圆角 */}
       <div className="flex-1 md:p-6">
         <div className="h-full w-full md:overflow-hidden md:rounded-2xl md:shadow-lg">
-          <MapClient trips={tripsData} />
+          <MapClient spots={spotMarkers} />
         </div>
       </div>
     </div>

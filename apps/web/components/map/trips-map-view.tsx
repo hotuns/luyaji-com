@@ -1,37 +1,35 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import "leaflet/dist/leaflet.css";
+import { getLeafletInstance } from "./leaflet-loader";
 
-// 修复 Leaflet 默认图标问题
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-});
-
-interface TripMarker {
+interface SpotMarker {
   id: string;
-  title: string | null;
+  name: string;
   locationName: string;
   lat: number;
   lng: number;
-  startTime: string;
-  totalCatchCount: number;
-  fishSpeciesCount: number;
+  description?: string | null;
+  visibility: string;
+  tripCount: number;
+  lastTrip: {
+    title: string | null;
+    startTime: string;
+    totalCatchCount: number;
+    fishSpeciesCount: number;
+  } | null;
 }
 
 interface TripsMapViewProps {
-  trips: TripMarker[];
+  spots: SpotMarker[];
 }
 
 // 自定义钓点标记图标
-const createFishingMarkerIcon = (catchCount: number) => {
-  const size = Math.min(40, 28 + catchCount * 2); // 根据渔获数调整大小
-  const bgColor = catchCount > 5 ? "#16a34a" : catchCount > 0 ? "#3b82f6" : "#6b7280";
+const createFishingMarkerIcon = (L: typeof import("leaflet"), tripCount: number) => {
+  const size = Math.min(40, 24 + tripCount * 2); // 根据出击次数调整大小
+  const bgColor = tripCount >= 5 ? "#16a34a" : tripCount > 0 ? "#3b82f6" : "#6b7280";
   
   return L.divIcon({
     html: `
@@ -52,7 +50,7 @@ const createFishingMarkerIcon = (catchCount: number) => {
           color: white;
           font-size: ${size * 0.35}px;
           font-weight: bold;
-        ">${catchCount}</span>
+        ">${tripCount}</span>
       </div>
     `,
     className: "fishing-marker",
@@ -72,7 +70,8 @@ function adjustColor(hex: string, amount: number): string {
 }
 
 // 格式化日期
-function formatDate(isoString: string): string {
+function formatDate(isoString?: string | null): string {
+  if (!isoString) return "-";
   const date = new Date(isoString);
   return date.toLocaleDateString("zh-CN", {
     year: "numeric",
@@ -81,23 +80,24 @@ function formatDate(isoString: string): string {
   });
 }
 
-export default function TripsMapView({ trips }: TripsMapViewProps) {
-  const mapRef = useRef<L.Map | null>(null);
+export default function TripsMapView({ spots }: TripsMapViewProps) {
+  const leaflet = useMemo(() => getLeafletInstance(), []);
+  const mapRef = useRef<import("leaflet").Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const markersRef = useRef<L.Marker[]>([]);
-  const [selectedTrip, setSelectedTrip] = useState<TripMarker | null>(null);
+  const markersRef = useRef<import("leaflet").Marker[]>([]);
+  const [selectedSpot, setSelectedSpot] = useState<SpotMarker | null>(null);
 
   // 初始化地图
   useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
+    if (!leaflet || !containerRef.current || mapRef.current) return;
 
     // 计算中心点
     let center: [number, number] = [30.2741, 120.1551]; // 默认杭州
     let zoom = 10;
 
-    if (trips.length > 0) {
-      const lats = trips.map((t) => t.lat);
-      const lngs = trips.map((t) => t.lng);
+    if (spots.length > 0) {
+      const lats = spots.map((t) => t.lat);
+      const lngs = spots.map((t) => t.lng);
       center = [
         (Math.min(...lats) + Math.max(...lats)) / 2,
         (Math.min(...lngs) + Math.max(...lngs)) / 2,
@@ -114,7 +114,7 @@ export default function TripsMapView({ trips }: TripsMapViewProps) {
     }
 
     // 创建地图实例
-    const map = L.map(containerRef.current, {
+    const map = leaflet.map(containerRef.current, {
       center: center,
       zoom: zoom,
       zoomControl: false,
@@ -122,10 +122,10 @@ export default function TripsMapView({ trips }: TripsMapViewProps) {
     });
 
     // 添加缩放控件
-    L.control.zoom({ position: "bottomright" }).addTo(map);
+    leaflet.control.zoom({ position: "bottomright" }).addTo(map);
 
     // 使用高德地图瓦片
-    L.tileLayer("https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}", {
+    leaflet.tileLayer("https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}", {
       subdomains: ["1", "2", "3", "4"],
       maxZoom: 18,
       attribution: '&copy; <a href="https://www.amap.com/">高德地图</a>',
@@ -137,24 +137,24 @@ export default function TripsMapView({ trips }: TripsMapViewProps) {
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [leaflet, spots]);
 
   // 添加标记
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!leaflet || !mapRef.current) return;
 
     // 清除旧标记
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
     // 添加新标记
-    trips.forEach((trip) => {
-      const marker = L.marker([trip.lat, trip.lng], {
-        icon: createFishingMarkerIcon(trip.totalCatchCount),
+    spots.forEach((spot) => {
+      const marker = leaflet.marker([spot.lat, spot.lng], {
+        icon: createFishingMarkerIcon(leaflet, spot.tripCount),
       });
 
       marker.on("click", () => {
-        setSelectedTrip(trip);
+        setSelectedSpot(spot);
       });
 
       marker.addTo(mapRef.current!);
@@ -162,11 +162,11 @@ export default function TripsMapView({ trips }: TripsMapViewProps) {
     });
 
     // 如果有多个标记，调整视野
-    if (trips.length > 1) {
-      const group = L.featureGroup(markersRef.current);
+    if (spots.length > 1) {
+      const group = leaflet.featureGroup(markersRef.current);
       mapRef.current.fitBounds(group.getBounds().pad(0.1));
     }
-  }, [trips]);
+  }, [leaflet, spots]);
 
   return (
     <div className="relative h-full w-full z-0">
@@ -178,24 +178,24 @@ export default function TripsMapView({ trips }: TripsMapViewProps) {
         <div className="space-y-1.5 text-xs text-slate-600">
           <div className="flex items-center gap-2">
             <div className="h-3 w-3 rounded-full bg-green-500" />
-            <span>渔获 &gt; 5 尾</span>
+            <span>出击次数 ≥ 5</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="h-3 w-3 rounded-full bg-blue-500" />
-            <span>渔获 1-5 尾</span>
+            <span>出击 1-4 次</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="h-3 w-3 rounded-full bg-slate-500" />
-            <span>空军</span>
+            <span>尚未出击</span>
           </div>
         </div>
       </div>
 
-      {/* 选中的出击详情 - 移动端底部全宽，PC端右侧固定宽度 */}
-      {selectedTrip && (
+      {/* 选中的钓点详情 */}
+      {selectedSpot && (
         <div className="absolute bottom-24 left-4 right-4 z-[500] rounded-2xl bg-white p-4 shadow-xl md:bottom-8 md:left-auto md:right-8 md:w-96 md:p-5">
           <button
-            onClick={() => setSelectedTrip(null)}
+            onClick={() => setSelectedSpot(null)}
             className="absolute right-3 top-3 rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -204,10 +204,11 @@ export default function TripsMapView({ trips }: TripsMapViewProps) {
           </button>
 
           <h3 className="pr-8 text-lg font-semibold text-slate-900">
-            {selectedTrip.title || selectedTrip.locationName}
+            {selectedSpot.name}
           </h3>
-          {selectedTrip.title && (
-            <p className="mt-1 text-sm text-slate-500">{selectedTrip.locationName}</p>
+          <p className="mt-1 text-sm text-slate-500">{selectedSpot.locationName}</p>
+          {selectedSpot.description && (
+            <p className="mt-2 text-xs text-slate-500 leading-relaxed">{selectedSpot.description}</p>
           )}
 
           <div className="mt-3 flex items-center gap-4 text-sm">
@@ -215,23 +216,45 @@ export default function TripsMapView({ trips }: TripsMapViewProps) {
               <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <span className="text-slate-600">{formatDate(selectedTrip.startTime)}</span>
+              <span className="text-slate-600">
+                {selectedSpot.lastTrip ? formatDate(selectedSpot.lastTrip.startTime) : "尚无出击"}
+              </span>
             </div>
             <div className="flex items-center gap-1.5">
               <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
               <span className="text-slate-600">
-                {selectedTrip.totalCatchCount} 尾 / {selectedTrip.fishSpeciesCount} 种
+                {selectedSpot.tripCount} 次出击
               </span>
             </div>
           </div>
 
+          {selectedSpot.lastTrip ? (
+            <div className="mt-4 grid gap-2 rounded-2xl bg-blue-50 p-3 text-xs text-blue-700">
+              <div className="font-semibold">最近出击</div>
+              <div className="text-blue-900">
+                {selectedSpot.lastTrip.title || "未命名出击"} · {formatDate(selectedSpot.lastTrip.startTime)}
+              </div>
+              <div className="flex justify-between text-blue-600">
+                <span>渔获：{selectedSpot.lastTrip.totalCatchCount} 条</span>
+                <span>鱼种：{selectedSpot.lastTrip.fishSpeciesCount}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 rounded-2xl bg-slate-50 p-3 text-xs text-slate-500">
+              暂无出击记录，快去完成第一次打卡吧！
+            </div>
+          )}
+
+          <div className="mt-4 text-xs text-slate-400">
+            坐标：{selectedSpot.lat.toFixed(5)}, {selectedSpot.lng.toFixed(5)}
+          </div>
           <Link
-            href={`/trips/${selectedTrip.id}`}
-            className="mt-4 block w-full rounded-xl bg-blue-600 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            href={`/spots?edit=${selectedSpot.id}`}
+            className="mt-4 inline-flex w-full items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:border-blue-200 hover:text-blue-600"
           >
-            查看详情
+            管理该钓点
           </Link>
         </div>
       )}

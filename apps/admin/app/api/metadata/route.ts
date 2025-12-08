@@ -1,6 +1,17 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
+
+const normalizeAliases = (aliases: unknown): string[] =>
+  Array.isArray(aliases)
+    ? aliases
+        .map((alias) => `${alias}`.trim())
+        .filter(Boolean)
+    : [];
+
+const formatJsonValue = (value: unknown) =>
+  value === undefined || value === null ? Prisma.JsonNull : value;
 
 // GET /api/metadata - 获取所有元数据
 export async function GET() {
@@ -30,7 +41,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { value, label, sortOrder, isActive } = body;
+    const { value, label, sortOrder, isActive, aliases, extra } = body;
     
     // 处理新建分类
     const category = body.category === "__new__" && body.newCategory
@@ -56,6 +67,7 @@ export async function POST(request: Request) {
       );
     }
 
+    const aliasList = normalizeAliases(aliases);
     const item = await prisma.metadata.create({
       data: {
         category,
@@ -63,6 +75,8 @@ export async function POST(request: Request) {
         label,
         sortOrder: sortOrder ?? 0,
         isActive: isActive ?? true,
+        aliases: aliasList.length ? aliasList : Prisma.JsonNull,
+        extra: formatJsonValue(extra),
       },
     });
 

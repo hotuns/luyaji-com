@@ -31,9 +31,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
-import { cn } from "@workspace/ui/lib/utils";
 import { ShareDialog } from "@/components/share-dialog";
-import { WEATHER_TYPES } from "@/lib/types";
+import { ImagePreviewDialog } from "@/components/image-preview-dialog";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("zh-CN", {
   dateStyle: "medium",
@@ -56,6 +55,17 @@ function formatDuration(start: string, end: string | null) {
   return `${hours}h ${minutes}m`;
 }
 
+function getSpotVisibilityLabel(value?: string | null) {
+  switch (value) {
+    case "public":
+      return "公开";
+    case "friends":
+      return "仅好友";
+    default:
+      return "私密";
+  }
+}
+
 export default function TripDetailClient() {
   const params = useParams<{ tripId: string }>();
   const router = useRouter();
@@ -66,6 +76,27 @@ export default function TripDetailClient() {
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [previewState, setPreviewState] = useState<{
+    open: boolean;
+    images: string[];
+    index: number;
+    title: string;
+  }>({
+    open: false,
+    images: [],
+    index: 0,
+    title: "图片预览",
+  });
+
+  const openImagePreview = (images?: string[] | null, title?: string, index = 0) => {
+    if (!images || images.length === 0) return;
+    setPreviewState({
+      open: true,
+      images,
+      index,
+      title: title || "图片预览",
+    });
+  };
 
   useEffect(() => {
     async function fetchDetail() {
@@ -144,6 +175,12 @@ export default function TripDetailClient() {
     );
   }
 
+  const spotIsPublic = !trip.spot || trip.spot.visibility === "public";
+  const fallbackSpotName = trip.spot?.name || "未关联钓点";
+  const fallbackSpotLocation = trip.spot?.locationName || fallbackSpotName;
+  const shareSpotName = spotIsPublic ? fallbackSpotName : "神秘钓点";
+  const shareLocationText = spotIsPublic ? fallbackSpotLocation : "钓点保密";
+
   return (
     <div className="min-h-screen bg-slate-50 pb-20 md:pb-10">
       {/* Header */}
@@ -159,7 +196,7 @@ export default function TripDetailClient() {
               <ArrowLeft className="w-6 h-6" />
             </Button>
             <h1 className="text-base font-bold text-slate-900 truncate max-w-[200px]">
-              {trip.title || trip.locationName}
+              {trip.title || fallbackSpotName}
             </h1>
           </div>
           
@@ -228,8 +265,23 @@ export default function TripDetailClient() {
               <div className="flex items-center gap-3 text-slate-700 md:col-span-2">
                 <MapPin className="w-5 h-5 text-slate-400" />
                 <div>
-                  <div className="text-xs text-slate-500">出击地点</div>
-                  <div className="font-medium">{trip.locationName}</div>
+                  <div className="text-xs text-slate-500">钓点</div>
+                  <div className="flex flex-wrap items-center gap-2 font-medium text-slate-900">
+                    <span>{trip.spot?.name || fallbackSpotName}</span>
+                    {trip.spot && (
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600">
+                        {getSpotVisibilityLabel(trip.spot.visibility)}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1">
+                    {trip.spot?.locationName || fallbackSpotLocation}
+                  </div>
+                  {!trip.spot && (
+                    <div className="text-[11px] text-amber-600 mt-1">
+                      该记录尚未关联钓点，仅展示文本地点。
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -325,57 +377,67 @@ export default function TripDetailClient() {
               </div>
             ) : (
               <div className="space-y-3">
-                {trip.catches.map((item, index) => (
-                  <div key={item.id} className="flex gap-3 p-3 bg-white border border-slate-200 rounded-xl shadow-sm">
-                    <div className="w-20 h-20 bg-slate-100 rounded-lg flex-shrink-0 overflow-hidden relative">
-                      {item.photoUrls && item.photoUrls.length > 0 ? (
-                        <>
-                          <img 
-                            src={item.photoUrls[0]} 
-                            alt={item.speciesName} 
-                            className="w-full h-full object-cover" 
+                {trip.catches.map((item, index) => {
+                  const hasPhotos = item.photoUrls && item.photoUrls.length > 0;
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex gap-3 p-3 bg-white border border-slate-200 rounded-xl shadow-sm"
+                    >
+                      {hasPhotos ? (
+                        <button
+                          type="button"
+                          className="w-20 h-20 rounded-lg flex-shrink-0 overflow-hidden relative border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                          onClick={() =>
+                            openImagePreview(item.photoUrls, `${item.speciesName} 渔获`, 0)
+                          }
+                        >
+                          <img
+                            src={item.photoUrls![0]}
+                            alt={item.speciesName}
+                            className="w-full h-full object-cover"
                           />
-                          {item.photoUrls.length > 1 && (
+                          {item.photoUrls!.length > 1 && (
                             <div className="absolute bottom-0 right-0 bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded-tl-lg">
-                              +{item.photoUrls.length - 1}
+                              +{item.photoUrls!.length - 1}
                             </div>
                           )}
-                        </>
+                        </button>
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-300">
+                        <div className="w-20 h-20 bg-slate-100 rounded-lg flex-shrink-0 overflow-hidden flex items-center justify-center text-slate-300">
                           <Camera className="w-8 h-8" />
                         </div>
                       )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-50 text-[10px] font-bold text-blue-600">
-                              #{index + 1}
-                            </span>
-                            <h4 className="font-medium text-slate-900">{item.speciesName}</h4>
-                          </div>
-                          <div className="text-sm text-slate-500 mt-1">
-                            {item.count}尾
-                            {item.sizeText && ` · ${item.sizeText}`}
-                            {item.lureText && ` · ${item.lureText}`}
-                          </div>
-                          {item.combo && (
-                            <div className="text-xs text-slate-400 mt-0.5">
-                              使用: {item.combo.name}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-50 text-[10px] font-bold text-blue-600">
+                                #{index + 1}
+                              </span>
+                              <h4 className="font-medium text-slate-900">{item.speciesName}</h4>
                             </div>
-                          )}
+                            <div className="text-sm text-slate-500 mt-1">
+                              {item.count}尾
+                              {item.sizeText && ` · ${item.sizeText}`}
+                              {item.lureText && ` · ${item.lureText}`}
+                            </div>
+                            {item.combo && (
+                              <div className="text-xs text-slate-400 mt-0.5">
+                                使用: {item.combo.name}
+                              </div>
+                            )}
+                          </div>
                         </div>
+                        {item.note && (
+                          <p className="text-xs text-slate-500 mt-2 bg-slate-50 p-1.5 rounded">
+                            {item.note}
+                          </p>
+                        )}
                       </div>
-                      {item.note && (
-                        <p className="text-xs text-slate-500 mt-2 bg-slate-50 p-1.5 rounded">
-                          {item.note}
-                        </p>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -388,14 +450,21 @@ export default function TripDetailClient() {
           config={{
             type: "trip",
             id: trip.id,
-            title: trip.title || trip.locationName,
-            description: `📍 ${trip.locationName} | 🐟 收获 ${trip.totalCatchCount || 0} 条`,
+            title: trip.title || shareSpotName,
+            description: `📍 ${shareLocationText} | 🐟 收获 ${trip.totalCatchCount || 0} 条`,
             imageUrl: trip.catches?.[0]?.photoUrls?.[0] || undefined,
           }}
           open={showShare}
           onOpenChange={setShowShare}
         />
       )}
+      <ImagePreviewDialog
+        open={previewState.open}
+        images={previewState.images}
+        initialIndex={previewState.index}
+        title={previewState.title}
+        onOpenChange={(open) => setPreviewState((prev) => ({ ...prev, open }))}
+      />
     </div>
   );
 }

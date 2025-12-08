@@ -1,8 +1,11 @@
+import type { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteOssFiles } from "@/lib/oss";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+
+import { resolveSceneMetadata } from "../helpers";
 
 // 预处理：将 null 转换为 undefined
 const nullToUndefined = <T>(val: T | null | undefined): T | undefined => 
@@ -17,6 +20,7 @@ const updateComboSchema = z.object({
   hookText: z.preprocess(nullToUndefined, z.string().optional()),
   lures: z.preprocess(nullToUndefined, z.array(z.any()).optional()),
   sceneTags: z.preprocess(nullToUndefined, z.array(z.string()).optional()),
+  sceneMetadataIds: z.preprocess(nullToUndefined, z.array(z.string()).optional()),
   detailNote: z.preprocess(nullToUndefined, z.string().optional()),
   visibility: z.preprocess(nullToUndefined, z.enum(["private", "public"]).optional()),
   photoUrls: z.preprocess(nullToUndefined, z.array(z.string()).optional()),
@@ -38,6 +42,11 @@ export async function GET(
       include: {
         rod: true,
         reel: true,
+        sceneMetadata: {
+          include: {
+            metadata: { select: { id: true, label: true, value: true } },
+          },
+        },
       },
     });
 
@@ -112,22 +121,112 @@ export async function PATCH(
 
     const existing = await prisma.combo.findFirst({
       where: { id: comboId, userId: session.user.id },
+      include: {
+        sceneMetadata: {
+          include: {
+            metadata: { select: { id: true, label: true, value: true } },
+          },
+        },
+      },
     });
 
     if (!existing) {
       return NextResponse.json({ success: false, error: "组合不存在" }, { status: 404 });
     }
 
-    const combo = await prisma.combo.update({
-      where: { id: existing.id },
-      data: payload,
-      include: {
-        rod: { select: { id: true, name: true } },
-        reel: { select: { id: true, name: true } },
-      },
+    const shouldUpdateMetadata = payload.sceneMetadataIds !== undefined;
+    const shouldUpdateCustomTags = payload.sceneTags !== undefined;
+    const sanitizedCustomTags =
+      payload.sceneTags
+        ?.map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0) ?? [];
+
+    let metadataResult: Awaited<ReturnType<typeof resolveSceneMetadata>> | null =
+      null;
+    if (shouldUpdateMetadata) {
+      metadataResult = await resolveSceneMetadata(payload.sceneMetadataIds);
+      if (metadataResult instanceof NextResponse) {
+        return metadataResult;
+      }
+    }
+
+    const existingMetadataLabels =
+      existing.sceneMetadata
+        ?.map((item) => item.metadata?.label ?? item.metadata?.value ?? null)
+        .filter((item): item is string => Boolean(item)) ?? [];
+    const existingSceneTags = Array.isArray(existing.sceneTags)
+      ? (existing.sceneTags as unknown[])
+          .map((tag) => (typeof tag === "string" ? tag : null))
+          .filter((tag): tag is string => Boolean(tag))
+      : [];
+    const existingCustomTags = existingSceneTags.filter(
+      (tag) => !existingMetadataLabels.includes(tag)
+    );
+
+    const metadataLabelsForSceneTags = shouldUpdateMetadata
+      ? metadataResult?.labels ?? []
+      : existingMetadataLabels;
+    const customTagsForSceneTags = shouldUpdateCustomTags
+      ? sanitizedCustomTags
+      : existingCustomTags;
+
+    const updateData: Prisma.ComboUncheckedUpdateInput = {};
+
+    if (payload.name !== undefined) updateData.name = payload.name;
+    if (payload.rodId !== undefined) updateData.rodId = payload.rodId;
+    if (payload.reelId !== undefined) updateData.reelId = payload.reelId;
+    if (payload.mainLineText !== undefined) updateData.mainLineText = payload.mainLineText;
+    if (payload.leaderLineText !== undefined) updateData.leaderLineText = payload.leaderLineText;
+    if (payload.hookText !== undefined) updateData.hookText = payload.hookText;
+    if (payload.lures !== undefined) updateData.lures = payload.lures;
+    if (payload.detailNote !== undefined) updateData.detailNote = payload.detailNote;
+    if (payload.visibility !== undefined) updateData.visibility = payload.visibility;
+    if (payload.photoUrls !== undefined) updateData.photoUrls = payload.photoUrls;
+
+    if (shouldUpdateMetadata || shouldUpdateCustomTags) {
+      const mergedTags = Array.from(
+        new Set([...metadataLabelsForSceneTags, ...customTagsForSceneTags])
+      );
+      updateData.sceneTags = mergedTags;
+    }
+
+    const updatedCombo = await prisma.$transaction(async (tx) => {
+      if (Object.keys(updateData).length > 0) {
+        await tx.combo.update({
+          where: { id: existing.id },
+          data: updateData,
+        });
+      }
+
+      if (shouldUpdateMetadata && metadataResult) {
+        await tx.comboSceneMetadata.deleteMany({
+          where: { comboId: existing.id },
+        });
+        if (metadataResult.relations.length > 0) {
+          await tx.comboSceneMetadata.createMany({
+            data: metadataResult.relations.map((relation) => ({
+              comboId: existing.id,
+              metadataId: relation.metadataId,
+            })),
+          });
+        }
+      }
+
+      return tx.combo.findUnique({
+        where: { id: existing.id },
+        include: {
+          rod: { select: { id: true, name: true } },
+          reel: { select: { id: true, name: true } },
+          sceneMetadata: {
+            include: {
+              metadata: { select: { id: true, label: true, value: true } },
+            },
+          },
+        },
+      });
     });
 
-    return NextResponse.json({ success: true, data: combo });
+    return NextResponse.json({ success: true, data: updatedCombo });
   } catch (error) {
     console.error("更新组合失败:", error);
     if (error instanceof z.ZodError) {

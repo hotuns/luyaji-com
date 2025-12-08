@@ -45,7 +45,7 @@ package_app() {
   # 检查是否已构建
   if [ ! -d "$APP_DIR/.next" ]; then
     log_error "未找到 .next 目录: $APP_DIR/.next"
-    log_error "请先执行构建: pnpm turbo build --filter=$APP_NAME"
+    log_error "请先执行构建: pnpm --filter $APP_NAME run build"
     return 1
   fi
 

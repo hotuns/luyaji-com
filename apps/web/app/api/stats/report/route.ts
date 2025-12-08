@@ -91,13 +91,30 @@ export async function GET(request: NextRequest) {
         take: 10,
       }),
       
-      // 地点排行
+      // 地点排行（按钓点聚合）
       prisma.trip.groupBy({
-        by: ["locationName"],
+        by: ["spotId"],
         where: { userId, startTime: dateFilter },
         _count: { id: true },
         orderBy: { _count: { id: "desc" } },
         take: 10,
+      }).then(async (groups) => {
+        const spotIds = groups
+          .map((g) => g.spotId)
+          .filter((id): id is string => Boolean(id));
+        const spots = await prisma.fishingSpot.findMany({
+          where: { id: { in: spotIds } },
+          select: { id: true, name: true, locationName: true },
+        });
+        const spotMap = new Map(spots.map((s) => [s.id, s]));
+        return groups.map((g) => {
+          const meta = g.spotId ? spotMap.get(g.spotId) : null;
+          const label = meta?.name || meta?.locationName || "未关联钓点";
+          return {
+            locationName: label,
+            tripCount: g._count.id,
+          };
+        });
       }),
       
       // 装备使用统计
@@ -188,9 +205,14 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           title: true,
-          locationName: true,
           startTime: true,
           totalCatchCount: true,
+          spot: {
+            select: {
+              name: true,
+              locationName: true,
+            },
+          },
         },
       }),
       
@@ -209,7 +231,11 @@ export async function GET(request: NextRequest) {
           weightText: true,
           caughtAt: true,
           trip: {
-            select: { id: true, title: true, locationName: true },
+            select: { 
+              id: true, 
+              title: true,
+              spot: { select: { name: true, locationName: true } },
+            },
           },
         },
         take: 1,
@@ -263,7 +289,7 @@ export async function GET(request: NextRequest) {
         // 地点排行
         topLocations: topLocations.map(l => ({
           locationName: l.locationName,
-          tripCount: l._count.id,
+          tripCount: l.tripCount,
         })),
         
         // 装备排行
@@ -285,7 +311,7 @@ export async function GET(request: NextRequest) {
         bestTrip: bestTrip ? {
           id: bestTrip.id,
           title: bestTrip.title || "未命名出击",
-          locationName: bestTrip.locationName,
+          locationName: bestTrip.spot?.name || bestTrip.spot?.locationName || "未关联钓点",
           startTime: bestTrip.startTime.toISOString(),
           catchCount: bestTrip.totalCatchCount,
         } : null,

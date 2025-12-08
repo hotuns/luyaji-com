@@ -29,7 +29,7 @@ const features = [
   },
   {
     icon: Users,
-    title: "装备广场",
+    title: "钓友广场",
     description: "浏览钓友们分享的装备组合，获取灵感",
   },
 ];
@@ -69,7 +69,7 @@ export function LandingPage() {
             >
               <Link href="/square">
                 <BookOpen className="mr-2 h-4 w-4" />
-                浏览装备广场
+                浏览钓友广场
               </Link>
             </Button>
           </div>

@@ -12,6 +12,16 @@ export async function GET(
     const trip = await prisma.trip.findUnique({
       where: { id: tripId },
       include: {
+        spot: {
+          select: {
+            id: true,
+            name: true,
+            locationName: true,
+            locationLat: true,
+            locationLng: true,
+            visibility: true,
+          },
+        },
         user: {
           select: {
             id: true,
@@ -52,6 +62,14 @@ export async function GET(
       );
     }
 
+    const spotVisible = !trip.spot || trip.spot.visibility === "public";
+    const baseSpotName = trip.spot?.name || "未关联钓点";
+    const baseLocationName = trip.spot?.locationName || baseSpotName;
+    const baseLat = trip.spot?.locationLat ?? null;
+    const baseLng = trip.spot?.locationLng ?? null;
+    const safeSpotName = spotVisible ? baseSpotName : "神秘钓点";
+    const safeLocationName = spotVisible ? baseLocationName : "钓点保密";
+
     return NextResponse.json({
       success: true,
       data: {
@@ -60,9 +78,9 @@ export async function GET(
         visibility: trip.visibility,
         startTime: trip.startTime.toISOString(),
         endTime: trip.endTime?.toISOString() || null,
-        locationName: trip.locationName,
-        locationLat: trip.locationLat,
-        locationLng: trip.locationLng,
+        locationName: safeLocationName,
+        locationLat: spotVisible ? baseLat : null,
+        locationLng: spotVisible ? baseLng : null,
         note: trip.note,
         weatherType: trip.weatherType,
         weatherTemperatureText: trip.weatherTemperatureText,
@@ -70,6 +88,8 @@ export async function GET(
         totalCatchCount: trip.totalCatchCount || 0,
         fishSpeciesCount: trip.fishSpeciesCount || 0,
         createdAt: trip.createdAt.toISOString(),
+        spotName: safeSpotName,
+        spotVisibility: trip.spot?.visibility || null,
         user: {
           id: trip.user.id,
           nickname: trip.user.nickname || "匿名钓友",
@@ -81,6 +101,10 @@ export async function GET(
           note: tc.note,
           rod: tc.combo.rod,
           reel: tc.combo.reel,
+          mainLineText: tc.combo.mainLineText,
+          leaderLineText: tc.combo.leaderLineText,
+          hookText: tc.combo.hookText,
+          detailNote: tc.combo.detailNote,
         })),
         catches: trip.catches.map((c) => ({
           id: c.id,

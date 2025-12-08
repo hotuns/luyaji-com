@@ -157,10 +157,16 @@ packages/
 pnpm install
 
 # 启动开发服务器
-pnpm dev
+pnpm dev        # 等价于 pnpm dev:web
+pnpm dev:web    # 用户端
+pnpm dev:admin  # 管理后台
 
 # 构建
 pnpm build
+
+# 代码检查
+pnpm lint
+pnpm typecheck
 
 # 添加 UI 组件
 pnpm dlx shadcn@latest add button -c apps/web
@@ -170,6 +176,12 @@ cd apps/web && pnpm prisma migrate dev
 
 # 生成 Prisma Client
 pnpm prisma generate
+
+# Metadata 字典
+- 所有品牌/场景/天气等枚举统一写入 `metadata` 表，可先运行 `cd apps/web && pnpm prisma db push && pnpm prisma db seed` 同步种子。
+- Rod/Reel/Trip 等模型已经新增 `…MetadataId` 字段，后续录入和迁移需参考 `docs.md` 中的《Metadata 接入计划》。
+- 旧数据的标准化迁移脚本：`cd apps/web && pnpm metadata:migrate -- --apply`。默认不带 `--apply` 时为 dry-run，仅输出匹配/未匹配统计，确保映射正确后再加 `--apply` 真正写库。
+- 清理旧的 `scene_tag` 分类：`cd apps/web && pnpm metadata:cleanup -- --apply`，不带 `--apply` 可先查看有哪些遗留记录。
 ```
 
 ## Docker 部署

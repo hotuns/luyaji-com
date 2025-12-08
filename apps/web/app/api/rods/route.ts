@@ -1,22 +1,39 @@
+import type { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ensureSafeText } from "@/lib/sensitive-words";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-// 预处理：将 null 转换为 undefined
+import { applyRodMetadata } from "./helpers";
+
+// 预处理：将 null、空字符串 转换为 undefined/null
 const nullToUndefined = <T>(val: T | null | undefined): T | undefined => 
   val === null ? undefined : val;
+
+const emptyToNull = (val: unknown) => {
+  if (val === undefined || val === null) return null
+  if (typeof val === "string" && val.trim().length === 0) return null
+  return val
+}
+
+const metadataIdSchema = z.preprocess(
+  emptyToNull,
+  z.union([z.string().uuid(), z.null()]).optional()
+);
 
 const baseRodSchema = {
   name: z.string().min(1, "请输入名称").max(60),
   brand: z.preprocess(nullToUndefined, z.string().max(40).optional()),
+  brandMetadataId: metadataIdSchema,
   length: z.preprocess(
     nullToUndefined,
     z.number().positive().max(10, "长度过大").optional()
   ),
   lengthUnit: z.preprocess(nullToUndefined, z.enum(["m", "ft"]).optional()),
+  lengthUnitMetadataId: metadataIdSchema,
   power: z.preprocess(nullToUndefined, z.string().max(20).optional()),
+  powerMetadataId: metadataIdSchema,
   lureWeightMin: z.preprocess(nullToUndefined, z.number().min(0).max(500).optional()),
   lureWeightMax: z.preprocess(nullToUndefined, z.number().min(0).max(500).optional()),
   lineWeightText: z.preprocess(nullToUndefined, z.string().max(60).optional()),
@@ -64,21 +81,26 @@ export async function POST(request: NextRequest) {
       ensureSafeText("鱼竿备注", payload.note);
     }
 
+    const rodData: Prisma.RodUncheckedCreateInput = {
+      userId: session.user.id,
+      name: payload.name,
+      brand: payload.brand,
+      length: payload.length,
+      lengthUnit: payload.lengthUnit ?? "m",
+      power: payload.power,
+      lureWeightMin: payload.lureWeightMin,
+      lureWeightMax: payload.lureWeightMax,
+      lineWeightText: payload.lineWeightText,
+      price: payload.price,
+      note: payload.note,
+      visibility: payload.visibility ?? "private",
+    };
+
+    const metadataError = await applyRodMetadata(payload, rodData);
+    if (metadataError) return metadataError;
+
     const rod = await prisma.rod.create({
-      data: {
-        userId: session.user.id,
-        name: payload.name,
-        brand: payload.brand,
-        length: payload.length,
-        lengthUnit: payload.lengthUnit ?? "m",
-        power: payload.power,
-        lureWeightMin: payload.lureWeightMin,
-        lureWeightMax: payload.lureWeightMax,
-        lineWeightText: payload.lineWeightText,
-        price: payload.price,
-        note: payload.note,
-        visibility: payload.visibility ?? "private",
-      },
+      data: rodData,
     });
 
     return NextResponse.json({ success: true, data: rod }, { status: 201 });

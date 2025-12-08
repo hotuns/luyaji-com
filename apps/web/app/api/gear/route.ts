@@ -29,6 +29,11 @@ export async function GET() {
         include: {
           rod: { select: { id: true, name: true } },
           reel: { select: { id: true, name: true } },
+          sceneMetadata: {
+            include: {
+              metadata: { select: { id: true, label: true, value: true } },
+            },
+          },
         },
       }),
     ]);
@@ -37,9 +42,12 @@ export async function GET() {
       id: rod.id,
       name: rod.name,
       brand: rod.brand,
+      brandMetadataId: rod.brandMetadataId,
       length: rod.length,
       lengthUnit: rod.lengthUnit,
+      lengthUnitMetadataId: rod.lengthUnitMetadataId,
       power: rod.power,
+      powerMetadataId: rod.powerMetadataId,
       lureWeightMin: rod.lureWeightMin,
       lureWeightMax: rod.lureWeightMax,
       lineWeightText: rod.lineWeightText,
@@ -53,6 +61,7 @@ export async function GET() {
       id: reel.id,
       name: reel.name,
       brand: reel.brand,
+      brandMetadataId: reel.brandMetadataId,
       model: reel.model,
       gearRatioText: reel.gearRatioText,
       lineCapacityText: reel.lineCapacityText,
@@ -62,21 +71,47 @@ export async function GET() {
       combosCount: reel._count.combos,
     }));
 
-    const comboSummaries = combos.map((combo) => ({
-      id: combo.id,
-      name: combo.name,
-      rodId: combo.rodId,
-      reelId: combo.reelId,
-      mainLineText: combo.mainLineText,
-      leaderLineText: combo.leaderLineText,
-      hookText: combo.hookText,
-      detailNote: combo.detailNote,
-      visibility: combo.visibility as "private" | "public",
-      sceneTags: Array.isArray(combo.sceneTags) ? (combo.sceneTags as string[]) : null,
-      rod: combo.rod,
-      reel: combo.reel,
-      photoUrls: Array.isArray(combo.photoUrls) ? (combo.photoUrls as string[]) : null,
-    }));
+    const comboSummaries = combos.map((combo) => {
+      const sceneMetadataIds =
+        combo.sceneMetadata?.map((item) => item.metadataId).filter(Boolean) ?? [];
+      const metadataLabels =
+        combo.sceneMetadata
+          ?.map((item) => item.metadata?.label ?? item.metadata?.value ?? null)
+          .filter((item): item is string => Boolean(item)) ?? [];
+      const fallbackSceneTags = Array.isArray(combo.sceneTags)
+        ? (combo.sceneTags as unknown[])
+            .map((item) => (typeof item === "string" ? item : null))
+            .filter((item): item is string => Boolean(item))
+        : [];
+      const metadataLabelSet = new Set(metadataLabels);
+      const customSceneTags = fallbackSceneTags.filter(
+        (tag) => !metadataLabelSet.has(tag)
+      );
+      const displaySceneTags =
+        metadataLabels.length > 0 || customSceneTags.length > 0
+          ? [...metadataLabels, ...customSceneTags]
+          : fallbackSceneTags;
+
+      return {
+        id: combo.id,
+        name: combo.name,
+        rodId: combo.rodId,
+        reelId: combo.reelId,
+        mainLineText: combo.mainLineText,
+        leaderLineText: combo.leaderLineText,
+        hookText: combo.hookText,
+        detailNote: combo.detailNote,
+        visibility: combo.visibility as "private" | "public",
+        sceneTags: displaySceneTags,
+        sceneMetadataIds,
+        customSceneTags,
+        rod: combo.rod,
+        reel: combo.reel,
+        photoUrls: Array.isArray(combo.photoUrls)
+          ? (combo.photoUrls as string[])
+          : null,
+      };
+    });
 
     return NextResponse.json({
       success: true,

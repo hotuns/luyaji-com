@@ -4,6 +4,8 @@ import { ensureSafeText } from "@/lib/sensitive-words";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { resolveSceneMetadata } from "./helpers";
+
 // 预处理：将 null 转换为 undefined
 const nullToUndefined = <T>(val: T | null | undefined): T | undefined => 
   val === null ? undefined : val;
@@ -25,6 +27,11 @@ export async function GET() {
       include: {
         rod: { select: { id: true, name: true } },
         reel: { select: { id: true, name: true } },
+        sceneMetadata: {
+          include: {
+            metadata: { select: { id: true, label: true, value: true } },
+          },
+        },
       },
     });
 
@@ -48,6 +55,7 @@ const createComboSchema = z.object({
   hookText: z.preprocess(nullToUndefined, z.string().optional()),
   lures: z.preprocess(nullToUndefined, z.array(z.any()).optional()),
   sceneTags: z.preprocess(nullToUndefined, z.array(z.string()).optional()),
+  sceneMetadataIds: z.preprocess(nullToUndefined, z.array(z.string()).optional()),
   detailNote: z.preprocess(nullToUndefined, z.string().optional()),
   visibility: z.preprocess(nullToUndefined, z.enum(["private", "public"]).optional()),
   photoUrls: z.preprocess(nullToUndefined, z.array(z.string()).optional()),
@@ -73,6 +81,23 @@ export async function POST(request: NextRequest) {
       ensureSafeText("组合说明", validatedData.detailNote);
     }
 
+    const sceneMetadataResult = await resolveSceneMetadata(
+      validatedData.sceneMetadataIds
+    );
+    if (sceneMetadataResult instanceof NextResponse) {
+      return sceneMetadataResult;
+    }
+    const customSceneTags =
+      validatedData.sceneTags
+        ?.map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0) ?? [];
+    const combinedSceneTags = Array.from(
+      new Set([
+        ...sceneMetadataResult.labels,
+        ...customSceneTags.filter((tag) => Boolean(tag)),
+      ])
+    );
+
     const combo = await prisma.combo.create({
       data: {
         userId: session.user.id,
@@ -83,7 +108,16 @@ export async function POST(request: NextRequest) {
         leaderLineText: validatedData.leaderLineText,
         hookText: validatedData.hookText,
         lures: validatedData.lures,
-        sceneTags: validatedData.sceneTags,
+        sceneTags:
+          combinedSceneTags.length > 0 ? combinedSceneTags : undefined,
+        sceneMetadata:
+          sceneMetadataResult.relations.length > 0
+            ? {
+                create: sceneMetadataResult.relations.map((relation) => ({
+                  metadataId: relation.metadataId,
+                })),
+              }
+            : undefined,
         detailNote: validatedData.detailNote,
         visibility: validatedData.visibility || "private",
         photoUrls: validatedData.photoUrls,
@@ -91,6 +125,11 @@ export async function POST(request: NextRequest) {
       include: {
         rod: { select: { id: true, name: true } },
         reel: { select: { id: true, name: true } },
+        sceneMetadata: {
+          include: {
+            metadata: { select: { id: true, label: true, value: true } },
+          },
+        },
       },
     });
 

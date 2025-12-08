@@ -3,6 +3,7 @@
 import {
   AppstoreOutlined,
   BarChartOutlined,
+  DatabaseOutlined,
   InboxOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
@@ -13,6 +14,7 @@ import {
   TeamOutlined,
   UnorderedListOutlined,
   UserOutlined,
+  ShareAltOutlined,
 } from "@ant-design/icons";
 import {
   Avatar,
@@ -38,7 +40,9 @@ const NAV_ITEMS = [
   { key: "/trips", label: "出击记录", icon: <UnorderedListOutlined /> },
   { key: "/fish-species", label: "鱼种管理", icon: <RadarChartOutlined /> },
   { key: "/gear", label: "装备管理", icon: <InboxOutlined /> },
-   { key: "/announcements", label: "公告管理", icon: <NotificationOutlined /> },
+  { key: "/share-assets", label: "分享素材", icon: <ShareAltOutlined /> },
+  { key: "/metadata", label: "元数据管理", icon: <DatabaseOutlined /> },
+  { key: "/announcements", label: "公告管理", icon: <NotificationOutlined /> },
   { key: "/settings", label: "系统设置", icon: <SettingOutlined /> },
 ];
 
@@ -49,6 +53,8 @@ const BREADCRUMB_NAME_MAP: Record<string, string> = {
   "/trips": "出击记录",
   "/fish-species": "鱼种管理",
   "/gear": "装备管理",
+  "/share-assets": "分享素材",
+  "/metadata": "元数据管理",
   "/announcements": "公告管理",
   "/settings": "系统设置",
 };

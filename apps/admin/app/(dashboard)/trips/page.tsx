@@ -15,7 +15,8 @@ export default async function TripsPage({
     ? {
         OR: [
           { title: { contains: search } },
-          { locationName: { contains: search } },
+          { spot: { name: { contains: search } } },
+          { spot: { locationName: { contains: search } } },
           { user: { nickname: { contains: search } } },
           { user: { phone: { contains: search } } },
         ],
@@ -34,6 +35,9 @@ export default async function TripsPage({
         },
         _count: {
           select: { catches: true },
+        },
+        spot: {
+          select: { name: true, locationName: true },
         },
       },
     }),

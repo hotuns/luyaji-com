@@ -39,6 +39,9 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
+    const folderInput = (formData.get("folder") as string | null)?.trim().toLowerCase();
+    const allowedFolders = ["catches", "combos"];
+    const targetFolder = folderInput && allowedFolders.includes(folderInput) ? folderInput : "catches";
 
     if (!file) {
       return NextResponse.json({ success: false, error: "没有上传文件" }, { status: 400 });
@@ -65,7 +68,7 @@ export async function POST(request: NextRequest) {
     const timestamp = Date.now();
     const randomId = Math.random().toString(36).substring(2, 8);
     const fileExt = ext || "jpg";
-    const objectKey = `catches/${session.user.id}_${timestamp}_${randomId}.${fileExt}`;
+    const objectKey = `${targetFolder}/${session.user.id}_${timestamp}_${randomId}.${fileExt}`;
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);

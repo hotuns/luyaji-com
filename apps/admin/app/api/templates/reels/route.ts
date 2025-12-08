@@ -9,6 +9,12 @@ function toNullableString(value: unknown) {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function toNullableNumber(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  const numeric = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
 export async function POST(request: Request) {
   try {
     const admin = await requireAdminUser();
@@ -30,6 +36,7 @@ export async function POST(request: Request) {
         model: toNullableString(body.model),
         gearRatioText: toNullableString(body.gearRatioText),
         lineCapacityText: toNullableString(body.lineCapacityText),
+        price: toNullableNumber(body.price),
         note: toNullableString(body.note),
         visibility: "public",
         sourceType: "template",

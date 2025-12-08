@@ -1,16 +1,31 @@
+import type { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ensureSafeText } from "@/lib/sensitive-words";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { applyReelMetadata } from "./helpers";
+
 // 预处理：将 null 转换为 undefined
 const nullToUndefined = <T>(val: T | null | undefined): T | undefined => 
   val === null ? undefined : val;
 
+const emptyToNull = (val: unknown) => {
+  if (val === undefined || val === null) return null
+  if (typeof val === "string" && val.trim().length === 0) return null
+  return val
+}
+
+const metadataIdSchema = z.preprocess(
+  emptyToNull,
+  z.union([z.string().uuid(), z.null()]).optional()
+);
+
 const createReelSchema = z.object({
   name: z.string().min(1).max(60),
   brand: z.preprocess(nullToUndefined, z.string().max(40).optional()),
+  brandMetadataId: metadataIdSchema,
   model: z.preprocess(nullToUndefined, z.string().max(40).optional()),
   gearRatioText: z.preprocess(nullToUndefined, z.string().max(30).optional()),
   lineCapacityText: z.preprocess(nullToUndefined, z.string().max(80).optional()),
@@ -56,18 +71,23 @@ export async function POST(request: NextRequest) {
       ensureSafeText("渔轮备注", payload.note);
     }
 
+    const reelData: Prisma.ReelUncheckedCreateInput = {
+      userId: session.user.id,
+      name: payload.name,
+      brand: payload.brand,
+      model: payload.model,
+      gearRatioText: payload.gearRatioText,
+      lineCapacityText: payload.lineCapacityText,
+      price: payload.price,
+      note: payload.note,
+      visibility: payload.visibility ?? "private",
+    };
+
+    const metadataError = await applyReelMetadata(payload, reelData);
+    if (metadataError) return metadataError;
+
     const reel = await prisma.reel.create({
-      data: {
-        userId: session.user.id,
-        name: payload.name,
-        brand: payload.brand,
-        model: payload.model,
-        gearRatioText: payload.gearRatioText,
-        lineCapacityText: payload.lineCapacityText,
-        price: payload.price,
-        note: payload.note,
-        visibility: payload.visibility ?? "private",
-      },
+      data: reelData,
     });
 
     return NextResponse.json({ success: true, data: reel }, { status: 201 });

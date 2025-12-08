@@ -1,19 +1,36 @@
+import type { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ensureSafeText } from "@/lib/sensitive-words";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { applyRodMetadata } from "../helpers";
+
 // 预处理：将 null 转换为 undefined
 const nullToUndefined = <T>(val: T | null | undefined): T | undefined => 
   val === null ? undefined : val;
 
+const emptyToNull = (val: unknown) => {
+  if (val === undefined || val === null) return null
+  if (typeof val === "string" && val.trim().length === 0) return null
+  return val
+}
+
+const metadataIdSchema = z.preprocess(
+  emptyToNull,
+  z.union([z.string().uuid(), z.null()]).optional()
+);
+
 const updateRodSchema = z.object({
   name: z.preprocess(nullToUndefined, z.string().min(1).max(60).optional()),
   brand: z.preprocess(nullToUndefined, z.string().max(40).optional()),
+  brandMetadataId: metadataIdSchema,
   length: z.preprocess(nullToUndefined, z.number().positive().max(10).optional()),
   lengthUnit: z.preprocess(nullToUndefined, z.enum(["m", "ft"]).optional()),
+  lengthUnitMetadataId: metadataIdSchema,
   power: z.preprocess(nullToUndefined, z.string().max(20).optional()),
+  powerMetadataId: metadataIdSchema,
   lureWeightMin: z.preprocess(nullToUndefined, z.number().min(0).max(500).optional()),
   lureWeightMax: z.preprocess(nullToUndefined, z.number().min(0).max(500).optional()),
   lineWeightText: z.preprocess(nullToUndefined, z.string().max(60).optional()),
@@ -51,9 +68,25 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: "鱼竿不存在" }, { status: 404 });
     }
 
+    const updateData: Prisma.RodUncheckedUpdateInput = {};
+
+    if (payload.name !== undefined) updateData.name = payload.name;
+    if (payload.brand !== undefined) updateData.brand = payload.brand;
+    if (payload.length !== undefined) updateData.length = payload.length;
+    if (payload.lengthUnit !== undefined) updateData.lengthUnit = payload.lengthUnit;
+    if (payload.power !== undefined) updateData.power = payload.power;
+    if (payload.lureWeightMin !== undefined) updateData.lureWeightMin = payload.lureWeightMin;
+    if (payload.lureWeightMax !== undefined) updateData.lureWeightMax = payload.lureWeightMax;
+    if (payload.lineWeightText !== undefined) updateData.lineWeightText = payload.lineWeightText;
+    if (payload.price !== undefined) updateData.price = payload.price;
+    if (payload.note !== undefined) updateData.note = payload.note;
+    if (payload.visibility !== undefined) updateData.visibility = payload.visibility;
+    const metadataError = await applyRodMetadata(payload, updateData);
+    if (metadataError) return metadataError;
+
     const rod = await prisma.rod.update({
       where: { id: existing.id },
-      data: payload,
+      data: updateData,
     });
 
     return NextResponse.json({ success: true, data: rod });

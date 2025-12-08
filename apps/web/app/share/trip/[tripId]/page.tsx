@@ -13,8 +13,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   try {
     const trip = await prisma.trip.findUnique({
-      where: { id: tripId, visibility: "public" },
+      where: { id: tripId },
       include: {
+        spot: {
+          select: {
+            name: true,
+            locationName: true,
+            visibility: true,
+          },
+        },
         user: { select: { nickname: true } },
         catches: {
           take: 1,
@@ -23,14 +30,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       },
     });
 
-    if (!trip) {
+    if (!trip || trip.visibility !== "public") {
       return {
         title: "出击记录不存在 - 路亚记",
       };
     }
 
+    const spotVisible = !trip.spot || trip.spot.visibility === "public";
+    const baseSpotName = trip.spot?.name || "未关联钓点";
+    const baseLocationName = trip.spot?.locationName || baseSpotName;
+    const safeSpotName = spotVisible ? baseSpotName : "神秘钓点";
+    const safeLocationName = spotVisible ? baseLocationName : "钓点保密";
+
     const description = [
-      `📍 ${trip.locationName}`,
+      `📍 ${safeLocationName}`,
       trip.totalCatchCount ? `🐟 收获 ${trip.totalCatchCount} 条` : null,
       trip.fishSpeciesCount ? `🎯 ${trip.fishSpeciesCount} 种鱼` : null,
     ]
@@ -43,7 +56,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       ? (catchPhotos[0] as string)
       : undefined;
 
-    const title = trip.title || `${trip.locationName}出击`;
+    const title = trip.title || `${safeSpotName}出击`;
 
     return {
       title: `${title} - ${trip.user?.nickname || "钓友"}的出击记录 | 路亚记`,

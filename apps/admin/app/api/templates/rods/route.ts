@@ -39,6 +39,7 @@ export async function POST(request: Request) {
         lureWeightMin: toNullableNumber(body.lureWeightMin),
         lureWeightMax: toNullableNumber(body.lureWeightMax),
         lineWeightText: toNullableString(body.lineWeightText),
+        price: toNullableNumber(body.price),
         note: toNullableString(body.note),
         visibility: "public",
         sourceType: "template",

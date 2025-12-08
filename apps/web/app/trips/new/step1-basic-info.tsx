@@ -1,8 +1,12 @@
 "use client";
 
 import { TripFormState } from "@/lib/types";
-import { useState, useEffect } from "react";
-import { LocationPicker } from "@/components/map";
+import { useState } from "react";
+import Link from "next/link";
+import { FishingSpotPicker } from "@/components/fishing-spot-picker";
+import { FishingSpotFormDialog } from "@/components/fishing-spot-form-dialog";
+import { useFishingSpots } from "@/hooks/use-fishing-spots";
+import type { FishingSpotOption } from "@/hooks/use-fishing-spots";
 import { DateTimeField } from "@/components/date-time-field";
 
 interface Step1Props {
@@ -19,27 +23,40 @@ export default function Step1BasicInfo({
   onCancel,
 }: Step1Props) {
   const [error, setError] = useState("");
-  const [lastLocation, setLastLocation] = useState<string | null>(null);
+  const [spotDialogOpen, setSpotDialogOpen] = useState(false);
+  const {
+    spots,
+    loading: spotsLoading,
+    error: spotsError,
+    reload: reloadSpots,
+    upsertSpot,
+  } = useFishingSpots();
+  const selectedSpot = spots.find((item) => item.id === formState.spotId) || null;
 
-  // 获取上一次出击地点
-  useEffect(() => {
-    fetch("/api/trips/last-location")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.locationName) {
-          setLastLocation(data.locationName);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  const applySpotToForm = (spot: FishingSpotOption) => {
+    updateForm({
+      spotId: spot.id,
+    });
+    setError("");
+  };
+
+  const handleSpotSelect = (spot: FishingSpotOption) => {
+    applySpotToForm(spot);
+  };
+
+  const handleSpotCreated = (spot: FishingSpotOption) => {
+    upsertSpot(spot);
+    reloadSpots();
+    applySpotToForm(spot);
+  };
 
   const handleNext = () => {
     if (!formState.startTime) {
       setError("请选择出击时间");
       return;
     }
-    if (!formState.locationName.trim()) {
-      setError("请填写出击地点");
+    if (!formState.spotId) {
+      setError("请选择一个钓点，或先创建新的钓点");
       return;
     }
     setError("");
@@ -74,8 +91,60 @@ export default function Step1BasicInfo({
   };
 
   return (
+    <>
     <div className="space-y-6">
       <h2 className="text-lg font-semibold text-slate-900">基础信息</h2>
+
+      <div>
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <label className="text-sm font-medium text-slate-700">
+            选择钓点 <span className="text-red-500">*</span>
+          </label>
+          <button
+            type="button"
+            onClick={() => setSpotDialogOpen(true)}
+            className="text-sm font-medium text-blue-600 hover:text-blue-700"
+          >
+            + 新建钓点
+          </button>
+        </div>
+        <div className="mt-2">
+          <FishingSpotPicker
+            spots={spots}
+            value={formState.spotId}
+            loading={spotsLoading}
+            error={spotsError}
+            onReload={reloadSpots}
+            onSelect={handleSpotSelect}
+          />
+        </div>
+        {selectedSpot ? (
+          <div className="mt-3 rounded-2xl border border-slate-100 bg-slate-50/50 p-3 text-xs text-slate-500">
+            <div className="font-medium text-slate-800">
+              {selectedSpot.name}
+              <span className="ml-2 inline-flex items-center rounded-full bg-white px-2 py-0.5 text-[11px] text-slate-500">
+                {selectedSpot.visibility === "public"
+                  ? "公开"
+                  : selectedSpot.visibility === "friends"
+                  ? "仅好友"
+                  : "私密"}
+              </span>
+            </div>
+            {selectedSpot.locationName && (
+              <div className="mt-1">地点：{selectedSpot.locationName}</div>
+            )}
+          </div>
+        ) : (
+          <p className="mt-2 text-xs text-slate-400">
+            建议先创建常用钓点，后续出击可复用并单独控制公开范围。
+          </p>
+        )}
+        <div className="mt-3 text-xs">
+          <Link href="/spots" className="text-blue-600 hover:text-blue-700">
+            管理全部钓点
+          </Link>
+        </div>
+      </div>
 
       {/* 出击标题（可选） */}
       <div>
@@ -108,38 +177,40 @@ export default function Step1BasicInfo({
         </p>
       </div>
 
-      {/* 出击地点 - 使用地图组件 */}
-      <LocationPicker
-        value={
-          formState.locationLat && formState.locationLng
-            ? { lat: formState.locationLat, lng: formState.locationLng }
-            : null
-        }
-        onChange={(location) => {
-          if (location) {
-            updateForm({
-              locationLat: location.lat,
-              locationLng: location.lng,
-            });
-          } else {
-            updateForm({
-              locationLat: undefined,
-              locationLng: undefined,
-            });
-          }
-        }}
-        locationName={formState.locationName}
-        onLocationNameChange={(name) => updateForm({ locationName: name })}
-      />
-      {lastLocation && formState.locationName !== lastLocation && (
-        <button
-          type="button"
-          onClick={() => updateForm({ locationName: lastLocation })}
-          className="mt-2 text-sm text-blue-600"
-        >
-          使用上一次的地点：{lastLocation}
-        </button>
-      )}
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          结束时间
+          <span className="text-slate-400 ml-1 text-xs">（可选）</span>
+        </label>
+        {formState.endTime ? (
+          <div className="space-y-2">
+            <DateTimeField
+              value={formState.endTime}
+              onChange={(iso) => updateForm({ endTime: iso })}
+            />
+            <div className="flex items-center gap-3 text-xs text-slate-500">
+              <span>
+                当前选择：{formatDateTime(formState.endTime)}
+              </span>
+              <button
+                type="button"
+                onClick={() => updateForm({ endTime: undefined })}
+                className="text-blue-600 hover:text-blue-700"
+              >
+                清除结束时间
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => updateForm({ endTime: new Date().toISOString() })}
+            className="w-full rounded-xl border-2 border-dashed border-slate-200 py-3 text-sm text-slate-500 hover:border-blue-300 hover:text-blue-600"
+          >
+            点击设置结束时间（默认使用提交时间）
+          </button>
+        )}
+      </div>
 
       {/* 备注（可选） */}
       <div>
@@ -212,5 +283,11 @@ export default function Step1BasicInfo({
         </button>
       </div>
     </div>
+    <FishingSpotFormDialog
+      open={spotDialogOpen}
+      onOpenChange={(open) => setSpotDialogOpen(open)}
+      onCreated={handleSpotCreated}
+    />
+    </>
   );
 }

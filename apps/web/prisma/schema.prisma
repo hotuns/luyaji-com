@@ -16,8 +16,8 @@ datasource db {
 // 用户表
 model User {
   id            String    @id @default(uuid())
-  phone         String?   @unique  // 手机号
-  email         String?   @unique  // 邮箱（预留）
+  phone         String?   @unique // 手机号
+  email         String?   @unique // 邮箱（预留）
   emailVerified DateTime?
   nickname      String?
   // 登录密码（BCrypt 哈希），为空表示仅支持短信登录
@@ -36,15 +36,16 @@ model User {
   sessions Session[]
 
   // 业务关联
-  rods    Rod[]
-  reels   Reel[]
-  combos  Combo[]
-  trips   Trip[]
-  catches Catch[]
+  rods       Rod[]
+  reels      Reel[]
+  combos     Combo[]
+  trips      Trip[]
+  catches    Catch[]
   comboLikes ComboLike[]
+  fishingSpots FishingSpot[]
 
-  @@index([phone])
   @@unique([nickname])
+  @@index([phone])
   @@map("users")
 }
 
@@ -100,28 +101,37 @@ model SmsVerification {
 
 // 鱼竿
 model Rod {
-  id            String   @id @default(uuid())
-  userId        String
-  name          String   // 必填，用户自定义名称
-  brand         String?  // 品牌
-  length        Float?   // 长度数值（米）
-  lengthUnit    String?  @default("m") // 长度单位 m | ft
-  power         String?  // 硬度/硬度 UL/L/ML/M/MH/H
-  lureWeightMin Float?   // 适用饵重下限（g）
-  lureWeightMax Float?   // 适用饵重上限（g）
-  lineWeightText String? // 适用线号描述
-  price         Float?   // 价格（元）
-  note          String?  @db.Text // 备注
-  visibility    String   @default("private") // private | public
-  sourceType    String   @default("user") // user | template | copied
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                   String   @id @default(uuid())
+  userId               String
+  name                 String // 必填，用户自定义名称
+  brand                String? // 品牌
+  brandMetadataId      String?
+  length               Float? // 长度数值（米）
+  lengthUnit           String?  @default("m") // 长度单位 m | ft
+  lengthUnitMetadataId String?
+  power                String? // 硬度/硬度 UL/L/ML/M/MH/H
+  powerMetadataId      String?
+  lureWeightMin        Float? // 适用饵重下限（g）
+  lureWeightMax        Float? // 适用饵重上限（g）
+  lineWeightText       String? // 适用线号描述
+  price                Float? // 价格（元）
+  note                 String?  @db.Text // 备注
+  visibility           String   @default("private") // private | public
+  sourceType           String   @default("user") // user | template | copied
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  combos Combo[]
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  combos             Combo[]
+  brandMetadata      Metadata? @relation("RodBrandMetadata", fields: [brandMetadataId], references: [id])
+  powerMetadata      Metadata? @relation("RodPowerMetadata", fields: [powerMetadataId], references: [id])
+  lengthUnitMetadata Metadata? @relation("RodLengthUnitMetadata", fields: [lengthUnitMetadataId], references: [id])
 
   @@index([userId])
   @@index([visibility])
+  @@index([brandMetadataId])
+  @@index([powerMetadataId])
+  @@index([lengthUnitMetadataId])
   @@map("rods")
 }
 
@@ -129,45 +139,49 @@ model Rod {
 model Reel {
   id               String   @id @default(uuid())
   userId           String
-  name             String   // 必填，用户自定义名称
-  brand            String?  // 品牌
-  model            String?  // 型号 2500, 3000 等
-  gearRatioText    String?  // 速比描述
-  lineCapacityText String?  // 线容量描述
-  price            Float?   // 价格（元）
+  name             String // 必填，用户自定义名称
+  brand            String? // 品牌
+  brandMetadataId  String?
+  model            String? // 型号 2500, 3000 等
+  gearRatioText    String? // 速比描述
+  lineCapacityText String? // 线容量描述
+  price            Float? // 价格（元）
   note             String?  @db.Text // 备注
   visibility       String   @default("private") // private | public
   sourceType       String   @default("user") // user | template | copied
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  combos Combo[]
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  combos        Combo[]
+  brandMetadata Metadata? @relation("ReelBrandMetadata", fields: [brandMetadataId], references: [id])
 
   @@index([userId])
   @@index([visibility])
+  @@index([brandMetadataId])
   @@map("reels")
 }
 
 // 装备组合
 model Combo {
-  id             String   @id @default(uuid())
+  id             String               @id @default(uuid())
   userId         String
-  name           String   // 组合名称
-  rodId          String   // 关联鱼竿
-  reelId         String   // 关联渔轮
-  mainLineText   String?  // 主线描述
-  leaderLineText String?  // 子线描述
-  hookText       String?  // 钩类描述
-  lures          Json?    // 常用假饵列表 ComboLure[]
-  sceneTags      Json?    // 适用场景标签 string[]
-  detailNote     String?  @db.Text // 组合详细说明
-  visibility     String   @default("private") // private | public
-  sourceType     String   @default("user") // user | template | copied
-  photoUrls      Json?    // 组合图片 URL 列表 string[]
-  likeCount      Int      @default(0) // 点赞数量（冗余计数）
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  name           String // 组合名称
+  rodId          String // 关联鱼竿
+  reelId         String // 关联渔轮
+  mainLineText   String? // 主线描述
+  leaderLineText String? // 子线描述
+  hookText       String? // 钩类描述
+  lures          Json? // 常用假饵列表 ComboLure[]
+  sceneTags      Json? // 适用场景标签 string[]
+  sceneMetadata  ComboSceneMetadata[]
+  detailNote     String?              @db.Text // 组合详细说明
+  visibility     String               @default("private") // private | public
+  sourceType     String               @default("user") // user | template | copied
+  photoUrls      Json? // 组合图片 URL 列表 string[]
+  likeCount      Int                  @default(0) // 点赞数量（冗余计数）
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
 
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   rod        Rod         @relation(fields: [rodId], references: [id])
@@ -202,37 +216,40 @@ model ComboLike {
 model Trip {
   id                     String    @id @default(uuid())
   userId                 String
-  title                  String?   // 出击标题
-  startTime              DateTime  // 出击时间
+  title                  String? // 出击标题
+  startTime              DateTime // 出击时间
   endTime                DateTime? // 结束时间
-  locationName           String    // 地点文本
-  locationLat            Float?    // 经度
-  locationLng            Float?    // 纬度
   note                   String?   @db.Text // 总体备注
-  weatherType            String?   // 天气类型
-  weatherTemperatureText String?   // 温度文本
-  weatherWindText        String?   // 风力文本
+  weatherType            String? // 天气类型
+  weatherMetadataId      String?
+  weatherTemperatureText String? // 温度文本
+  weatherWindText        String? // 风力文本
   totalCatchCount        Int?      @default(0) // 渔获总条数
   fishSpeciesCount       Int?      @default(0) // 渔获鱼种数
   visibility             String    @default("private") // private | public
+  spotId                 String?
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tripCombos TripCombo[]
-  catches    Catch[]
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tripCombos      TripCombo[]
+  catches         Catch[]
+  weatherMetadata Metadata?   @relation("TripWeatherMetadata", fields: [weatherMetadataId], references: [id])
+  spot            FishingSpot? @relation(fields: [spotId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([startTime])
+  @@index([weatherMetadataId])
+  @@index([spotId])
   @@map("trips")
 }
 
 // 出击与组合的关联表
 model TripCombo {
-  id       String  @id @default(uuid())
-  tripId   String
-  comboId  String
-  note     String? // 此次出击中关于该组合的备注
+  id      String  @id @default(uuid())
+  tripId  String
+  comboId String
+  note    String? // 此次出击中关于该组合的备注
 
   trip  Trip  @relation(fields: [tripId], references: [id], onDelete: Cascade)
   combo Combo @relation(fields: [comboId], references: [id])
@@ -241,15 +258,35 @@ model TripCombo {
   @@map("trip_combos")
 }
 
+model FishingSpot {
+  id           String   @id @default(uuid())
+  userId       String
+  name         String
+  locationName String?
+  locationLat  Float?
+  locationLng  Float?
+  description  String?  @db.Text
+  visibility   String   @default("private") // private | friends | public
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trips Trip[]
+
+  @@index([userId])
+  @@index([visibility])
+  @@map("fishing_spots")
+}
+
 // ==================== 渔获与鱼种 ====================
 
 // 鱼种数据库（系统级公共数据）
 model FishSpecies {
   id          String   @id @default(uuid())
-  name        String   // 中文名
-  latinName   String?  // 学名
-  aliasNames  Json?    // 别名 string[]
-  habitatType String?  // fresh | salt | brackish
+  name        String // 中文名
+  latinName   String? // 学名
+  aliasNames  Json? // 别名 string[]
+  habitatType String? // fresh | salt | brackish
   imageUrl    String?  @db.Text // 图鉴图标
   description String?  @db.Text // 简介
   isActive    Boolean  @default(true) // 是否在应用中展示
@@ -267,17 +304,17 @@ model FishSpecies {
 model Catch {
   id          String    @id @default(uuid())
   tripId      String
-  userId      String    // 冗余字段，方便查询
-  speciesId   String    // 鱼种ID
-  speciesName String    // 冗余保存当前显示名
+  userId      String // 冗余字段，方便查询
+  speciesId   String // 鱼种ID
+  speciesName String // 冗余保存当前显示名
   count       Int       @default(1) // 条数
-  sizeText    String?   // 尺寸文本
-  weightText  String?   // 重量文本
+  sizeText    String? // 尺寸文本
+  weightText  String? // 重量文本
   caughtAt    DateTime? // 捕获时间
-  comboId     String?   // 使用的组合
-  lureText    String?   // 使用假饵描述
+  comboId     String? // 使用的组合
+  lureText    String? // 使用假饵描述
   note        String?   @db.Text // 单条渔获备注
-  photoUrls   Json?     // 图片URL列表 string[]
+  photoUrls   Json? // 图片URL列表 string[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -295,18 +332,18 @@ model Catch {
 // ==================== 系统公告 ====================
 
 model Announcement {
-  id          String   @id @default(uuid())
-  title       String   // 公告标题
-  content     String   @db.Text // 公告内容
-  isActive    Boolean  @default(true) // 是否当前有效
+  id           String    @id @default(uuid())
+  title        String // 公告标题
+  content      String    @db.Text // 公告内容
+  isActive     Boolean   @default(true) // 是否当前有效
   // 公告开始生效时间，为空表示立即生效
-  startsAt    DateTime?
+  startsAt     DateTime?
   // 公告结束时间，为空表示长期有效
-  endsAt      DateTime?
+  endsAt       DateTime?
   // 是否作为首页顶部横幅展示
-  showAsBanner Boolean @default(false)
-  createdAt   DateTime @default(now())
-  publishedAt DateTime?
+  showAsBanner Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  publishedAt  DateTime?
 
   @@index([isActive, createdAt])
   @@index([showAsBanner, isActive])
@@ -319,8 +356,8 @@ model Announcement {
 model ShortLink {
   id         String   @id @default(uuid())
   code       String   @unique // 短码，6-8位字母数字
-  targetType String   // trip | combo | dex
-  targetId   String   // 目标资源ID
+  targetType String // trip | combo | dex
+  targetId   String // 目标资源ID
   createdAt  DateTime @default(now())
   clickCount Int      @default(0) // 点击统计
 
@@ -332,19 +369,19 @@ model ShortLink {
 
 // 页面访问记录（用于 PV/UV 统计）
 model PageView {
-  id         String   @id @default(uuid())
-  path       String   // 访问路径
-  userId     String?  // 用户ID（可选，未登录为空）
-  visitorId  String   // 访客唯一标识（浏览器指纹或cookie）
-  userAgent  String?  @db.Text // 浏览器UA
-  referer    String?  @db.Text // 来源页面
-  ip         String?  // IP地址（脱敏存储）
-  country    String?  // 国家
-  city       String?  // 城市
-  device     String?  // mobile | desktop | tablet
-  browser    String?  // Chrome | Safari | ...
-  os         String?  // iOS | Android | Windows | macOS
-  createdAt  DateTime @default(now())
+  id        String   @id @default(uuid())
+  path      String // 访问路径
+  userId    String? // 用户ID（可选，未登录为空）
+  visitorId String // 访客唯一标识（浏览器指纹或cookie）
+  userAgent String?  @db.Text // 浏览器UA
+  referer   String?  @db.Text // 来源页面
+  ip        String? // IP地址（脱敏存储）
+  country   String? // 国家
+  city      String? // 城市
+  device    String? // mobile | desktop | tablet
+  browser   String? // Chrome | Safari | ...
+  os        String? // iOS | Android | Windows | macOS
+  createdAt DateTime @default(now())
 
   @@index([path, createdAt])
   @@index([userId, createdAt])
@@ -356,7 +393,7 @@ model PageView {
 // 用户活跃记录（用于留存分析）
 model UserActivity {
   id        String   @id @default(uuid())
-  userId    String   // 用户ID
+  userId    String // 用户ID
   date      DateTime @db.Date // 活跃日期（按天）
   actions   Int      @default(1) // 当天操作次数
   createdAt DateTime @default(now())
@@ -369,19 +406,115 @@ model UserActivity {
 
 // 每日统计汇总（定时任务生成）
 model DailyStat {
-  id              String   @id @default(uuid())
-  date            DateTime @unique @db.Date // 统计日期
-  pv              Int      @default(0) // 页面浏览量
-  uv              Int      @default(0) // 独立访客数
-  newUsers        Int      @default(0) // 新增用户数
-  activeUsers     Int      @default(0) // 活跃用户数
-  newTrips        Int      @default(0) // 新增出击记录
-  newCatches      Int      @default(0) // 新增渔获
-  newCombos       Int      @default(0) // 新增装备组合
-  avgSessionTime  Int?     // 平均会话时长（秒）
-  bounceRate      Float?   // 跳出率
-  createdAt       DateTime @default(now())
+  id             String   @id @default(uuid())
+  date           DateTime @unique @db.Date // 统计日期
+  pv             Int      @default(0) // 页面浏览量
+  uv             Int      @default(0) // 独立访客数
+  newUsers       Int      @default(0) // 新增用户数
+  activeUsers    Int      @default(0) // 活跃用户数
+  newTrips       Int      @default(0) // 新增出击记录
+  newCatches     Int      @default(0) // 新增渔获
+  newCombos      Int      @default(0) // 新增装备组合
+  avgSessionTime Int? // 平均会话时长（秒）
+  bounceRate     Float? // 跳出率
+  createdAt      DateTime @default(now())
 
   @@index([date])
   @@map("daily_stats")
+}
+
+// ==================== 分享素材与模板 ====================
+
+model ShareTemplate {
+  id                 String   @id @default(uuid())
+  type               String   // 模板类型，如 trip | combo
+  name               String   // 模板内部名称
+  title              String?
+  subtitle           String?
+  description        String?  @db.Text
+  badgeLabel         String?
+  backgroundImageUrl String?  @db.Text
+  config             Json?
+  sortOrder          Int      @default(0)
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([type, isActive, sortOrder])
+  @@map("share_templates")
+}
+
+model ShareMediaAsset {
+  id        String   @id @default(uuid())
+  category  String
+  label     String?
+  imageUrl  String   @db.Text
+  linkUrl   String?  @db.Text
+  weight    Int      @default(1)
+  isActive  Boolean  @default(true)
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, isActive])
+  @@map("share_media_assets")
+}
+
+model ShareCta {
+  id          String   @id @default(uuid())
+  key         String
+  title       String
+  description String?  @db.Text
+  buttonText  String?
+  linkUrl     String?  @db.Text
+  audience    String?  @default("all")
+  isActive    Boolean  @default(true)
+  startAt     DateTime?
+  endAt       DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([key, audience])
+  @@map("share_ctas")
+}
+
+// ==================== 系统元数据（枚举/选项） ====================
+
+// 通用元数据表，用于存储品牌、场景标签等可选项
+model Metadata {
+  id                  String               @id @default(uuid())
+  category            String // 分类: rod_brand, reel_brand, combo_scene_tag, weather_type 等
+  value               String // 存储值（用于程序逻辑）
+  label               String // 显示文本（用于 UI 展示）
+  extra               Json? // 扩展字段，如品牌 logo URL、颜色等
+  aliases             Json? // 同义词/别名，用于模糊匹配
+  sortOrder           Int                  @default(0) // 排序权重，越小越靠前
+  isActive            Boolean              @default(true) // 是否启用
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  rodBrandUsages      Rod[]                @relation("RodBrandMetadata")
+  rodPowerUsages      Rod[]                @relation("RodPowerMetadata")
+  rodLengthUnitUsages Rod[]                @relation("RodLengthUnitMetadata")
+  reelBrandUsages     Reel[]               @relation("ReelBrandMetadata")
+  tripWeatherUsages   Trip[]               @relation("TripWeatherMetadata")
+  comboSceneMetadata  ComboSceneMetadata[]
+
+  @@unique([category, value]) // 同一分类下 value 唯一
+  @@index([category, isActive, sortOrder])
+  @@map("metadata")
+}
+
+// 组合与 metadata 的多对多关系（场景标签等）
+model ComboSceneMetadata {
+  id         String   @id @default(uuid())
+  comboId    String
+  metadataId String
+  createdAt  DateTime @default(now())
+
+  combo    Combo    @relation(fields: [comboId], references: [id], onDelete: Cascade)
+  metadata Metadata @relation(fields: [metadataId], references: [id])
+
+  @@unique([comboId, metadataId])
+  @@index([metadataId])
+  @@map("combo_scene_metadata")
 }
