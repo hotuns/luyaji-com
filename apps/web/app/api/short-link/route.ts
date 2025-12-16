@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 验证 targetType
-    if (!["trip", "combo", "dex"].includes(targetType)) {
+    if (!["trip", "combo", "dex", "gear"].includes(targetType)) {
       return NextResponse.json(
         { success: false, error: "无效的资源类型" },
         { status: 400 }

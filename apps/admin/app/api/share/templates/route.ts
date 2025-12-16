@@ -18,6 +18,9 @@ const toJsonValue = (value: unknown) => {
   return value as Prisma.JsonValue;
 };
 
+const isMissingTableError = (error: unknown) =>
+  error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2021";
+
 export async function GET() {
   const auth = await requireAdmin();
   if (!auth.success) {
@@ -33,6 +36,10 @@ export async function GET() {
     });
     return NextResponse.json({ success: true, data: templates });
   } catch (error) {
+    if (isMissingTableError(error)) {
+      console.warn("[admin/share/templates] table missing, returning empty list");
+      return NextResponse.json({ success: true, data: [] });
+    }
     console.error("获取分享模板失败:", error);
     return NextResponse.json({ success: false, error: "获取失败" }, { status: 500 });
   }
@@ -70,6 +77,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, data: created });
   } catch (error) {
+    if (isMissingTableError(error)) {
+      console.error("创建分享模板失败：数据库缺少 share_templates 表");
+      return NextResponse.json(
+        { success: false, error: "数据库尚未迁移（缺少 share_templates 表），请先执行迁移" },
+        { status: 500 },
+      );
+    }
     console.error("创建分享模板失败:", error);
     return NextResponse.json({ success: false, error: "创建失败" }, { status: 500 });
   }

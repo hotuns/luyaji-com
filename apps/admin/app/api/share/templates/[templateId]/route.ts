@@ -18,6 +18,9 @@ const toJsonValue = (value: unknown) => {
   return value as Prisma.JsonValue;
 };
 
+const isMissingTableError = (error: unknown) =>
+  error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2021";
+
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ templateId: string }> },
@@ -54,6 +57,9 @@ export async function PUT(
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
+    if (isMissingTableError(error)) {
+      return NextResponse.json({ success: false, error: "分享模板表不存在" }, { status: 500 });
+    }
     console.error("更新分享模板失败:", error);
     return NextResponse.json({ success: false, error: "更新失败" }, { status: 500 });
   }
@@ -73,6 +79,9 @@ export async function DELETE(
     await prisma.shareTemplate.delete({ where: { id: templateId } });
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (isMissingTableError(error)) {
+      return NextResponse.json({ success: false, error: "分享模板表不存在" }, { status: 500 });
+    }
     console.error("删除分享模板失败:", error);
     return NextResponse.json({ success: false, error: "删除失败" }, { status: 500 });
   }

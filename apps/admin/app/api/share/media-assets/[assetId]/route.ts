@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
+
+const isMissingTableError = (error: unknown) =>
+  error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2021";
 
 export async function PUT(
   request: Request,
@@ -36,6 +40,9 @@ export async function PUT(
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
+    if (isMissingTableError(error)) {
+      return NextResponse.json({ success: false, error: "素材表不存在" }, { status: 500 });
+    }
     console.error("更新分享素材失败:", error);
     return NextResponse.json({ success: false, error: "更新失败" }, { status: 500 });
   }
@@ -55,6 +62,9 @@ export async function DELETE(
     await prisma.shareMediaAsset.delete({ where: { id: assetId } });
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (isMissingTableError(error)) {
+      return NextResponse.json({ success: false, error: "素材表不存在" }, { status: 500 });
+    }
     console.error("删除分享素材失败:", error);
     return NextResponse.json({ success: false, error: "删除失败" }, { status: 500 });
   }

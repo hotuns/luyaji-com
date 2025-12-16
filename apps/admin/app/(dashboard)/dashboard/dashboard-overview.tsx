@@ -135,7 +135,7 @@ export function DashboardOverview({
             title="最近注册用户"
             extra={<Link href="/users">查看全部</Link>}
             bordered
-            bodyStyle={{ padding: 0 }}
+            styles={{ body: { padding: 0 } }}
           >
             <List
               dataSource={recentUsers}
@@ -168,7 +168,7 @@ export function DashboardOverview({
             title="最近出击记录"
             extra={<Link href="/trips">查看全部</Link>}
             bordered
-            bodyStyle={{ padding: 0 }}
+            styles={{ body: { padding: 0 } }}
           >
             <List
               dataSource={recentTrips}

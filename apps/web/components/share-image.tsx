@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useCallback, useState, useEffect } from "react";
+import { toPng } from "html-to-image";
+import QRCode from "qrcode";
 import type { ShareConfig } from "./share-dialog";
 
 interface ShareCardData {
@@ -94,6 +96,182 @@ function wrapText(
   return currentY;
 }
 
+const CAPTURE_IFRAME_WIDTH = 430;
+
+async function captureSharePageScreenshot(shareUrl: string): Promise<HTMLImageElement> {
+  if (!shareUrl) {
+    throw new Error("分享链接不存在，无法生成截屏");
+  }
+
+  return new Promise((resolve, reject) => {
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.left = "-12000px";
+    iframe.style.top = "0";
+    iframe.style.width = `${CAPTURE_IFRAME_WIDTH}px`;
+    iframe.style.height = "100vh";
+    iframe.style.opacity = "0";
+    iframe.style.pointerEvents = "none";
+    iframe.referrerPolicy = "no-referrer";
+    document.body.appendChild(iframe);
+
+    const cleanup = () => {
+      if (iframe.parentNode) {
+        iframe.parentNode.removeChild(iframe);
+      }
+    };
+
+    iframe.onload = async () => {
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!doc) throw new Error("无法访问分享页面内容");
+
+        const ready = await waitForShareReady(doc);
+        if (!ready) {
+          await new Promise((r) => setTimeout(r, 600));
+        }
+
+        const body = doc.body;
+        body.style.overflow = "visible";
+        const scrollHeight = body.scrollHeight;
+        const captureWidth = Math.min(CAPTURE_IFRAME_WIDTH, body.scrollWidth || CAPTURE_IFRAME_WIDTH);
+
+        const dataUrl = await toPng(body, {
+          cacheBust: true,
+          pixelRatio: 2,
+          width: captureWidth,
+          height: scrollHeight,
+          backgroundColor: "#ffffff",
+          style: {
+            width: `${captureWidth}px`,
+          },
+        });
+
+        const image = await loadImage(dataUrl);
+        cleanup();
+        resolve(image);
+      } catch (err) {
+        cleanup();
+        reject(err);
+      }
+    };
+
+    iframe.onerror = (err) => {
+      cleanup();
+      reject(err instanceof Error ? err : new Error("分享页面加载失败"));
+    };
+
+    iframe.src = shareUrl;
+  });
+}
+
+async function waitForShareReady(doc: Document, timeout = 5000) {
+  const body = doc.body;
+  if (!body) return false;
+  if (body.getAttribute("data-share-ready") === "true") {
+    return true;
+  }
+
+  return new Promise<boolean>((resolve) => {
+    let settled = false;
+    const cleanup = () => {
+      if (settled) return;
+      settled = true;
+      observer.disconnect();
+      clearTimeout(timer);
+    };
+
+    const observer = new MutationObserver(() => {
+      if (body.getAttribute("data-share-ready") === "true") {
+        cleanup();
+        resolve(true);
+      }
+    });
+    observer.observe(body, { attributes: true, attributeFilter: ["data-share-ready"] });
+
+    const timer = setTimeout(() => {
+      cleanup();
+      resolve(false);
+    }, timeout);
+  });
+}
+
+async function composeLongScreenshot(
+  canvas: HTMLCanvasElement,
+  screenshot: HTMLImageElement,
+  data: ShareCardData,
+  shareUrl: string
+): Promise<string> {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported");
+
+  const width = 900;
+  const overlayHeight = 280;
+
+  const scale = width / screenshot.width;
+  const screenshotHeight = Math.round(screenshot.height * scale);
+
+  canvas.width = width;
+  canvas.height = screenshotHeight + overlayHeight;
+
+  ctx.fillStyle = "#f8fafc";
+  ctx.fillRect(0, 0, width, canvas.height);
+  ctx.drawImage(screenshot, 0, 0, width, screenshotHeight);
+
+  ctx.fillStyle = "#0f172a";
+  ctx.fillRect(0, screenshotHeight, width, overlayHeight);
+
+  const textMargin = 48;
+  let textY = screenshotHeight + 56;
+  ctx.font = "bold 34px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = "#e2e8f0";
+  textY = wrapText(ctx, data.title, textMargin, textY, width - textMargin * 2 - 220, 44, 2);
+  textY += 24;
+
+  ctx.font = "20px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = "#cbd5f5";
+  textY = wrapText(
+    ctx,
+    data.description || "长按二维码打开路亚记，查看完整装备库详情。",
+    textMargin,
+    textY,
+    width - textMargin * 2 - 220,
+    32,
+    4
+  );
+  textY += 24;
+
+  const qrSize = 200;
+  const qrX = width - qrSize - textMargin;
+  const qrY = screenshotHeight + (overlayHeight - qrSize) / 2;
+  const qrDataUrl = await QRCode.toDataURL(shareUrl, {
+    width: 512,
+    margin: 1,
+    color: { dark: "#0f172a", light: "#ffffff" },
+  });
+  const qrImg = await loadImage(qrDataUrl);
+  drawRoundedRect(ctx, qrX - 10, qrY - 10, qrSize + 20, qrSize + 20, 24, "#ffffff");
+  ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+
+  ctx.font = "bold 20px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = "#e2e8f0";
+  ctx.textAlign = "right";
+  ctx.fillText("长按识别二维码", qrX - 24, qrY + 40);
+
+  ctx.font = "16px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = "#cbd5f5";
+  ctx.fillText("进入路亚记，查看更多细节", qrX - 24, qrY + 72);
+
+  ctx.textAlign = "left";
+  ctx.font = "14px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = "#94a3b8";
+  const prettyUrl = shareUrl.replace(/^https?:\/\//, "");
+  const truncated = prettyUrl.length > 40 ? `${prettyUrl.slice(0, 40)}…` : prettyUrl;
+  ctx.fillText(truncated, textMargin, screenshotHeight + overlayHeight - 30);
+
+  return canvas.toDataURL("image/png", 0.92);
+}
+
 // 获取类型图标和颜色
 function getTypeStyle(type: ShareConfig["type"]) {
   switch (type) {
@@ -103,6 +281,8 @@ function getTypeStyle(type: ShareConfig["type"]) {
       return { icon: "⚔️", color: "#8b5cf6", label: "装备组合", gradient: ["#8b5cf6", "#7c3aed"] };
     case "dex":
       return { icon: "🐡", color: "#f59e0b", label: "渔获图鉴", gradient: ["#f59e0b", "#d97706"] };
+    case "gear":
+      return { icon: "🧰", color: "#0ea5e9", label: "装备库", gradient: ["#22d3ee", "#0ea5e9"] };
     default:
       return { icon: "🌊", color: "#64748b", label: "路亚记", gradient: ["#64748b", "#475569"] };
   }
@@ -142,7 +322,7 @@ function drawRoundedRect(
 }
 
 // 生成分享卡片
-export async function generateShareCard(
+async function generateDefaultCard(
   canvas: HTMLCanvasElement,
   data: ShareCardData,
   shareUrl: string
@@ -150,58 +330,38 @@ export async function generateShareCard(
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas not supported");
 
-  const width = 750;
-  const height = 1000;
-  const padding = 40;
-  
+  const width = 900;
+  const height = 1600;
+  const padding = 48;
+
   canvas.width = width;
   canvas.height = height;
 
   const typeStyle = getTypeStyle(data.type);
 
-  // 1. 背景
-  // 使用柔和的渐变背景
-  const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-  bgGradient.addColorStop(0, "#f8fafc");
-  bgGradient.addColorStop(1, "#e2e8f0");
+  // 背景
+  const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+  bgGradient.addColorStop(0, "#e2e8f0");
+  bgGradient.addColorStop(1, "#f8fafc");
   ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, width, height);
 
-  // 绘制一些装饰性的背景圆
-  ctx.save();
-  ctx.globalAlpha = 0.05;
-  ctx.fillStyle = typeStyle.color;
-  ctx.beginPath();
-  ctx.arc(width, 0, 300, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(0, height, 200, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  // 2. 主卡片
+  // 大卡片
   const cardX = padding;
-  const cardY = padding + 20;
+  const cardY = padding;
   const cardW = width - padding * 2;
-  const cardH = height - padding * 2 - 40;
-  const cardRadius = 24;
+  const cardH = height - padding * 2;
+  const cardRadius = 42;
 
-  // 卡片阴影
-  ctx.shadowColor = "rgba(0, 0, 0, 0.08)";
-  ctx.shadowBlur = 40;
-  ctx.shadowOffsetY = 20;
-  
-  // 卡片背景
+  ctx.shadowColor = "rgba(15, 23, 42, 0.15)";
+  ctx.shadowBlur = 50;
+  ctx.shadowOffsetY = 30;
   drawRoundedRect(ctx, cardX, cardY, cardW, cardH, cardRadius, "#ffffff");
   ctx.shadowColor = "transparent";
 
-  let currentY = cardY;
-
-  // 3. 顶部图片区域 (Hero Image)
-  const heroHeight = Math.min(cardH * 0.55, 520);
-  
+  // 顶部图
+  const heroHeight = Math.min(cardH * 0.42, 620);
   ctx.save();
-  // 创建顶部圆角的裁剪区域
   ctx.beginPath();
   ctx.moveTo(cardX + cardRadius, cardY);
   ctx.lineTo(cardX + cardW - cardRadius, cardY);
@@ -216,207 +376,176 @@ export async function generateShareCard(
   if (data.imageUrl) {
     try {
       const coverImg = await loadImage(data.imageUrl);
-      // 保持比例填充 (Object-fit: cover)
       const scale = Math.max(cardW / coverImg.width, heroHeight / coverImg.height);
       const sw = cardW / scale;
       const sh = heroHeight / scale;
       const sx = (coverImg.width - sw) / 2;
       const sy = (coverImg.height - sh) / 2;
       ctx.drawImage(coverImg, sx, sy, sw, sh, cardX, cardY, cardW, heroHeight);
-      
-      // 图片底部加一个渐变遮罩，让过渡更自然
-      const overlayGradient = ctx.createLinearGradient(0, cardY + heroHeight - 100, 0, cardY + heroHeight);
-      overlayGradient.addColorStop(0, "rgba(255,255,255,0)");
-      overlayGradient.addColorStop(1, "rgba(255,255,255,1)");
+
+      const overlayGradient = ctx.createLinearGradient(cardX, cardY + heroHeight - 140, cardX, cardY + heroHeight);
+      overlayGradient.addColorStop(0, "rgba(2,6,23,0)");
+      overlayGradient.addColorStop(1, "rgba(2,6,23,0.75)");
       ctx.fillStyle = overlayGradient;
-      ctx.fillRect(cardX, cardY + heroHeight - 100, cardW, 100);
-      
+      ctx.fillRect(cardX, cardY + heroHeight - 140, cardW, 140);
     } catch {
-      // 图片加载失败回退
       drawFallbackHero(ctx, cardX, cardY, cardW, heroHeight, typeStyle);
     }
   } else {
-    // 无图片时的样式
     drawFallbackHero(ctx, cardX, cardY, cardW, heroHeight, typeStyle);
   }
   ctx.restore();
 
-  // 4. 类型标签 (悬浮在图片左上角)
-  const tagX = cardX + 24;
-  const tagY = cardY + 24;
-  const tagH = 36;
-  const tagW = 110;
-  
-  ctx.shadowColor = "rgba(0,0,0,0.1)";
-  ctx.shadowBlur = 10;
-  ctx.shadowOffsetY = 4;
-  drawRoundedRect(ctx, tagX, tagY, tagW, tagH, 18, "#ffffff");
-  ctx.shadowColor = "transparent";
-  
-  ctx.font = "bold 15px -apple-system, BlinkMacSystemFont, sans-serif";
+  // 顶部标签
+  const tagX = cardX + 36;
+  const tagY = cardY + 36;
+  drawRoundedRect(ctx, tagX, tagY, 140, 44, 22, "rgba(255,255,255,0.9)");
+  ctx.font = "bold 18px -apple-system, BlinkMacSystemFont, sans-serif";
   ctx.fillStyle = typeStyle.color;
   ctx.textBaseline = "middle";
   ctx.textAlign = "center";
-  ctx.fillText(`${typeStyle.icon} ${typeStyle.label}`, tagX + tagW / 2, tagY + tagH / 2 + 1);
-  ctx.textAlign = "left"; // Reset
+  ctx.fillText(`${typeStyle.icon} ${typeStyle.label}`, tagX + 70, tagY + 22);
+  ctx.textAlign = "left";
 
-  currentY += heroHeight + 32;
-
-  // 5. 内容区域
-  const contentPadding = 40;
-  const contentWidth = cardW - contentPadding * 2;
-  const contentX = cardX + contentPadding;
+  let currentY = cardY + heroHeight + 48;
+  const contentX = cardX + 48;
+  const contentWidth = cardW - 96;
 
   // 标题
-  ctx.font = "bold 40px -apple-system, BlinkMacSystemFont, sans-serif";
-  ctx.fillStyle = "#1e293b";
-  ctx.textBaseline = "top";
-  // 标题最多2行
-  currentY = wrapText(ctx, data.title, contentX, currentY, contentWidth, 52, 2);
-  
+  ctx.font = "bold 44px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = "#0f172a";
+  currentY = wrapText(ctx, data.title, contentX, currentY, contentWidth, 58, 2);
   currentY += 16;
 
   // 描述
   if (data.description) {
-    ctx.font = "22px -apple-system, BlinkMacSystemFont, sans-serif";
-    ctx.fillStyle = "#64748b";
-    // 描述最多3行
-    currentY = wrapText(ctx, data.description, contentX, currentY, contentWidth, 34, 3);
+    ctx.font = "24px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillStyle = "#475569";
+    currentY = wrapText(ctx, data.description, contentX, currentY, contentWidth, 36, 4);
     currentY += 32;
-  } else {
-    currentY += 16;
   }
 
-  // 6. 统计数据 (如果有)
-  if (data.stats && data.stats.length > 0) {
-    const statBoxHeight = 90;
-    const statBoxY = currentY;
-    
-    // 绘制统计数据背景容器
-    drawRoundedRect(ctx, contentX, statBoxY, contentWidth, statBoxHeight, 16, "#f8fafc", "#e2e8f0");
-    
-    const statCount = Math.min(data.stats.length, 3); // 最多显示3个数据
-    const statWidth = contentWidth / statCount;
-    
-    data.stats.slice(0, 3).forEach((stat, index) => {
-      const statX = contentX + statWidth * index;
-      const centerX = statX + statWidth / 2;
-      const centerY = statBoxY + statBoxHeight / 2;
-      
-      // 分隔线
-      if (index > 0) {
-        ctx.beginPath();
-        ctx.moveTo(statX, statBoxY + 20);
-        ctx.lineTo(statX, statBoxY + statBoxHeight - 20);
-        ctx.strokeStyle = "#e2e8f0";
-        ctx.stroke();
-      }
-
-      // 数值
-      ctx.font = "bold 28px -apple-system, BlinkMacSystemFont, sans-serif";
-      ctx.fillStyle = typeStyle.color;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(String(stat.value), centerX, centerY - 12);
-      
-      // 标签
-      ctx.font = "14px -apple-system, BlinkMacSystemFont, sans-serif";
-      ctx.fillStyle = "#64748b";
-      ctx.fillText(stat.label, centerX, centerY + 16);
-    });
-    
-    ctx.textAlign = "left"; // Reset
-    currentY += statBoxHeight + 40;
-  } else {
-    currentY += 20;
-  }
-
-  // 7. 底部区域 (作者 + 品牌)
-  // 将底部固定在卡片底部
-  const footerH = 100;
-  const footerY = cardY + cardH - footerH;
-  
-  // 分隔线
-  ctx.beginPath();
-  ctx.moveTo(contentX, footerY);
-  ctx.lineTo(contentX + contentWidth, footerY);
-  ctx.strokeStyle = "#f1f5f9";
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  const footerContentY = footerY + 30;
-
-  // 作者信息 (左侧)
+  // 作者
+  const avatarY = currentY;
   if (data.authorAvatar) {
     try {
       const avatarImg = await loadImage(data.authorAvatar);
-      drawCircleImage(ctx, avatarImg, contentX, footerContentY, 24);
+      drawCircleImage(ctx, avatarImg, contentX, avatarY, 36);
     } catch {
-      // 默认头像
       ctx.fillStyle = "#e2e8f0";
       ctx.beginPath();
-      ctx.arc(contentX + 24, footerContentY + 24, 24, 0, Math.PI * 2);
+      ctx.arc(contentX + 36, avatarY + 36, 36, 0, Math.PI * 2);
       ctx.fill();
     }
   } else {
     ctx.fillStyle = "#e2e8f0";
     ctx.beginPath();
-    ctx.arc(contentX + 24, footerContentY + 24, 24, 0, Math.PI * 2);
+    ctx.arc(contentX + 36, avatarY + 36, 36, 0, Math.PI * 2);
     ctx.fill();
   }
-  
-  ctx.font = "bold 18px -apple-system, BlinkMacSystemFont, sans-serif";
-  ctx.fillStyle = "#334155";
-  ctx.textBaseline = "middle";
-  ctx.fillText(data.authorName || "钓友", contentX + 60, footerContentY + 14);
-  
-  ctx.font = "13px -apple-system, BlinkMacSystemFont, sans-serif";
+
+  ctx.font = "bold 22px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = "#0f172a";
+  ctx.fillText(data.authorName || "匿名钓友", contentX + 80, avatarY + 22);
+  ctx.font = "16px -apple-system, BlinkMacSystemFont, sans-serif";
   ctx.fillStyle = "#94a3b8";
-  ctx.fillText("发布于 路亚记", contentX + 60, footerContentY + 36);
+  ctx.fillText("分享自 路亚记", contentX + 80, avatarY + 48);
 
-  // 品牌/链接 (右侧)
-  // 真正的二维码
-  const qrSize = 64;
-  const qrX = contentX + contentWidth - qrSize;
-  const qrY = footerContentY - 8;
-  
-  // 绘制二维码背景
-  drawRoundedRect(ctx, qrX, qrY, qrSize, qrSize, 8, "#ffffff", "#e2e8f0");
+  currentY = avatarY + 80;
 
-  const qrImageUrl =
-    data.qrCodeUrl ??
-    `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=0&data=${encodeURIComponent(shareUrl)}`;
-  let qrImg: HTMLImageElement | null = null;
-  try {
-    qrImg = await loadImage(qrImageUrl);
-  } catch (err) {
-    console.error("二维码加载失败:", err);
+  // 统计信息
+  if (data.stats && data.stats.length > 0) {
+    currentY += 16;
+    const statRows = [];
+    const stats = data.stats.slice(0, 6);
+    for (let i = 0; i < stats.length; i += 3) {
+      statRows.push(stats.slice(i, i + 3));
+    }
+    statRows.forEach((row) => {
+      const rowHeight = 120;
+      drawRoundedRect(ctx, contentX, currentY, contentWidth, rowHeight, 24, "#f8fafc");
+      const colWidth = contentWidth / row.length;
+      row.forEach((stat, idx) => {
+        const centerX = contentX + colWidth * idx + colWidth / 2;
+        ctx.textAlign = "center";
+        ctx.font = "bold 34px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillStyle = typeStyle.color;
+        ctx.fillText(String(stat.value), centerX, currentY + 48);
+        ctx.font = "16px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillStyle = "#64748b";
+        ctx.fillText(stat.label, centerX, currentY + 82);
+      });
+      ctx.textAlign = "left";
+      currentY += rowHeight + 20;
+    });
   }
 
-  if (qrImg) {
-    ctx.drawImage(qrImg, qrX + 4, qrY + 4, qrSize - 8, qrSize - 8);
-  } else {
-    // 回退到简单占位
-    ctx.fillStyle = "#0f172a";
-    for (let i = 0; i < 30; i++) {
-      const rx = Math.floor(Math.random() * (qrSize - 16)) + 8;
-      const ry = Math.floor(Math.random() * (qrSize - 16)) + 8;
-      ctx.fillRect(qrX + rx, qrY + ry, 3, 3);
+  currentY += 10;
+
+  // 高光提示
+  drawRoundedRect(ctx, contentX, currentY, contentWidth, 120, 24, "#fff7ed", "#fed7aa");
+  ctx.font = "bold 18px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = "#c2410c";
+  ctx.fillText("亮点速览", contentX + 24, currentY + 32);
+  ctx.font = "16px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = "#9a3412";
+  const highlightText =
+    data.description && data.description.length > 0
+      ? data.description
+      : "装备、组合、渔轮一应俱全，欢迎围观我的豪华库房。";
+  wrapText(ctx, highlightText, contentX + 24, currentY + 54, contentWidth - 48, 28, 3);
+  currentY += 140;
+
+  // 底部二维码区域
+  const qrBlockHeight = 260;
+  if (currentY + qrBlockHeight > cardY + cardH - 80) {
+    currentY = cardY + cardH - qrBlockHeight - 80;
+  }
+  drawRoundedRect(ctx, contentX, currentY, contentWidth, qrBlockHeight, 28, "#0f172a");
+
+  const qrSize = 180;
+  const qrX = contentX + contentWidth - qrSize - 40;
+  const qrY = currentY + (qrBlockHeight - qrSize) / 2;
+
+  let qrImageUrl = data.qrCodeUrl;
+  if (!qrImageUrl && shareUrl) {
+    try {
+      qrImageUrl = await QRCode.toDataURL(shareUrl, {
+        width: 512,
+        margin: 1,
+        color: { dark: "#0f172a", light: "#ffffff" },
+      });
+    } catch (err) {
+      console.error("二维码生成失败:", err);
     }
   }
 
-  // 链接提示
-  ctx.textAlign = "right";
-  ctx.font = "bold 14px -apple-system, BlinkMacSystemFont, sans-serif";
-  ctx.fillStyle = typeStyle.color;
-  ctx.fillText("长按识别", qrX - 12, footerContentY + 14);
-  
-  ctx.font = "12px -apple-system, BlinkMacSystemFont, sans-serif";
-  ctx.fillStyle = "#94a3b8";
-  ctx.fillText("查看详情", qrX - 12, footerContentY + 34);
-  ctx.textAlign = "left";
+  if (qrImageUrl) {
+    try {
+      const qrImg = await loadImage(qrImageUrl);
+      drawRoundedRect(ctx, qrX - 8, qrY - 8, qrSize + 16, qrSize + 16, 20, "#ffffff");
+      ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+    } catch (err) {
+      console.error("二维码加载失败:", err);
+    }
+  }
 
-  return canvas.toDataURL("image/png", 0.9);
+  ctx.fillStyle = "#e2e8f0";
+  ctx.font = "bold 24px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillText("长按识别二维码", contentX + 32, currentY + 70);
+  ctx.font = "18px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = "#cbd5f5";
+  ctx.fillText("进入路亚记，查看完整装备库详情", contentX + 32, currentY + 110);
+
+  if (shareUrl) {
+    const prettyUrl = shareUrl.replace(/^https?:\/\//, "");
+    ctx.font = "16px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillStyle = "#94a3b8";
+    const truncated = prettyUrl.length > 36 ? `${prettyUrl.slice(0, 36)}…` : prettyUrl;
+    ctx.fillText(truncated, contentX + 32, currentY + qrBlockHeight - 32);
+  }
+
+  return canvas.toDataURL("image/png", 0.92);
 }
 
 // 绘制无图片时的占位背景
@@ -483,14 +612,28 @@ export function useShareImage() {
 
   const generate = useCallback(async (data: ShareCardData, shareUrl: string) => {
     if (!canvasRef.current) return;
-    
+
     setGenerating(true);
     setError(null);
-    
+
     try {
-      const url = await generateShareCard(canvasRef.current, data, shareUrl);
-      setImageUrl(url);
-      return url;
+      let resultUrl: string | null = null;
+
+      if (shareUrl) {
+        try {
+          const screenshotImage = await captureSharePageScreenshot(shareUrl);
+          resultUrl = await composeLongScreenshot(canvasRef.current!, screenshotImage, data, shareUrl);
+        } catch (longShotError) {
+          console.warn("截取长图失败，使用默认卡片:", longShotError);
+        }
+      }
+
+      if (!resultUrl) {
+        resultUrl = await generateDefaultCard(canvasRef.current, data, shareUrl);
+      }
+
+      setImageUrl(resultUrl);
+      return resultUrl;
     } catch (err) {
       console.error("生成分享图片失败:", err);
       setError("生成图片失败，请重试");

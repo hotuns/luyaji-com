@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Card } from "@workspace/ui/components/card";
 import { Skeleton } from "@workspace/ui/components/skeleton";
 import { Button } from "@workspace/ui/components/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@workspace/ui/components/dialog";
-import { Search, Layers } from "lucide-react";
+import { Search, Layers, Share2 } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 
+import { ShareDialog } from "@/components/share-dialog";
 import { RodSummary, ReelSummary, ComboSummary } from "./gear-shared";
 import { ComboCard, RodCard, ReelCard } from "./GearCards";
 import { ComboForm, RodForm, ReelForm } from "./GearForms";
@@ -75,11 +77,32 @@ export function GearDashboard({ initialRods, initialReels, initialCombos }: Gear
   const [reels, setReels] = useState(initialReels);
   const [combos, setCombos] = useState(initialCombos);
   const [gearTab, setGearTab] = useState<"combos" | "rods" | "reels">("combos");
+  const [shareOpen, setShareOpen] = useState(false);
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
 
   // 计算装备总价
   const totalRodsPrice = rods.reduce((sum, rod) => sum + (rod.price ?? 0), 0);
   const totalReelsPrice = reels.reduce((sum, reel) => sum + (reel.price ?? 0), 0);
   const totalGearPrice = totalRodsPrice + totalReelsPrice;
+  const gearSummaryParts = [
+    combos.length ? `${combos.length} 套组合` : null,
+    rods.length ? `${rods.length} 根鱼竿` : null,
+    reels.length ? `${reels.length} 个渔轮` : null,
+  ].filter(Boolean);
+  const shareDescription =
+    gearSummaryParts.length > 0
+      ? `公开了 ${gearSummaryParts.join(" · ")}`
+      : "欢迎来参观我的装备库";
+  const shareDisabled = !userId || (combos.length === 0 && rods.length === 0 && reels.length === 0);
+  const shareCover = combos.find((combo) => combo.photoUrls && combo.photoUrls.length)?.photoUrls?.[0];
+  const shareStats = [
+    { label: "组合", value: combos.length },
+    { label: "鱼竿", value: rods.length },
+    { label: "渔轮", value: reels.length },
+    { label: "总价值", value: totalGearPrice > 0 ? `¥${totalGearPrice.toLocaleString()}` : "未填写" },
+  ];
+  const totalValueText = totalGearPrice > 0 ? `¥${totalGearPrice.toLocaleString()}` : undefined;
 
   return (
     <div className="space-y-8 pb-24 md:pb-12">
@@ -129,15 +152,25 @@ export function GearDashboard({ initialRods, initialReels, initialCombos }: Gear
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="gap-2 px-3 py-2 text-xs md:text-sm"
-            onClick={() => (window.location.href = "/square")}
-          >
-            <Search className="h-4 w-4" />
-            <span className="hidden sm:inline">去广场看看</span>
-            <span className="sm:hidden">广场</span>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              className="gap-2 px-3 py-2 text-xs md:text-sm"
+              onClick={() => (window.location.href = "/square")}
+            >
+              <Search className="h-4 w-4" />
+              <span className="hidden sm:inline">去广场看看</span>
+              <span className="sm:hidden">广场</span>
+            </Button>
+            <Button
+              className="gap-2 px-3 py-2 text-xs md:text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400"
+              onClick={() => setShareOpen(true)}
+              disabled={shareDisabled}
+            >
+              <Share2 className="h-4 w-4" />
+              分享装备库
+            </Button>
+          </div>
           {/* 创建按钮 融合到每个 tab 的 Dialog 由表单组件内部处理 */}
         </div>
       </div>
@@ -261,6 +294,29 @@ export function GearDashboard({ initialRods, initialReels, initialCombos }: Gear
           </>
         )}
       </div>
+
+      {userId && (
+        <ShareDialog
+          config={{
+            type: "gear",
+            id: userId,
+            title: session?.user?.name ? `${session.user.name}的装备库` : "我的装备库",
+            description: shareDescription,
+            imageUrl: shareCover,
+            authorName: session?.user?.name || undefined,
+            authorAvatar: session?.user?.image || undefined,
+            stats: shareStats,
+            meta: {
+              totalValue: totalValueText,
+              combosCount: String(combos.length),
+              rodsCount: String(rods.length),
+              reelsCount: String(reels.length),
+            },
+          }}
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+        />
+      )}
     </div>
   );
 }

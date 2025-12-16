@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import type { Metadata, Viewport } from "next"
 import { headers } from "next/headers"
 
+import "antd/dist/reset.css"
 import "@workspace/ui/globals.css"
 import { Providers } from "@/components/providers"
 import { ResponsiveNav, AppHeader } from "@/components/responsive-nav"

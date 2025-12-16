@@ -70,6 +70,7 @@ type ShareCtaRecord = {
 const templateTypes = [
 	{ label: "出击分享", value: "trip" },
 	{ label: "装备分享", value: "combo" },
+	{ label: "装备库分享", value: "gear" },
 	{ label: "其它", value: "custom" },
 ];
 
@@ -646,7 +647,7 @@ export function ShareAssetsManager({
 					templateForm.resetFields();
 				}}
 				onOk={handleTemplateSubmit}
-				destroyOnClose
+				destroyOnHidden
 				maskClosable={false}
 			>
 				<Form
@@ -703,7 +704,7 @@ export function ShareAssetsManager({
 					assetForm.resetFields();
 				}}
 				onOk={handleAssetSubmit}
-				destroyOnClose
+				destroyOnHidden
 				maskClosable={false}
 			>
 				<Form
@@ -747,7 +748,7 @@ export function ShareAssetsManager({
 					ctaForm.resetFields();
 				}}
 				onOk={handleCtaSubmit}
-				destroyOnClose
+				destroyOnHidden
 				maskClosable={false}
 			>
 				<Form

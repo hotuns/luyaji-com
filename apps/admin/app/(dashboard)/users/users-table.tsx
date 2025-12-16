@@ -1,9 +1,9 @@
 "use client";
 
-import { Card, Typography, Input, Button, Table, Avatar, Tag, Pagination, Popconfirm, message, Space } from "antd";
-import { SearchOutlined, TeamOutlined, UserOutlined, StopOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
+import { Card, Typography, Input, Button, Table, Avatar, Tag, Pagination, Popconfirm, message, Space, Modal, Form } from "antd";
+import { SearchOutlined, TeamOutlined, StopOutlined, SafetyCertificateOutlined, KeyOutlined } from "@ant-design/icons";
 import type { Prisma } from "@prisma/client";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const { Title, Text } = Typography;
@@ -31,6 +31,10 @@ export function UsersTable({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [resetTarget, setResetTarget] = useState<UserWithCounts | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetForm] = Form.useForm();
 
   const toggleAdmin = async (userId: string, current: boolean) => {
     try {
@@ -95,6 +99,39 @@ export function UsersTable({
     },
     [router, searchParams, search]
   );
+
+  const openResetModal = (user: UserWithCounts) => {
+    setResetTarget(user);
+    setResetModalOpen(true);
+    resetForm.resetFields();
+  };
+
+  const handleResetPassword = async () => {
+    try {
+      const values = await resetForm.validateFields();
+      if (!resetTarget) return;
+      setResetLoading(true);
+      const res = await fetch(`/api/users/${resetTarget.id}/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword: values.newPassword }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "重置失败");
+      }
+      message.success("密码已重置");
+      setResetModalOpen(false);
+      router.refresh();
+    } catch (error) {
+      if ((error as { errorFields?: unknown[] })?.errorFields) {
+        return;
+      }
+      message.error(error instanceof Error ? error.message : "重置失败");
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -258,6 +295,13 @@ export function UsersTable({
                       删除
                     </Button>
                   </Popconfirm>
+                  <Button
+                    size="small"
+                    icon={<KeyOutlined />}
+                    onClick={() => openResetModal(record)}
+                  >
+                    重置密码
+                  </Button>
                 </Space>
               ),
             },
@@ -280,6 +324,31 @@ export function UsersTable({
           </div>
         )}
       </Card>
+
+      <Modal
+        title={`重置密码 - ${resetTarget?.nickname || "用户"}`}
+        open={resetModalOpen}
+        onCancel={() => setResetModalOpen(false)}
+        onOk={handleResetPassword}
+        confirmLoading={resetLoading}
+        okText="确认重置"
+        cancelText="取消"
+        destroyOnHidden
+        maskClosable={false}
+      >
+        <Form form={resetForm} layout="vertical">
+          <Form.Item
+            name="newPassword"
+            label="新密码"
+            rules={[
+              { required: true, message: "请输入新密码" },
+              { min: 6, message: "密码至少 6 位" },
+            ]}
+          >
+            <Input.Password placeholder="请输入新密码" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

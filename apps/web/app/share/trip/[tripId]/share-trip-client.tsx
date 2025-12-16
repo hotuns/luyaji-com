@@ -86,6 +86,7 @@ export default function ShareTripClient({ tripId }: { tripId: string }) {
   const [trip, setTrip] = useState<TripDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEmbed, setIsEmbed] = useState(false);
   const { status } = useSession();
   const isAuthenticated = status === "authenticated";
 
@@ -109,6 +110,23 @@ export default function ShareTripClient({ tripId }: { tripId: string }) {
     fetchTrip();
   }, [tripId]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setIsEmbed(window.self !== window.top);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const body = document.body;
+    if (!loading && !error && trip) {
+      body.setAttribute("data-share-ready", "true");
+      return () => {
+        body.removeAttribute("data-share-ready");
+      };
+    }
+    return undefined;
+  }, [loading, error, trip]);
+
   if (loading) return <TripSkeleton />;
   if (error || !trip) return <ErrorState error={error || "未知错误"} />;
 
@@ -124,7 +142,7 @@ export default function ShareTripClient({ tripId }: { tripId: string }) {
         <div className="pointer-events-auto">
           {/* Logo or Back button could go here */}
         </div>
-        {!isAuthenticated && (
+        {!isAuthenticated && !isEmbed && (
           <Button
             size="sm"
             variant="secondary"
@@ -349,21 +367,23 @@ export default function ShareTripClient({ tripId }: { tripId: string }) {
       </div>
 
       {/* 底部悬浮引导栏 */}
-      <div className="fixed bottom-6 left-0 right-0 px-4 pointer-events-none">
-        <div className="max-w-md mx-auto bg-slate-900/90 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-white/10 pointer-events-auto">
-          <div>
-            <p className="font-bold text-sm">路亚记 Luyaji</p>
-            <p className="text-xs text-slate-300">记录你的每一次抛投</p>
+      {!isEmbed && (
+        <div className="fixed bottom-6 left-0 right-0 px-4 pointer-events-none">
+          <div className="max-w-md mx-auto bg-slate-900/90 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-white/10 pointer-events-auto">
+            <div>
+              <p className="font-bold text-sm">路亚记 Luyaji</p>
+              <p className="text-xs text-slate-300">记录你的每一次抛投</p>
+            </div>
+            <Button
+              size="sm"
+              className="bg-white text-slate-900 hover:bg-slate-100 rounded-full font-medium"
+              asChild
+            >
+              <Link href="/auth/register">立即体验</Link>
+            </Button>
           </div>
-          <Button
-            size="sm"
-            className="bg-white text-slate-900 hover:bg-slate-100 rounded-full font-medium"
-            asChild
-          >
-            <Link href="/auth/register">立即体验</Link>
-          </Button>
         </div>
-      </div>
+      )}
     </div>
   );
 }

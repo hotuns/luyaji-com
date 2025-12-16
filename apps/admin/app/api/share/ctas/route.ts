@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
+
+const isMissingTableError = (error: unknown) =>
+  error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2021";
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -17,6 +21,10 @@ export async function GET() {
     });
     return NextResponse.json({ success: true, data: ctas });
   } catch (error) {
+    if (isMissingTableError(error)) {
+      console.warn("[admin/share/ctas] table missing, returning empty list");
+      return NextResponse.json({ success: true, data: [] });
+    }
     console.error("获取 CTA 配置失败:", error);
     return NextResponse.json({ success: false, error: "获取失败" }, { status: 500 });
   }
@@ -53,6 +61,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, data: created });
   } catch (error) {
+    if (isMissingTableError(error)) {
+      return NextResponse.json({ success: false, error: "CTA 表不存在" }, { status: 500 });
+    }
     console.error("创建 CTA 失败:", error);
     return NextResponse.json({ success: false, error: "创建失败" }, { status: 500 });
   }

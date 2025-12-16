@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { Share2, Copy, Check, Link2, Loader2, Image, Download } from "lucide-react";
 import {
@@ -16,7 +16,7 @@ import { useShareImage } from "./share-image";
 
 export interface ShareConfig {
   /** 分享类型 */
-  type: "combo" | "trip" | "dex";
+  type: "combo" | "trip" | "dex" | "gear";
   /** 资源 ID */
   id: string;
   /** 分享标题 */
@@ -33,6 +33,8 @@ export interface ShareConfig {
   authorAvatar?: string;
   /** 统计数据 */
   stats?: { label: string; value: string | number }[];
+  /** 额外上下文字段，可在模板中引用 */
+  meta?: Record<string, string | number | undefined>;
 }
 
 interface ShareDialogProps {
@@ -79,6 +81,18 @@ function getDefaultShareText(config: ShareConfig, url: string): string {
       return `🐟 我的路亚出击记录「${config.title}」\n${config.description || ""}\n\n👉 点击查看详情：${url}`;
     case "dex":
       return `📚 我的路亚图鉴成就\n${config.description || ""}\n\n👉 点击查看我的图鉴：${url}`;
+    case "gear": {
+      const totalValue =
+        config.meta?.totalValue ??
+        config.stats?.find(
+          (s) =>
+            typeof s.label === "string" &&
+            (s.label.includes("价值") ||
+              s.label.toLowerCase().includes("value"))
+        )?.value;
+      const totalValueText = totalValue ? `💸 总价值 ${totalValue}` : "💸 我的装备投入真不少";
+      return `🧰 我的装备库更新啦\n${config.description || ""}\n\n${totalValueText}\n👉 点击查看全部装备：${url}`;
+    }
     default:
       return `来看看我在路亚记的分享：${url}`;
   }
@@ -122,6 +136,34 @@ export function useShareConfig(type: ShareConfig['type'], data: Record<string, u
 
 type ShareTab = "link" | "image";
 
+type ShareTemplatePayload = {
+  id: string;
+  type: string;
+  description: string | null;
+};
+
+const applyShareTemplate = (
+  template: string,
+  context: Record<string, string | undefined>,
+) => {
+  return template.replace(/\{\{(\w+)\}\}/g, (_match, key) => {
+    const normalizedKey = String(key).trim().toLowerCase();
+    switch (normalizedKey) {
+      case "title":
+        return context.title ?? "";
+      case "description":
+        return context.description ?? "";
+      case "author":
+      case "authorname":
+        return context.authorName ?? "";
+      case "url":
+        return context.url ?? "";
+      default:
+        return context[normalizedKey] ?? "";
+    }
+  });
+};
+
 export function ShareDialog({ config, trigger, className, open: controlledOpen, onOpenChange }: ShareDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
@@ -133,6 +175,7 @@ export function ShareDialog({ config, trigger, className, open: controlledOpen, 
   const [linkCopied, setLinkCopied] = useState(false);
   const [shareUrl, setShareUrl] = useState<string>("");
   const [shareText, setShareText] = useState<string>("");
+  const userEditedRef = useRef(false);
   const [loading, setLoading] = useState(false);
   
   // 分享图片相关
@@ -148,6 +191,7 @@ export function ShareDialog({ config, trigger, className, open: controlledOpen, 
       getShortUrl(config).then((url) => {
         setShareUrl(url);
         setShareText(config.defaultText || getDefaultShareText(config, url));
+        userEditedRef.current = false;
         setLoading(false);
       });
     }
@@ -159,6 +203,7 @@ export function ShareDialog({ config, trigger, className, open: controlledOpen, 
     setShareText("");
     setActiveTab("link");
     shareImage.reset();
+    userEditedRef.current = false;
   }, [config.id, shareImage.reset]);
 
   // 当切换到图片 tab 时自动生成图片
@@ -206,6 +251,64 @@ export function ShareDialog({ config, trigger, className, open: controlledOpen, 
       console.error("复制链接失败:", err);
     }
   }, [shareUrl]);
+
+  const templateContext = useMemo(() => {
+    const context: Record<string, string | undefined> = {
+      title: config.title,
+      description: config.description || "",
+      authorName: resolvedAuthorName,
+      url: shareUrl,
+    };
+
+    if (config.meta) {
+      Object.entries(config.meta).forEach(([key, value]) => {
+        if (value === undefined || value === null) return;
+        context[key.toLowerCase()] = typeof value === "string" ? value : String(value);
+      });
+    }
+
+    if (config.stats) {
+      config.stats.forEach((stat) => {
+        if (!stat.label) return;
+        const normalized = `stat_${stat.label}`
+          .replace(/[^a-zA-Z0-9]/g, "")
+          .toLowerCase();
+        if (!normalized) return;
+        context[normalized] = stat.value !== undefined ? String(stat.value) : "";
+      });
+    }
+
+    return context;
+  }, [config.title, config.description, resolvedAuthorName, shareUrl, config.meta, config.stats]);
+
+  useEffect(() => {
+    if (!open || !shareUrl || userEditedRef.current) return;
+    let cancelled = false;
+    const fetchTemplate = async () => {
+      try {
+        const res = await fetch(`/api/share/templates?type=${config.type}&take=10`, {
+          cache: "no-store",
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success || cancelled) return;
+        const templates: ShareTemplatePayload[] = json.data ?? [];
+        if (templates.length === 0) return;
+        const picked =
+          templates[Math.floor(Math.random() * templates.length)];
+        if (!picked?.description || userEditedRef.current) return;
+        const applied = applyShareTemplate(picked.description, templateContext);
+        if (applied.trim()) {
+          setShareText(applied);
+        }
+      } catch (error) {
+        console.error("加载分享模板失败:", error);
+      }
+    };
+    void fetchTemplate();
+    return () => {
+      cancelled = true;
+    };
+  }, [config.type, templateContext, open, shareUrl]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -309,7 +412,10 @@ export function ShareDialog({ config, trigger, className, open: controlledOpen, 
                 <label className="text-xs font-medium text-slate-500 ml-1">分享文案</label>
                 <Textarea
                   value={shareText}
-                  onChange={(e) => setShareText(e.target.value)}
+                  onChange={(e) => {
+                    setShareText(e.target.value);
+                    userEditedRef.current = true;
+                  }}
                   className="min-h-[100px] text-sm resize-none bg-slate-50 border-slate-200 focus:border-blue-500 focus:ring-blue-500/20"
                   disabled={loading}
                 />

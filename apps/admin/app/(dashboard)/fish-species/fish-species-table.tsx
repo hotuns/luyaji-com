@@ -14,6 +14,7 @@ import {
   Popconfirm,
   message,
   Avatar,
+  Upload,
 } from "antd";
 import type { FormInstance } from "antd/es/form";
 import {
@@ -24,6 +25,7 @@ import {
   CiOutlined,
   EyeOutlined,
   EyeInvisibleOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import type { Prisma } from "@prisma/client";
 import { useMemo, useState } from "react";
@@ -338,6 +340,38 @@ export function FishSpeciesTable({
 }
 
 function SpeciesForm({ form }: { form: FormInstance<SpeciesFormValues> }) {
+  const [uploading, setUploading] = useState(false);
+  const imageUrl = Form.useWatch("imageUrl", form);
+
+  const handleImageUpload: NonNullable<React.ComponentProps<typeof Upload>["customRequest"]> = async ({
+    file,
+    onError,
+    onSuccess,
+  }) => {
+    try {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append("file", file as File);
+      formData.append("folder", "fish-species");
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "上传失败");
+      }
+      form.setFieldsValue({ imageUrl: result.data.url });
+      message.success("上传成功");
+      onSuccess?.(result.data, new XMLHttpRequest());
+    } catch (error) {
+      message.error((error as Error).message || "上传失败");
+      onError?.(error as Error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <Form layout="vertical" form={form} initialValues={{ habitatType: "fresh", isActive: true }}>
       <Form.Item name="name" label="中文名" rules={[{ required: true, message: "请输入中文名" }]}>
@@ -357,6 +391,46 @@ function SpeciesForm({ form }: { form: FormInstance<SpeciesFormValues> }) {
             { label: "半咸水", value: "brackish" },
           ]}
         />
+      </Form.Item>
+      <Form.Item label="鱼种图片">
+        <Space align="start">
+          {imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imageUrl}
+              alt="鱼种图片"
+              style={{ width: 96, height: 96, borderRadius: 16, objectFit: "cover", border: "1px solid #e2e8f0" }}
+            />
+          ) : (
+            <Avatar
+              shape="square"
+              size={96}
+              style={{ borderRadius: 16, backgroundColor: "#f1f5f9", color: "#94a3b8" }}
+              icon={<CiOutlined />}
+            />
+          )}
+          <Space direction="vertical">
+            <Upload
+              accept="image/*"
+              showUploadList={false}
+              customRequest={handleImageUpload}
+              disabled={uploading}
+            >
+              <Button icon={<UploadOutlined />} loading={uploading}>
+                {uploading ? "上传中..." : "上传图片"}
+              </Button>
+            </Upload>
+            {imageUrl && (
+              <Button
+                size="small"
+                type="link"
+                onClick={() => form.setFieldsValue({ imageUrl: undefined })}
+              >
+                移除图片
+              </Button>
+            )}
+          </Space>
+        </Space>
       </Form.Item>
       <Form.Item name="imageUrl" label="图片 URL">
         <Input placeholder="https://..." />

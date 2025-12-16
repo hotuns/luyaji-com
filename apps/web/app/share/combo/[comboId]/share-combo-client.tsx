@@ -65,6 +65,7 @@ export default function ShareComboClient({ comboId }: { comboId: string }) {
   const [combo, setCombo] = useState<ComboDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEmbed, setIsEmbed] = useState(false);
 
   useEffect(() => {
     async function fetchCombo() {
@@ -86,6 +87,21 @@ export default function ShareComboClient({ comboId }: { comboId: string }) {
     fetchCombo();
   }, [comboId]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setIsEmbed(window.self !== window.top);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const body = document.body;
+    if (!loading && !error && combo) {
+      body.setAttribute("data-share-ready", "true");
+      return () => body.removeAttribute("data-share-ready");
+    }
+    return undefined;
+  }, [loading, error, combo]);
+
   if (loading) return <ComboSkeleton />;
   if (error || !combo) return <ErrorState error={error || "未知错误"} />;
 
@@ -97,12 +113,14 @@ export default function ShareComboClient({ comboId }: { comboId: string }) {
       {/* 顶部导航栏 */}
       <div className="fixed top-0 left-0 right-0 z-50 p-4 flex justify-between items-center pointer-events-none">
         <div className="pointer-events-auto"></div>
-        <Button size="sm" variant="secondary" className="rounded-full shadow-lg bg-white/90 backdrop-blur text-slate-800 pointer-events-auto" asChild>
-          <Link href="/auth/register">
-            <Download className="w-4 h-4 mr-1.5" />
-            查看更多
-          </Link>
-        </Button>
+        {!isEmbed && (
+          <Button size="sm" variant="secondary" className="rounded-full shadow-lg bg-white/90 backdrop-blur text-slate-800 pointer-events-auto" asChild>
+            <Link href="/auth/register">
+              <Download className="w-4 h-4 mr-1.5" />
+              查看更多
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* Hero Section */}
@@ -247,19 +265,21 @@ export default function ShareComboClient({ comboId }: { comboId: string }) {
       </div>
 
       {/* 底部悬浮引导栏 */}
-      <div className="fixed bottom-6 left-4 right-4 z-50">
-        <div className="bg-slate-900/90 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-white/10">
-          <div>
-            <p className="font-bold text-sm">路亚记 Luyaji</p>
-            <p className="text-xs text-slate-300">发现更多强力装备</p>
+      {!isEmbed && (
+        <div className="fixed bottom-6 left-4 right-4 z-50">
+          <div className="bg-slate-900/90 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-white/10">
+            <div>
+              <p className="font-bold text-sm">路亚记 Luyaji</p>
+              <p className="text-xs text-slate-300">发现更多强力装备</p>
+            </div>
+            <Button size="sm" className="bg-white text-slate-900 hover:bg-slate-100 rounded-full font-medium" asChild>
+              <Link href="/auth/register">
+                立即体验
+              </Link>
+            </Button>
           </div>
-          <Button size="sm" className="bg-white text-slate-900 hover:bg-slate-100 rounded-full font-medium" asChild>
-            <Link href="/auth/register">
-              立即体验
-            </Link>
-          </Button>
         </div>
-      </div>
+      )}
     </div>
   );
 }

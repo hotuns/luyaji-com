@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@workspace/ui/components/input";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { Button } from "@workspace/ui/components/button";
+import { cn } from "@workspace/ui/lib/utils";
 import { LocationPicker } from "@/components/map";
 
 const SpotsMap = dynamic(() => import("@/components/map/trips-map-view"), {
@@ -126,25 +127,25 @@ export default function SpotsDashboard({
       </div>
 
       <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-        <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-          <button
-            type="button"
-            onClick={() => setView("list")}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium ${
-              view === "list" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            列表视图
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("map")}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium ${
-              view === "map" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            地图视图
-          </button>
+        <div className="flex p-1 bg-slate-100 rounded-xl overflow-x-auto no-scrollbar mb-4">
+          {[
+            { key: "list", label: "列表视图" },
+            { key: "map", label: "地图视图" },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setView(tab.key as "list" | "map")}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all whitespace-nowrap",
+                view === tab.key
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {view === "list" ? (

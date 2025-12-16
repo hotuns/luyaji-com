@@ -28,6 +28,8 @@ export default async function ShortLinkPage({ params }: { params: Promise<{ code
         return `/share/combo/${shortLink.targetId}`;
       case "dex":
         return `/share/dex/${shortLink.targetId}`;
+      case "gear":
+        return `/share/gear/${shortLink.targetId}`;
       default:
         return "/";
     }

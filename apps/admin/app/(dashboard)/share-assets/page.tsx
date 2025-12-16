@@ -4,29 +4,45 @@ import { prisma } from "@/lib/prisma";
 import { ShareAssetsManager } from "./share-assets-manager";
 
 const normalizeJson = (value: Prisma.JsonValue | null) => {
-  if (value === null || value === Prisma.JsonNull) return null;
-  return value;
+  return value === null ? null : value;
 };
 
+const isMissingShareTableError = (error: unknown) =>
+  error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2021";
+
+async function fetchShareData() {
+  try {
+    const [templates, mediaAssets, ctas] = await Promise.all([
+      prisma.shareTemplate.findMany({
+        orderBy: [
+          { sortOrder: "asc" },
+          { updatedAt: "desc" },
+        ],
+      }),
+      prisma.shareMediaAsset.findMany({
+        orderBy: [
+          { category: "asc" },
+          { weight: "desc" },
+          { createdAt: "desc" },
+        ],
+      }),
+      prisma.shareCta.findMany({
+        orderBy: [{ createdAt: "desc" }],
+      }),
+    ]);
+
+    return { templates, mediaAssets, ctas };
+  } catch (error) {
+    if (isMissingShareTableError(error)) {
+      console.warn("[share-assets] share tables not found, returning empty data.");
+      return { templates: [], mediaAssets: [], ctas: [] };
+    }
+    throw error;
+  }
+}
+
 export default async function ShareAssetsPage() {
-  const [templates, mediaAssets, ctas] = await Promise.all([
-    prisma.shareTemplate.findMany({
-      orderBy: [
-        { sortOrder: "asc" },
-        { updatedAt: "desc" },
-      ],
-    }),
-    prisma.shareMediaAsset.findMany({
-      orderBy: [
-        { category: "asc" },
-        { weight: "desc" },
-        { createdAt: "desc" },
-      ],
-    }),
-    prisma.shareCta.findMany({
-      orderBy: [{ createdAt: "desc" }],
-    }),
-  ]);
+  const { templates, mediaAssets, ctas } = await fetchShareData();
 
   const templateData = templates.map((item) => ({
     ...item,

@@ -15,7 +15,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "metadata:migrate": "tsx prisma/migrate-metadata.ts",
-    "metadata:cleanup": "tsx prisma/cleanup-legacy-scene-tags.ts"
+    "metadata:cleanup": "tsx prisma/cleanup-legacy-scene-tags.ts",
+    "share:seed": "tsx prisma/seed-share-templates.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -25,18 +26,21 @@
     "@alicloud/openapi-client": "^0.4.15",
     "@auth/prisma-adapter": "^2.11.1",
     "@prisma/client": "5",
+    "@types/qrcode": "^1.5.6",
     "@workspace/ui": "workspace:*",
     "ali-oss": "^6.23.0",
     "antd": "^5.23.1",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.19",
+    "html-to-image": "^1.11.11",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.475.0",
     "next": "^15.4.5",
     "next-auth": "5.0.0-beta.30",
     "next-themes": "^0.4.6",
     "prisma": "5",
+    "qrcode": "^1.5.4",
     "react": "^19.1.1",
     "react-day-picker": "^9.11.3",
     "react-dom": "^19.1.1",
